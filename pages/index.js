@@ -357,8 +357,9 @@ function LosersTab(props){
         fetch("/api/market?source=td&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
         fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
         fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch("/api/edgar?ticker="+t).then(function(r){return r.json();}).catch(function(){return null;}),
       ]).then(function(results){
-        var rec=results[0],pt=results[1],earn=results[2],quote=results[3],fhQuote=results[4],metric=results[5];
+        var rec=results[0],pt=results[1],earn=results[2],quote=results[3],fhQuote=results[4],metric=results[5],edgar=results[6];
         var checks={};
         var score=0,total=0;
         if(rec&&Array.isArray(rec)&&rec.length>0){
@@ -411,6 +412,15 @@ function LosersTab(props){
             if(beta&&beta<1.5){score++;} // lower beta = less volatile, safer recovery
             total++;
           }
+        }
+        // 8. SEC EDGAR: revenue growth from actual filings
+        if(edgar&&edgar.revenues&&edgar.revenues.length>=2){
+          var revs=edgar.revenues;
+          var latest=revs[revs.length-1].val,prior=revs[revs.length-2].val;
+          var revGrowth=prior>0?((latest-prior)/prior*100).toFixed(1):0;
+          var growing=parseFloat(revGrowth)>0;
+          checks.secRevenue="SEC filing: Revenue "+(growing?"+":"")+revGrowth+"% YoY ($"+(latest/1e9).toFixed(1)+"B)";
+          if(growing){score++;}total++;
         }
         var pct2=total>0?score/total:0;
         var confidence=pct2>=0.6?"HIGH":pct2>=0.4?"MEDIUM":"LOW";
