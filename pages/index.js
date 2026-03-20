@@ -1069,14 +1069,79 @@ export default function App(){
       entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2),isReal:true};
   }
 
-  var refresh=useCallback(function(){
+  var refresh=useCallback(function(forceRefresh){
     var c=cfgRef.current;
-    setDataLoading(true);setDataSource("live");
-    // Use batch quote endpoint — fetches all 20 tickers in ONE API call (1 credit)
     var symbols=TICKERS.join(",");
+    var cacheKey="apex_quotes_daily";
+    // Check daily cache — only fetch from API once per day unless forced
+    var cached=null;
+    try{
+      var cv=localStorage.getItem(cacheKey);
+      if(cv){
+        var cp=JSON.parse(cv);
+        var age=Date.now()-cp.ts;
+        var sameDay=new Date(cp.ts).toDateString()===new Date().toDateString();
+        if(sameDay&&!forceRefresh){cached=cp.data;}
+      }
+    }catch(e){}
+    // If we have today's data, use it immediately — no API call
+    if(cached){
+      setDataLoading(false);setDataSource("live");
+      (function buildFromCache(batch){
+        var ns=TICKERS.map(function(t,i){
+          var q=batch[t]||batch;
+          if(q&&q.close){
+            var cur=parseFloat(q.close)||BASE[t]||50;
+            var prev=parseFloat(q.previous_close)||cur;
+            var chg=cur>0?((cur-prev)/prev*100):0;
+            var vol=parseFloat(q.volume)||5e6;
+            var avgVol=parseFloat(q.average_volume)||8e6;
+            var vr=+(vol/avgVol).toFixed(2)||1;
+            var h52hi=parseFloat((q.fifty_two_week||{}).high)||cur*1.3;
+            var h52lo=parseFloat((q.fifty_two_week||{}).low)||cur*0.7;
+            var dip=(h52hi-cur)/h52hi*100;
+            var days=90;var prices=[];
+            for(var d=0;d<days;d++){
+              var hash=t.split("").reduce(function(a,ch){return a+ch.charCodeAt(0);},0);
+              var progress=d/(days-1);
+              var base=h52lo+(cur-h52lo)*Math.pow(progress,0.7);
+              var osc=((hash*d)%17-8)/8*(h52hi-h52lo)*0.04;
+              prices.push(Math.max(h52lo*0.95,Math.min(h52hi*1.02,base+osc)));
+            }
+            prices[prices.length-1]=cur;
+            var rsi=lastRSI(prices),mh=macdH(prices);
+            var sig="HOLD";
+            if(dip>=c.dipMin&&dip<=c.dipMax){
+              if(rsi>=c.rsiRecovery&&rsi<60&&mh>0&&vr>=c.volMult)sig="STRONG_BUY";
+              else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";
+              else if(rsi<c.rsiOversold)sig="WATCH";
+            }else if(dip<5){if(rsi>70)sig="SELL";}
+            else if(dip>25){sig=rsi<30?"WATCH":"SELL";}
+            var score=Math.min(100,Math.max(0,Math.round(
+              (dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0)
+            )));
+            return{ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),
+              rsi,mh,chg:+chg.toFixed(2),vr,sig,score,sector:SECTORS[i%20],
+              sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),
+              entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
+          }
+          return genStock(t,i,c);
+        });
+        setStocks(ns);setLastR(new Date());
+      })(cached);
+      return;
+    }
+    // No cache — fetch from API
+    setDataLoading(true);setDataSource("live");
     fetch("/api/market?source=td&endpoint=quote?symbol="+symbols)
       .then(function(r){return r.json();})
       .then(function(batch){
+        if(batch.code===429||batch.status==="error"){
+          setStocks(TICKERS.map(function(t,i){return genStock(t,i,c);}));
+          setLastR(new Date());setDataLoading(false);setDataSource("simulated");return;
+        }
+        // Save to daily cache
+        try{localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),data:batch}));}catch(e){}
         // Twelve Data returns object keyed by ticker when multiple symbols requested
         var ns=TICKERS.map(function(t,i){
           var q=batch[t]||batch;
@@ -1385,7 +1450,8 @@ export default function App(){
           <div style={{display:"flex",gap:14,alignItems:"center"}}>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>PORTFOLIO</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{"$"+portVal.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>RETURN</div><div style={{fontSize:14,fontWeight:700,color:portPct>=0?"#22c55e":"#ef4444"}}>{(portPct>=0?"+":"")+portPct.toFixed(2)+"%"}</div></div>
-            <button onClick={refresh} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="simulated"&&<span style={{fontSize:9,background:"#1c1917",color:"#78716c",border:"1px solid #292524",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>SIM</span>}
+            <button onClick={function(){refresh(false);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>
+                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">↻ New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="simulated"&&<span style={{fontSize:9,background:"#1c1917",color:"#78716c",border:"1px solid #292524",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>SIM</span>}
           </div>
         </div>
       </div>
