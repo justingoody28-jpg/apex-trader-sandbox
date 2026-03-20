@@ -971,6 +971,35 @@ export default function App(){
   var [tab,setTab]=useState("screener");
   var [stocks,setStocks]=useState([]);
   var [appWatchlist,setAppWatchlist]=useState([]);
+  var [tickerDetail,setTickerDetail]=useState(null); // stock object for detail panel
+  var [tickerAI,setTickerAI]=useState(null);         // AI explanation
+  var [tickerAILoading,setTickerAILoading]=useState(false);
+
+  function openTickerDetail(s){
+    setTickerDetail(s);
+    setTickerAI(null);
+    setTickerAILoading(true);
+    var prompt="Today is "+new Date().toDateString()+". Analyze "+s.ticker+" ("+s.sector+") which currently has a "+s.sig.replace("_"," ")+" signal. "+
+      "The key metrics are: Price $"+s.cur+", "+s.dip.toFixed(1)+"% below 52-week high of $"+s.h52+
+      ", RSI "+s.rsi+" (oversold<35, overbought>70), MACD "+(s.mh>0?"bullish":"bearish")+" at "+s.mh+
+      ", Volume "+s.vr+"x average, 1D change "+s.chg+"%"+
+      ", Score "+s.score+"/100. "+
+      "In 3-4 sentences, explain the specific justification for the "+s.sig.replace("_"," ")+" signal based on these exact numbers. "+
+      "Be specific — reference the RSI, DIP, and MACD values. Keep it factual and concise.";
+    fetch("/api/analyze",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",max_tokens:300,
+        system:"You are a technical analysis assistant. Respond in 3-4 sentences only. Be specific about the numbers provided.",
+        messages:[{role:"user",content:prompt}]
+      })
+    }).then(function(r){return r.json();})
+    .then(function(d){
+      var txt=(d.content||[]).map(function(b){return b.text||"";}).join("").trim();
+      setTickerAI(txt);setTickerAILoading(false);
+    })
+    .catch(function(){setTickerAI("Unable to generate analysis.");setTickerAILoading(false);});
+  }
   var [watchlistStocks,setWatchlistStocks]=useState([]);
   function refreshWatchlist(){
     fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(data){
@@ -1461,7 +1490,108 @@ export default function App(){
         {/* ── SCREENER ── */}
         {tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
-            {appWatchlist.length>0&&(
+            {/* Ticker Detail Panel */}
+          {tickerDetail&&(function(){
+            var s=tickerDetail;
+            var sg=SIGS[s.sig]||SIGS.HOLD;
+            function Gauge(props){
+              var pct=Math.min(100,Math.max(0,props.pct));
+              var col=props.good?
+                (pct>=props.goodMin&&pct<=props.goodMax?"#22c55e":pct>props.goodMax?"#f87171":"#f59e0b"):
+                (pct>50?"#22c55e":"#f87171");
+              return(
+                <div style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:10,color:"#64748b",letterSpacing:1}}>{props.label}</span>
+                    <span style={{fontSize:11,fontWeight:700,color:col}}>{props.display}</span>
+                  </div>
+                  <div style={{height:4,background:"#0f172a",borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:pct+"%",background:col,borderRadius:2,transition:"width 0.4s ease"}}/>
+                  </div>
+                  {props.note&&<div style={{fontSize:9,color:"#334155",marginTop:3}}>{props.note}</div>}
+                </div>
+              );
+            }
+            var dipPct=Math.min(100,s.dip/30*100);
+            var rsiPct=s.rsi;
+            var macdPct=s.mh>0?Math.min(100,50+s.mh*500):Math.max(0,50+s.mh*500);
+            var vrPct=Math.min(100,s.vr/3*100);
+            var h52range=s.h52-s.h52*0.7;
+            var h52pos=h52range>0?Math.min(100,Math.max(0,((s.cur-(s.h52*0.7))/h52range)*100)):50;
+            var chgPct=Math.min(100,Math.max(0,50+(s.chg*5)));
+            var scorePct=s.score;
+            return(
+              <div style={{position:"fixed",top:0,right:0,width:400,height:"100vh",background:"#080d14",
+                borderLeft:"1px solid #1e293b",zIndex:1000,overflowY:"auto",boxShadow:"-8px 0 32px rgba(0,0,0,0.5)",
+                animation:"slideIn 0.2s ease"}}>
+                <style>{`@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
+                {/* Header */}
+                <div style={{padding:"20px 20px 16px",borderBottom:"1px solid #0f172a",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                      <span style={{fontSize:24,fontWeight:800,color:"#f1f5f9"}}>{s.ticker}</span>
+                      <span style={{padding:"4px 10px",borderRadius:5,fontSize:11,fontWeight:800,background:sg.bg,color:sg.c,border:"1px solid "+sg.b}}>{sg.label}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#475569"}}>{s.sector} · ${s.cur} · Score {s.score}/100</div>
+                  </div>
+                  <button onClick={function(){setTickerDetail(null);setTickerAI(null);}}
+                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>✕</button>
+                </div>
+                {/* Signal Breakdown */}
+                <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
+                  <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:14}}>SIGNAL BREAKDOWN</div>
+                  <Gauge label="DIP FROM 52W HIGH" display={s.dip.toFixed(1)+"%"} pct={dipPct}
+                    good goodMin={17} goodMax={67}
+                    note={"Target: 5–20% · 52W High: $"+s.h52}/>
+                  <Gauge label="RSI (14)" display={s.rsi} pct={rsiPct}
+                    good goodMin={35} goodMax={55}
+                    note="Buy zone: 35–55 · Oversold <35 · Overbought >70"/>
+                  <Gauge label="MACD HISTOGRAM" display={(s.mh>0?"+":"")+s.mh} pct={macdPct}
+                    good goodMin={50} goodMax={100}
+                    note={s.mh>0?"Bullish momentum":"Bearish momentum"}/>
+                  <Gauge label="VOLUME VS AVERAGE" display={s.vr+"x"} pct={vrPct}
+                    good goodMin={43} goodMax={100}
+                    note="Target: >1.3x average · Current: "+s.vr+"x"/>
+                  <Gauge label="52-WEEK RANGE POSITION" display={Math.round(h52pos)+"%"} pct={h52pos}
+                    good goodMin={0} goodMax={40}
+                    note={"Low: $"+(s.h52*0.7).toFixed(0)+" → High: $"+s.h52}/>
+                  <Gauge label="1-DAY CHANGE" display={(s.chg>0?"+":"")+s.chg+"%"} pct={chgPct}
+                    good goodMin={45} goodMax={65}
+                    note="Neutral around 0%"/>
+                  <Gauge label="COMPOSITE SCORE" display={s.score+"/100"} pct={scorePct}
+                    good goodMin={60} goodMax={100}
+                    note="Weighted: DIP 30pts · RSI 25pts · MACD 25pts · VOL 20pts"/>
+                </div>
+                {/* AI Justification */}
+                <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
+                  <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:12}}>AI SIGNAL JUSTIFICATION</div>
+                  {tickerAILoading?(
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:12,height:12,border:"2px solid #1e293b",borderTopColor:sg.c,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+                      <span style={{fontSize:12,color:"#334155"}}>Analyzing {s.ticker}...</span>
+                    </div>
+                  ):(
+                    <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.8}}>{tickerAI||"—"}</div>
+                  )}
+                </div>
+                {/* Actions */}
+                <div style={{padding:"16px 20px",display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <button onClick={function(){setModal(Object.assign({},s,{side:"BUY"}));setQty(1);setTickerDetail(null);setTickerAI(null);setTab("paper");}}
+                    style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 18px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                    Paper Buy {s.ticker}
+                  </button>
+                  <button onClick={function(){setTickerDetail(null);setTickerAI(null);setTab("backtest");}}
+                    style={{background:"transparent",border:"1px solid #1e293b",color:"#64748b",borderRadius:8,padding:"10px 18px",fontSize:12,cursor:"pointer"}}>
+                    Backtest
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+          {/* Click outside to close */}
+          {tickerDetail&&<div onClick={function(){setTickerDetail(null);setTickerAI(null);}} style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:999}}/>}
+
+          {appWatchlist.length>0&&(
               <div style={{marginBottom:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div>
@@ -1514,7 +1644,7 @@ export default function App(){
               return(
                 <div key={s.ticker} style={{display:"grid",gridTemplateColumns:"70px 1fr 78px 64px 56px 52px 70px 62px 80px 90px",gap:7,padding:"8px 10px",borderBottom:"1px solid #0a0f1a",alignItems:"center",cursor:"pointer",animation:"fu 0.3s ease "+(i*0.02)+"s both"}}
                   onMouseEnter={function(e){e.currentTarget.style.background="#0f172a";}} onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}
-                  onClick={function(){setModal(Object.assign({},s,{side:(s.sig==="STRONG_BUY"||s.sig==="BUY")?"BUY":"SELL"}));setQty(1);}}>
+                  onClick={function(){openTickerDetail(s);}}>
                   <div style={{fontWeight:700,color:"#f1f5f9",fontSize:12}}>{s.ticker}</div>
                   <div><div style={{fontSize:10,color:"#475569",marginBottom:2}}>{s.sector}</div><Spark prices={s.prices} up={s.chg>=0}/></div>
                   <div style={{fontSize:12,color:"#f1f5f9"}}>{"$"+s.cur}</div>
