@@ -767,7 +767,7 @@ function LosersTab(props){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:10}}>
               <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
                 <div><div style={{fontSize:26,fontWeight:800,color:"#f1f5f9"}}>{sr.ticker}</div><div style={{fontSize:12,color:"#475569",marginTop:2}}>{sr.name}</div></div>
-                <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector} Â| {sr.exchange}</div></div>
+                <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector} | {sr.exchange}</div></div>
                 <div><div style={{fontSize:11,color:"#475569"}}>52w: {sr.fiftyTwoWeekLow} â {sr.fiftyTwoWeekHigh}</div><div style={{fontSize:11,color:"#475569",marginTop:2}}>Mkt Cap: {sr.marketCap}</div></div>
               </div>
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
@@ -1532,7 +1532,7 @@ export default function App(){
                       <span style={{fontSize:24,fontWeight:800,color:"#f1f5f9"}}>{s.ticker}</span>
                       <span style={{padding:"4px 10px",borderRadius:5,fontSize:11,fontWeight:800,background:sg.bg,color:sg.c,border:"1px solid "+sg.b}}>{sg.label}</span>
                     </div>
-                    <div style={{fontSize:11,color:"#475569"}}>{s.sector} Â| ${s.cur} Â| Score {s.score}/100</div>
+                    <div style={{fontSize:11,color:"#475569"}}>{s.sector} | ${s.cur} | Score {s.score}/100</div>
                   </div>
                   <button onClick={function(){setTickerDetail(null);setTickerAI(null);}}
                     style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>â</button>
@@ -1542,16 +1542,16 @@ export default function App(){
                   <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:14}}>SIGNAL BREAKDOWN</div>
                   <Gauge label="DIP FROM 52W HIGH" display={s.dip.toFixed(1)+"%"} pct={dipPct}
                     good goodMin={17} goodMax={67}
-                    note={"Target: 5â20% Â| 52W High: $"+s.h52}/>
+                    note={"Target: 5â20% | 52W High: $"+s.h52}/>
                   <Gauge label="RSI (14)" display={s.rsi} pct={rsiPct}
                     good goodMin={35} goodMax={55}
-                    note="Buy zone: 35â55 Â| Oversold <35 Â| Overbought >70"/>
+                    note="Buy zone: 35â55 | Oversold <35 | Overbought >70"/>
                   <Gauge label="MACD HISTOGRAM" display={(s.mh>0?"+":"")+s.mh} pct={macdPct}
                     good goodMin={50} goodMax={100}
                     note={s.mh>0?"Bullish momentum":"Bearish momentum"}/>
                   <Gauge label="VOLUME VS AVERAGE" display={s.vr+"x"} pct={vrPct}
                     good goodMin={43} goodMax={100}
-                    note="Target: >1.3x average Â| Current: "+s.vr+"x"/>
+                    note="Target: >1.3x average | Current: "+s.vr+"x"/>
                   <Gauge label="52-WEEK RANGE POSITION" display={Math.round(h52pos)+"%"} pct={h52pos}
                     good goodMin={0} goodMax={40}
                     note={"Low: $"+(s.h52*0.7).toFixed(0)+" to High: $"+s.h52}/>
@@ -1560,7 +1560,7 @@ export default function App(){
                     note="Neutral around 0%"/>
                   <Gauge label="COMPOSITE SCORE" display={s.score+"/100"} pct={scorePct}
                     good goodMin={60} goodMax={100}
-                    note="Weighted: DIP 30pts Â| RSI 25pts Â| MACD 25pts Â| VOL 20pts"/>
+                    note="Weighted: DIP 30pts | RSI 25pts | MACD 25pts | VOL 20pts"/>
                 </div>
                 {/* AI Justification */}
                 <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
