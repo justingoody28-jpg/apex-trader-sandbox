@@ -347,25 +347,48 @@ function LosersTab(props){
       newVal[t]={loading:true};
       Promise.all([
         fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fh&endpoint=stock/insider-sentiment?symbol="+t+"&from=2024-01-01").then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fh&endpoint=stock/earnings?symbol="+t+"&limit=1").then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fmp&endpoint=income-statement/"+t+"?limit=2").then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fmp&endpoint=cash-flow-statement/"+t+"?limit=1").then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fmp&endpoint=ratios-ttm/"+t).then(function(r){return r.json();}).catch(function(){return null;}),
         fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch("/api/market?source=fh&endpoint=stock/earnings?symbol="+t+"&limit=4").then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch("/api/market?source=td&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
       ]).then(function(results){
-        var rec=results[0],ins=results[1],earn=results[2],inc=results[3],cf=results[4],rat=results[5],pt=results[6];
+        var rec=results[0],pt=results[1],earn=results[2],quote=results[3];
         var checks={};
         var score=0,total=0;
-        if(rec&&rec.length>0){var r=rec[0];var buy=r.buy+r.strongBuy,sell=r.sell+r.strongSell,hold=r.hold;var tot=buy+sell+hold||1;checks.analystBuy=Math.round(buy/tot*100)+"%  buy consensus";if(buy/tot>0.5){score++;} total++;}
-        if(pt&&pt.targetHigh){var cur=parseFloat((l.price||"0").replace(/[^0-9.]/g,""));var tgt=parseFloat(pt.targetMean||0);if(tgt>cur){checks.priceTarget="Consensus target $"+tgt.toFixed(0)+" (+"+(((tgt-cur)/cur)*100).toFixed(0)+"%)";score++;} total++;}
-        if(ins&&ins.data&&ins.data.length>0){var mspr=ins.data.reduce(function(s,d){return s+d.mspr;},0)/ins.data.length;checks.insiderSentiment=mspr>0?"Insider buying (MSPR: "+mspr.toFixed(2)+")":"Insider selling (MSPR: "+mspr.toFixed(2)+")";if(mspr>0){score++;} total++;}
-        if(earn&&earn.length>0){var e=earn[0];checks.lastEarnings=e.surprise>0?"Beat by $"+e.surprise.toFixed(2):"Missed by $"+Math.abs(e.surprise||0).toFixed(2);if(e.surprise>0){score++;} total++;}
-        if(inc&&inc.length>=2){var rev0=inc[0].revenue,rev1=inc[1].revenue;var revGrowth=rev1>0?((rev0-rev1)/rev1*100).toFixed(1):0;checks.revenueGrowth="Revenue "+revGrowth+"% YoY";if(parseFloat(revGrowth)>0){score++;} total++;}
-        if(cf&&cf.length>0){checks.freeCashFlow=cf[0].freeCashFlow>0?"FCF Positive ($"+(cf[0].freeCashFlow/1e9).toFixed(1)+"B)":"FCF Negative";if(cf[0].freeCashFlow>0){score++;} total++;}
-        if(rat&&rat.length>0){var pe=rat[0].peRatioTTM;checks.peRatio=pe>0?"P/E: "+pe.toFixed(1)+(pe<30?" (reasonable)":" (elevated)"):"P/E: N/A";if(pe>0&&pe<30){score++;} total++;}
-        var pct=total>0?score/total:0;
-        var confidence=pct>=0.65?"HIGH":pct>=0.4?"MEDIUM":"LOW";
+        if(rec&&Array.isArray(rec)&&rec.length>0){
+          var r=rec[0];var buy=(r.buy||0)+(r.strongBuy||0),sell=(r.sell||0)+(r.strongSell||0),hold=r.hold||0;
+          var tot=buy+sell+hold||1;var pct=Math.round(buy/tot*100);
+          checks.analystBuy=pct+"% analyst buy consensus";if(buy/tot>0.5){score++;}total++;
+        }
+        if(pt&&pt.targetMean){
+          var cur=parseFloat((l.price||"0").replace(/[^0-9.]/g,""));
+          var tgt=parseFloat(pt.targetMean||0);
+          if(tgt>0&&cur>0){
+            var upside=((tgt-cur)/cur*100).toFixed(0);
+            checks.priceTarget="Analyst target $"+tgt.toFixed(0)+" ("+(upside>0?"+":"")+upside+"%)";
+            if(tgt>cur){score++;}total++;
+          }
+        }
+        if(earn&&Array.isArray(earn)&&earn.length>0){
+          var beats=earn.filter(function(e){return e.surprise>0;}).length;
+          checks.earningsBeat=beats+"/"+earn.length+" recent quarters beat";
+          if(beats/earn.length>=0.5){score++;}total++;
+        }
+        if(quote&&quote.close&&quote.fifty_two_week){
+          var price=parseFloat(quote.close);
+          var hi=parseFloat(quote.fifty_two_week.high);
+          var lo=parseFloat(quote.fifty_two_week.low);
+          var rng=hi-lo||1;
+          var pos=Math.round((price-lo)/rng*100);
+          checks.weekPosition="At "+pos+"% of 52-week range ($"+lo.toFixed(0)+"–$"+hi.toFixed(0)+")";
+          if(pos<40){score++;}total++;
+        }
+        if(quote&&quote.volume&&quote.average_volume){
+          var vr=(parseFloat(quote.volume)/parseFloat(quote.average_volume)).toFixed(1);
+          checks.volume="Volume "+vr+"x average";
+          if(parseFloat(vr)>1.5){score++;}total++;
+        }
+        var pct2=total>0?score/total:0;
+        var confidence=pct2>=0.6?"HIGH":pct2>=0.4?"MEDIUM":"LOW";
         newVal[t]={loading:false,checks,score,total,confidence};
         done();
       }).catch(function(){newVal[t]={loading:false,checks:{},score:0,total:0,confidence:"LOW"};done();});
