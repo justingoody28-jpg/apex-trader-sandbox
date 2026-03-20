@@ -327,15 +327,20 @@ function LosersTab(props){
      prompt:"Identify 8 small-cap US companies (market cap under $1B) that have experienced sharp drops. These carry higher risk — be explicit about solvency concerns, debt loads, and whether the business model is proven. Include honest bear cases. Only flag as Buy if there is a genuinely compelling recovery thesis."},
   ];
   var [category,setCategory]=useState("fallen_giants");
-  var [losers,setLosers]=useState([]);
+  var [cache,setCache]=useState({}); // per-category results cache
   var [loading,setLoading]=useState(false);
   var [error,setError]=useState(null);
   var [filter,setFilter]=useState("all");
-  var [validation,setValidation]=useState({});
+  var [validationCache,setValidationCache]=useState({});
   var [validating,setValidating]=useState(false);
-  var [summary,setSummary]=useState(null);
 
   var cat=CATEGORIES.find(function(c){return c.id===category;})||CATEGORIES[0];
+  var losers=(cache[category]||{}).losers||[];
+  var summary=(cache[category]||{}).summary||null;
+  var validation=validationCache[category]||{};
+  function setLosers(v){setCache(function(prev){var n=Object.assign({},prev);n[category]=Object.assign({},n[category]||{},{losers:v});return n;});}
+  function setSummary(v){setCache(function(prev){var n=Object.assign({},prev);n[category]=Object.assign({},n[category]||{},{summary:v});return n;});}
+  function setValidation(v){setValidationCache(function(prev){var n=Object.assign({},prev);n[category]=v;return n;});}
 
   function validateLosers(losersArr){
     setValidating(true);
@@ -350,8 +355,10 @@ function LosersTab(props){
         fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
         fetch("/api/market?source=fh&endpoint=stock/earnings?symbol="+t+"&limit=4").then(function(r){return r.json();}).catch(function(){return null;}),
         fetch("/api/market?source=td&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
       ]).then(function(results){
-        var rec=results[0],pt=results[1],earn=results[2],quote=results[3];
+        var rec=results[0],pt=results[1],earn=results[2],quote=results[3],fhQuote=results[4],metric=results[5];
         var checks={};
         var score=0,total=0;
         if(rec&&Array.isArray(rec)&&rec.length>0){
@@ -386,6 +393,24 @@ function LosersTab(props){
           var vr=(parseFloat(quote.volume)/parseFloat(quote.average_volume)).toFixed(1);
           checks.volume="Volume "+vr+"x average";
           if(parseFloat(vr)>1.5){score++;}total++;
+        }
+        // 6. Finnhub quote: is price above 50-day moving average? (bullish signal)
+        if(fhQuote&&fhQuote.c&&fhQuote.c>0){
+          var fhPrice=fhQuote.c,prevClose=fhQuote.pc||fhPrice;
+          var chgPct=((fhPrice-prevClose)/prevClose*100).toFixed(1);
+          checks.recentMove="Today: "+(chgPct>0?"+":"")+chgPct+"% ($"+fhPrice.toFixed(2)+")";
+          if(fhQuote.dp<-5){score++;} // big single-day drop = capitulation signal
+          total++;
+        }
+        // 7. Fundamental metric: P/E and beta from Finnhub
+        if(metric&&metric.metric){
+          var m=metric.metric;
+          var beta=m.beta;var pe=m["peExclExtraTTM"];
+          if(beta!==undefined){
+            checks.riskMetric="Beta: "+(beta?beta.toFixed(2):"N/A")+(pe?" | P/E: "+pe.toFixed(1):"");
+            if(beta&&beta<1.5){score++;} // lower beta = less volatile, safer recovery
+            total++;
+          }
         }
         var pct2=total>0?score/total:0;
         var confidence=pct2>=0.6?"HIGH":pct2>=0.4?"MEDIUM":"LOW";
@@ -472,7 +497,7 @@ function LosersTab(props){
         {CATEGORIES.map(function(c){
           var active=category===c.id;
           return(
-            <button key={c.id} onClick={function(){setCategory(c.id);setLosers([]);setSummary(null);setError(null);setValidation({});}}
+            <button key={c.id} onClick={function(){setCategory(c.id);setError(null);setFilter("all");}}
               style={{background:active?c.bg:"#0a0f1a",border:"1px solid "+(active?c.color:"#1e293b"),borderRadius:10,padding:"12px 10px",cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
               <div style={{fontSize:18,marginBottom:4}}>{c.icon}</div>
               <div style={{fontSize:12,fontWeight:800,color:active?c.color:"#64748b",marginBottom:2}}>{c.label}</div>
