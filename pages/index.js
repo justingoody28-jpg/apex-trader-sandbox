@@ -315,6 +315,96 @@ function BTResults(props){
 }
 
 // ── AI Losers Tab ─────────────────────────────────────────────────────────────
+
+// ── Price Chart Component ──────────────────────────────────────────────────
+function PriceChart(props){
+  var data=props.data,ticker=props.ticker;
+  if(!data||data.length<2)return <div style={{color:"#334155",fontSize:11,padding:"20px 0",textAlign:"center"}}>Loading chart...</div>;
+  var W=520,H=120,PL=52,PR=10,PT=8,PB=20;
+  var IW=W-PL-PR,IH=H-PT-PB;
+  var closes=data.map(function(d){return parseFloat(d.close);});
+  var mn=Math.min.apply(null,closes),mx=Math.max.apply(null,closes),rng=mx-mn||1;
+  var n=closes.length-1;
+  function tx(i){return PL+(i/n)*IW;}
+  function ty(v){return PT+IH-((v-mn)/rng)*IH;}
+  var pts=closes.map(function(v,i){return tx(i)+","+ty(v);}).join(" ");
+  var up=closes[closes.length-1]>=closes[0];
+  var col=up?"#22c55e":"#ef4444";
+  var first=closes[0],last=closes[closes.length-1];
+  var chg=((last-first)/first*100).toFixed(1);
+  // Labels: first, mid, last date
+  var dates=[data[0].datetime, data[Math.floor(n/2)].datetime, data[n].datetime];
+  var prices=[mn, mn+rng/2, mx];
+  return(
+    <div style={{marginTop:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <span style={{fontSize:9,color:"#334155",letterSpacing:2}}>90-DAY PRICE CHART</span>
+        <span style={{fontSize:12,fontWeight:700,color:col}}>{up?"+":""}{chg}% over period</span>
+      </div>
+      <svg width="100%" viewBox={"0 0 "+W+" "+H} style={{display:"block",overflow:"visible"}}>
+        <defs>
+          <linearGradient id={"pg"+ticker} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={col} stopOpacity="0.18"/>
+            <stop offset="100%" stopColor={col} stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        {[mn, mn+rng/2, mx].map(function(v,i){return(
+          <g key={i}>
+            <line x1={PL} y1={ty(v)} x2={W-PR} y2={ty(v)} stroke="#0f172a" strokeWidth="1"/>
+            <text x={PL-4} y={ty(v)+4} fill="#334155" fontSize="9" textAnchor="end">{"$"+v.toFixed(0)}</text>
+          </g>
+        );})}
+        <polygon points={PL+","+(PT+IH)+" "+pts+" "+(W-PR)+","+(PT+IH)} fill={"url(#pg"+ticker+")"}/>
+        <polyline points={pts} fill="none" stroke={col} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"/>
+        <circle cx={tx(n)} cy={ty(last)} r="3" fill={col}/>
+        {dates.map(function(d,i){var xi=i===0?0:i===1?Math.floor(n/2):n;return(
+          <text key={i} x={tx(xi)} y={H} fill="#334155" fontSize="8" textAnchor={i===0?"start":i===1?"middle":"end"}>{d.slice(5)}</text>
+        );})}
+      </svg>
+    </div>
+  );
+}
+
+// ── Analyst Ratings Chart ──────────────────────────────────────────────────
+function AnalystChart(props){
+  var data=props.data;
+  if(!data||!Array.isArray(data)||data.length===0)return <div style={{color:"#334155",fontSize:11,padding:"8px 0"}}>No analyst data</div>;
+  var recent=data.slice(0,4).reverse(); // oldest → newest
+  var maxTotal=Math.max.apply(null,recent.map(function(d){return(d.buy||0)+(d.strongBuy||0)+(d.hold||0)+(d.sell||0)+(d.strongSell||0)||1;}));
+  var W=520,H=80,barW=60,gap=16,PL=8;
+  return(
+    <div style={{marginTop:12}}>
+      <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:8}}>ANALYST RATINGS TREND</div>
+      <div style={{display:"flex",gap:gap,alignItems:"flex-end",height:H+20}}>
+        {recent.map(function(d,i){
+          var buy=(d.buy||0)+(d.strongBuy||0),hold=d.hold||0,sell=(d.sell||0)+(d.strongSell||0);
+          var tot=buy+hold+sell||1;
+          var bH=Math.round((buy/tot)*H),hH=Math.round((hold/tot)*H),sH=Math.round((sell/tot)*H);
+          return(
+            <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <div style={{fontSize:9,color:"#4ade80",fontWeight:700}}>{buy}</div>
+              <div style={{width:barW,display:"flex",flexDirection:"column",borderRadius:4,overflow:"hidden"}}>
+                {sH>0&&<div style={{height:sH,background:"#ef4444",opacity:0.8}}/>}
+                {hH>0&&<div style={{height:hH,background:"#475569",opacity:0.8}}/>}
+                {bH>0&&<div style={{height:bH,background:"#22c55e",opacity:0.9}}/>}
+              </div>
+              <div style={{fontSize:8,color:"#334155"}}>{d.period?.slice(0,7)||"—"}</div>
+            </div>
+          );
+        })}
+        <div style={{display:"flex",flexDirection:"column",gap:4,justifyContent:"flex-end",paddingBottom:18,marginLeft:8}}>
+          {[{c:"#22c55e",l:"Buy"},{c:"#475569",l:"Hold"},{c:"#ef4444",l:"Sell"}].map(function(x,i){return(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:4}}>
+              <div style={{width:8,height:8,background:x.c,borderRadius:2}}/>
+              <span style={{fontSize:9,color:"#475569"}}>{x.l}</span>
+            </div>
+          );})}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LosersTab(props){
   var CATEGORIES=[
     {id:"fallen_giants",label:"Fallen Giants",icon:"👑",cap:"$100B+",desc:"Household names — Apple, Nike, Disney",color:"#a78bfa",bg:"#1e1b4b",border:"#4c1d95",
@@ -331,6 +421,30 @@ function LosersTab(props){
   var [loading,setLoading]=useState(false);
   var [error,setError]=useState(null);
   var [filter,setFilter]=useState("all");
+  var [expanded,setExpanded]=useState({}); // ticker -> {chart, ratings}
+  var [chartData,setChartData]=useState({}); // ticker -> price series
+  var [ratingsData,setRatingsData]=useState({}); // ticker -> analyst ratings
+
+  function loadTrends(ticker){
+    if(chartData[ticker]&&ratingsData[ticker])return; // already loaded
+    fetch("/api/market?source=td&endpoint=time_series?symbol="+ticker+"&interval=1day&outputsize=90")
+      .then(function(r){return r.json();})
+      .then(function(d){if(d.values)setChartData(function(prev){var n=Object.assign({},prev);n[ticker]=d.values.reverse();return n;});})
+      .catch(function(){});
+    fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+ticker)
+      .then(function(r){return r.json();})
+      .then(function(d){if(Array.isArray(d))setRatingsData(function(prev){var n=Object.assign({},prev);n[ticker]=d;return n;});})
+      .catch(function(){});
+  }
+
+  function toggleExpand(ticker,field){
+    setExpanded(function(prev){
+      var cur=Object.assign({},prev[ticker]||{});
+      cur[field]=!cur[field];
+      if(cur[field])loadTrends(ticker);
+      return Object.assign({},prev,{[ticker]:cur});
+    });
+  }
   var [validationCache,setValidationCache]=useState({});
   var [validating,setValidating]=useState(false);
 
@@ -341,6 +455,36 @@ function LosersTab(props){
   function setLosers(v){setCache(function(prev){var n=Object.assign({},prev);n[category]=Object.assign({},n[category]||{},{losers:v});return n;});}
   function setSummary(v){setCache(function(prev){var n=Object.assign({},prev);n[category]=Object.assign({},n[category]||{},{summary:v});return n;});}
   function setValidation(v){setValidationCache(function(prev){var n=Object.assign({},prev);n[category]=v;return n;});}
+
+  // Watchlist state
+  var [watchlist,setWatchlist]=useState([]);
+  function loadWatchlist(){fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(d){setWatchlist(Array.isArray(d)?d:[]);}).catch(function(){});}
+  useEffect(function(){loadWatchlist();},[]);
+  function addToWatchlist(ticker,name){
+    fetch("/api/portfolio?action=watchlist_add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker,name,added_from:"ai_analysis"})})
+      .then(function(){loadWatchlist();});
+  }
+  function removeFromWatchlist(ticker){
+    fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})})
+      .then(function(){loadWatchlist();});
+  }
+
+  // Watchlist state
+  var [watchlist,setWatchlist]=useState([]);
+  function loadWatchlist(){fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(d){setWatchlist(Array.isArray(d)?d:[]);}).catch(function(){});}
+  useEffect(function(){loadWatchlist();},[]);
+  function addToWatchlist(ticker,name){fetch("/api/portfolio?action=watchlist_add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker,name,added_from:"ai_analysis"})}).then(function(){loadWatchlist();});}
+  function removeFromWatchlist(ticker){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})}).then(function(){loadWatchlist();});}
+
+  // Expanded trend state
+  var [expanded,setExpanded]=useState({});
+  var [chartData,setChartData]=useState({});
+  var [ratingsData,setRatingsData]=useState({});
+  function loadTrends(ticker){
+    fetch("/api/market?source=td&endpoint=time_series?symbol="+ticker+"&interval=1day&outputsize=90").then(function(r){return r.json();}).then(function(d){if(d.values)setChartData(function(p){var n=Object.assign({},p);n[ticker]=d.values.slice().reverse();return n;});}).catch(function(){});
+    fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+ticker).then(function(r){return r.json();}).then(function(d){if(Array.isArray(d))setRatingsData(function(p){var n=Object.assign({},p);n[ticker]=d;return n;});}).catch(function(){});
+  }
+  function toggleExpand(ticker,field){setExpanded(function(p){var c=Object.assign({},p[ticker]||{});c[field]=!c[field];if(c[field])loadTrends(ticker);return Object.assign({},p,{[ticker]:c});});}
 
   // Search state
   var [searchTicker,setSearchTicker]=useState("");
@@ -651,6 +795,16 @@ function LosersTab(props){
                 <div style={{fontSize:12,color:"#fca5a5",lineHeight:1.6}}>{sr.bear}</div>
               </div>
             </div>
+            <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+              {watchlist.find(function(w){return w.ticker===sr.ticker;})?
+                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>✓ In Watchlist</button>:
+                <button onClick={function(){addToWatchlist(sr.ticker,sr.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
+              }
+              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>📈 90-Day Chart</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>👥 Analyst Ratings</button>
+            </div>
+            {expanded[sr.ticker]&&expanded[sr.ticker].chart&&<div style={{marginBottom:12}}><PriceChart data={chartData[sr.ticker]} ticker={sr.ticker}/></div>}
+            {expanded[sr.ticker]&&expanded[sr.ticker].ratings&&<div style={{marginBottom:12}}><AnalystChart data={ratingsData[sr.ticker]}/></div>}
             <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
               {[
                 {label:"ANALYST TARGET",val:sr.analystTarget,color:"#f1f5f9"},
@@ -767,7 +921,23 @@ function LosersTab(props){
                 <div><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>MKT CAP</div><div style={{fontSize:14,fontWeight:700,color:"#94a3b8"}}>{l.marketCap}</div></div>
               </div>
               {isBuy&&<button onClick={function(){var m=props.stocks.find(function(s){return s.ticker===l.ticker;});props.setModal(m?Object.assign({},m,{side:"BUY"}):{ticker:l.ticker,cur:parseFloat((l.price||"0").replace(/[^0-9.]/g,"")),sl:0,tp:0,side:"BUY"});props.setTab("paper");props.setQty(1);}} style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Paper Buy {l.ticker}</button>}
+              {watchlist.find(function(w){return w.ticker===l.ticker;})?
+                <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>✓ In Watchlist</button>:
+                <button onClick={function(){addToWatchlist(l.ticker,l.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
+              }
+              <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>📈 Chart</button>
+              <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>👥 Analysts</button>
             </div>
+            {expanded[l.ticker]&&expanded[l.ticker].chart&&(
+              <div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}>
+                <PriceChart data={chartData[l.ticker]} ticker={l.ticker}/>
+              </div>
+            )}
+            {expanded[l.ticker]&&expanded[l.ticker].ratings&&(
+              <div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}>
+                <AnalystChart data={ratingsData[l.ticker]}/>
+              </div>
+            )}
             {validation[l.ticker]&&(function(){
               var v=validation[l.ticker];
               if(v.loading)return <div style={{marginTop:12,fontSize:10,color:"#334155"}}>Validating...</div>;
@@ -800,6 +970,30 @@ function LosersTab(props){
 export default function App(){
   var [tab,setTab]=useState("screener");
   var [stocks,setStocks]=useState([]);
+  var [appWatchlist,setAppWatchlist]=useState([]);
+  var [watchlistStocks,setWatchlistStocks]=useState([]);
+  function refreshWatchlist(){
+    fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(data){
+      setAppWatchlist(Array.isArray(data)?data:[]);
+      if(!data||!data.length)return;
+      var syms=data.map(function(w){return w.ticker;}).join(",");
+      fetch("/api/market?source=td&endpoint=quote?symbol="+syms)
+        .then(function(r){return r.json();})
+        .then(function(batch){
+          var ns=data.map(function(w){
+            var q=batch[w.ticker]||{};
+            var cur=parseFloat(q.close)||0;
+            var prev=parseFloat(q.previous_close)||cur;
+            var chg=prev>0?((cur-prev)/prev*100):0;
+            return{ticker:w.ticker,name:w.name||w.ticker,cur:+cur.toFixed(2),chg:+chg.toFixed(2),
+              hi52:parseFloat((q.fifty_two_week||{}).high)||0,lo52:parseFloat((q.fifty_two_week||{}).low)||0,
+              vol:parseFloat(q.volume)||0,avgVol:parseFloat(q.average_volume)||1};
+          });
+          setWatchlistStocks(ns);
+        }).catch(function(){});
+    }).catch(function(){});
+  }
+  useEffect(function(){refreshWatchlist();},[]);
   var [cfg,setCfg]=useState(Object.assign({},INIT_CFG));
   var [port,setPort]=useState({cash:INIT_CFG.startCash,pos:{},trades:[]});
   var [storageReady,setStorageReady]=useState(false);
@@ -1188,6 +1382,42 @@ export default function App(){
         {/* ── SCREENER ── */}
         {tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
+            {appWatchlist.length>0&&(
+              <div style={{marginBottom:20}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div>
+                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>⭐ Watchlist</div>
+                    <div style={{fontSize:11,color:"#334155",marginTop:2}}>{appWatchlist.length} stocks from AI Analysis</div>
+                  </div>
+                  <button onClick={refreshWatchlist} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"5px 11px",fontSize:11}}>Refresh</button>
+                </div>
+                <div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,overflow:"hidden"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"70px 1fr 78px 64px 56px 56px 56px 80px",gap:7,padding:"7px 10px",fontSize:9,color:"#334155",letterSpacing:1,borderBottom:"1px solid #0f172a"}}>
+                    <span>TICKER</span><span>NAME</span><span>PRICE</span><span>1D</span><span>52W HI</span><span>52W LO</span><span>VOL/AVG</span><span>ACTION</span>
+                  </div>
+                  {watchlistStocks.map(function(w){
+                    var chgCol=w.chg>=0?"#4ade80":"#f87171";
+                    var vr=w.avgVol>0?(w.vol/w.avgVol).toFixed(1):"—";
+                    return(
+                      <div key={w.ticker} style={{display:"grid",gridTemplateColumns:"70px 1fr 78px 64px 56px 56px 56px 80px",gap:7,padding:"9px 10px",borderBottom:"1px solid #0a0f1a",alignItems:"center"}}
+                        onMouseEnter={function(e){e.currentTarget.style.background="#0f172a";}} onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
+                        <div style={{fontWeight:700,color:"#f1f5f9",fontSize:12}}>{w.ticker}</div>
+                        <div style={{fontSize:10,color:"#475569",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.name}</div>
+                        <div style={{fontSize:12,fontWeight:600,color:"#f1f5f9"}}>{w.cur>0?"$"+w.cur:"—"}</div>
+                        <div style={{fontSize:11,fontWeight:600,color:chgCol}}>{w.chg>0?"+":""}{w.chg}%</div>
+                        <div style={{fontSize:10,color:"#64748b"}}>{w.hi52>0?"$"+w.hi52.toFixed(0):"—"}</div>
+                        <div style={{fontSize:10,color:"#64748b"}}>{w.lo52>0?"$"+w.lo52.toFixed(0):"—"}</div>
+                        <div style={{fontSize:10,color:parseFloat(vr)>1.5?"#f59e0b":"#64748b"}}>{vr}x</div>
+                        <button onClick={function(){
+                          fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})})
+                            .then(function(){refreshWatchlist();});
+                        }} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:5,padding:"3px 8px",fontSize:10,cursor:"pointer"}}>Remove</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div style={{marginBottom:14,display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
               <div><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Market Screener</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>{stocks.filter(function(s){return s.sig==="STRONG_BUY"||s.sig==="BUY";}).length+" active buy signals"}</div></div>
               <div style={{marginLeft:"auto",display:"flex",gap:7,flexWrap:"wrap"}}>
