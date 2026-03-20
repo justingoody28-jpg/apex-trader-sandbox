@@ -25,7 +25,7 @@ const VS = {
   "Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c",dot:"#ef4444"},
 };
 
-// ââ Math helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Math helpers --------------------------------------------------------------
 function genPrices(base,days,vol){
   var p=[base];
   for(var i=1;i<days;i++) p.push(Math.max(p[i-1]+(Math.random()-0.48)*vol*p[i-1],1));
@@ -52,7 +52,7 @@ function macdH(prices){
   return +(m-m*0.85).toFixed(3);
 }
 
-// ââ Stock generator âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Stock generator -----------------------------------------------------------
 function genStock(ticker,idx,cfg){
   cfg=cfg||INIT_CFG;
   var base=BASE[ticker]||50,vol=0.018+Math.random()*0.012;
@@ -77,7 +77,7 @@ function genStock(ticker,idx,cfg){
     entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
 }
 
-// ââ Backtester ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Backtester ----------------------------------------------------------------
 function runBT(prices,cfg){
   cfg=cfg||INIT_CFG;
   var S=10000,cash=S,sh=0,ep=0,ed=0,trades=[],equity=[];
@@ -133,7 +133,7 @@ function runBT(prices,cfg){
   return{fv,ret,bhR,bhF,trades,equity,dds,bheq,wr,totalTrades:closed.length,aw,al,pf,avgDur,lw,ll,mcw,mcl,sharpe,sortino,mdd,calmar,exp,monthly,alpha};
 }
 
-// ââ Self-tuning engine ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Self-tuning engine --------------------------------------------------------
 function tuneCFG(res,cfg){
   var n=Object.assign({},cfg),changes=[];
   if(res.sharpe<0.5){n.sl=Math.max(3,cfg.sl-1);changes.push("Sharpe "+res.sharpe+" low to SL tightened to "+n.sl+"%");}
@@ -148,7 +148,7 @@ function tuneCFG(res,cfg){
   return{cfg:n,changes};
 }
 
-// ââ Small UI components âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Small UI components -------------------------------------------------------
 function Spark(props){
   var p=props.prices.slice(-20),mn=Math.min.apply(null,p),mx=Math.max.apply(null,p),rng=mx-mn||1;
   var pts=p.map(function(v,i){return (i/(p.length-1)*80)+","+(28-(v-mn)/rng*28);}).join(" ");
@@ -173,7 +173,7 @@ function rc(m,v){
   return v>=0?"#4ade80":"#f87171";
 }
 
-// ââ Charts ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Charts --------------------------------------------------------------------
 function EqChart(props){
   var eq=props.equity,bh=props.bheq,tr=props.trades;
   if(!eq||eq.length<2)return null;
@@ -224,7 +224,7 @@ function DDChart(props){
   );
 }
 
-// ââ BacktestResults component âââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- BacktestResults component -------------------------------------------------
 function BTResults(props){
   var r=props.r,ticker=props.ticker;
   if(!r)return null;
@@ -314,9 +314,9 @@ function BTResults(props){
   );
 }
 
-// ââ AI Losers Tab âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- AI Losers Tab -------------------------------------------------------------
 
-// ââ Price Chart Component ââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Price Chart Component --------------------------------------------------
 function PriceChart(props){
   var data=props.data,ticker=props.ticker;
   if(!data||data.length<2)return <div style={{color:"#334155",fontSize:11,padding:"20px 0",textAlign:"center"}}>Loading chart...</div>;
@@ -365,7 +365,7 @@ function PriceChart(props){
   );
 }
 
-// ââ Analyst Ratings Chart ââââââââââââââââââââââââââââââââââââââââââââââââââ
+// -- Analyst Ratings Chart --------------------------------------------------
 function AnalystChart(props){
   var data=props.data;
   if(!data||!Array.isArray(data)||data.length===0)return <div style={{color:"#334155",fontSize:11,padding:"8px 0"}}>No analyst data</div>;
@@ -388,7 +388,7 @@ function AnalystChart(props){
                 {hH>0&&<div style={{height:hH,background:"#475569",opacity:0.8}}/>}
                 {bH>0&&<div style={{height:bH,background:"#22c55e",opacity:0.9}}/>}
               </div>
-              <div style={{fontSize:8,color:"#334155"}}>{d.period?.slice(0,7)||"â"}</div>
+              <div style={{fontSize:8,color:"#334155"}}>{d.period?.slice(0,7)||"-"}</div>
             </div>
           );
         })}
@@ -407,14 +407,14 @@ function AnalystChart(props){
 
 function LosersTab(props){
   var CATEGORIES=[
-    {id:"fallen_giants",label:"Fallen Giants",icon:"ð",cap:"$100B+",desc:"Household names â Apple, Nike, Disney",color:"#a78bfa",bg:"#1e1b4b",border:"#4c1d95",
-     prompt:"Identify 8 iconic, large-cap US companies (S&P 500 household names, market cap $100B+) currently trading significantly below their 52-week highs. Focus on companies everyone has heard of â Apple, Nike, Google, Disney, etc. The drop should appear disproportionate to their long-term fundamentals."},
-    {id:"mid_market",label:"Mid-Market",icon:"ð¢",cap:"$10Bâ$100B",desc:"Well-known companies, higher upside",color:"#60a5fa",bg:"#0c1a2e",border:"#1e3a5f",
-     prompt:"Identify 8 mid-cap US companies (market cap $10Bâ$100B) that are significant players in their industries and currently trading well below recent highs. These should be companies with real revenue, established business models, and a drop that appears driven more by sentiment than fundamentals."},
-    {id:"rising_stars",label:"Rising Stars",icon:"ð",cap:"$1Bâ$10B",desc:"Growth names with high upside potential",color:"#34d399",bg:"#022c22",border:"#065f46",
-     prompt:"Identify 8 growth-oriented US companies (market cap $1Bâ$10B) that have pulled back significantly from highs. These should be companies with strong growth trajectories â high revenue growth, expanding markets â where the drop represents an oversized reaction to short-term headwinds rather than a fundamental breakdown."},
-    {id:"speculative",label:"Speculative",icon:"â¡",cap:"Under $1B",desc:"High risk, high reward â use with caution",color:"#fb923c",bg:"#1c0a00",border:"#7c2d12",
-     prompt:"Identify 8 small-cap US companies (market cap under $1B) that have experienced sharp drops. These carry higher risk â be explicit about solvency concerns, debt loads, and whether the business model is proven. Include honest bear cases. Only flag as Buy if there is a genuinely compelling recovery thesis."},
+    {id:"fallen_giants",label:"Fallen Giants",icon:"ð",cap:"$100B+",desc:"Household names - Apple, Nike, Disney",color:"#a78bfa",bg:"#1e1b4b",border:"#4c1d95",
+     prompt:"Identify 8 iconic, large-cap US companies (S&P 500 household names, market cap $100B+) currently trading significantly below their 52-week highs. Focus on companies everyone has heard of - Apple, Nike, Google, Disney, etc. The drop should appear disproportionate to their long-term fundamentals."},
+    {id:"mid_market",label:"Mid-Market",icon:"ð¢",cap:"$10B-$100B",desc:"Well-known companies, higher upside",color:"#60a5fa",bg:"#0c1a2e",border:"#1e3a5f",
+     prompt:"Identify 8 mid-cap US companies (market cap $10B-$100B) that are significant players in their industries and currently trading well below recent highs. These should be companies with real revenue, established business models, and a drop that appears driven more by sentiment than fundamentals."},
+    {id:"rising_stars",label:"Rising Stars",icon:"ð",cap:"$1B-$10B",desc:"Growth names with high upside potential",color:"#34d399",bg:"#022c22",border:"#065f46",
+     prompt:"Identify 8 growth-oriented US companies (market cap $1B-$10B) that have pulled back significantly from highs. These should be companies with strong growth trajectories - high revenue growth, expanding markets - where the drop represents an oversized reaction to short-term headwinds rather than a fundamental breakdown."},
+    {id:"speculative",label:"Speculative",icon:"-¡",cap:"Under $1B",desc:"High risk, high reward - use with caution",color:"#fb923c",bg:"#1c0a00",border:"#7c2d12",
+     prompt:"Identify 8 small-cap US companies (market cap under $1B) that have experienced sharp drops. These carry higher risk - be explicit about solvency concerns, debt loads, and whether the business model is proven. Include honest bear cases. Only flag as Buy if there is a genuinely compelling recovery thesis."},
   ];
   var [category,setCategory]=useState("fallen_giants");
   var [cache,setCache]=useState({}); // per-category results cache
@@ -504,15 +504,15 @@ function LosersTab(props){
       "price (string e.g. \"$142.30\"), marketCap (string e.g. \"$48B\"),"+
       "fiftyTwoWeekHigh (string), fiftyTwoWeekLow (string),"+
       "verdict (exactly one of: \"Strong Overreaction\", \"Overreaction\", \"Partial Overreaction\", \"Mixed\", \"Justified\", \"Fairly Valued\", \"Overvalued\"),"+
-      "catalyst (string, 2 sentences â most recent significant development),"+
-      "bull (string, 3 sentences â strongest bull case),"+
-      "bear (string, 3 sentences â strongest bear case),"+
+      "catalyst (string, 2 sentences - most recent significant development),"+
+      "bull (string, 3 sentences - strongest bull case),"+
+      "bear (string, 3 sentences - strongest bear case),"+
       "analystTarget (string e.g. \"$185\" or \"N/A\"),"+
       "upside (string e.g. \"+42%\" or \"N/A\"), upsideNum (number),"+
       "peRatio (string e.g. \"28.4x\" or \"N/A\"),"+
       "revenueGrowth (string e.g. \"+12% YoY\" or \"N/A\"),"+
       "recommendation (exactly one of: \"Strong Buy\", \"Buy\", \"Watch\", \"Avoid\"),"+
-      "summary (string, 3 sentences â your overall take on this stock right now)";
+      "summary (string, 3 sentences - your overall take on this stock right now)";
     fetch("/api/analyze",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -588,7 +588,7 @@ function LosersTab(props){
           var lo=parseFloat(quote.fifty_two_week.low);
           var rng=hi-lo||1;
           var pos=Math.round((price-lo)/rng*100);
-          checks.weekPosition="At "+pos+"% of 52-week range ($"+lo.toFixed(0)+"â$"+hi.toFixed(0)+")";
+          checks.weekPosition="At "+pos+"% of 52-week range ($"+lo.toFixed(0)+"-$"+hi.toFixed(0)+")";
           if(pos<40){score++;}total++;
         }
         if(quote&&quote.volume&&quote.average_volume){
@@ -687,7 +687,7 @@ function LosersTab(props){
         body:JSON.stringify({results:parsed,category:cat.id})
       }).catch(function(){});
     })
-    .catch(function(err){var m=err.message||"Unknown error";setLoading(false);setError("Analysis failed: "+m+(m.includes("401")?" â Invalid API key.":" â Try again."));});
+    .catch(function(err){var m=err.message||"Unknown error";setLoading(false);setError("Analysis failed: "+m+(m.includes("401")?" - Invalid API key.":" - Try again."));});
   }
 
   var shown=losers.filter(function(l){
@@ -768,7 +768,7 @@ function LosersTab(props){
               <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
                 <div><div style={{fontSize:26,fontWeight:800,color:"#f1f5f9"}}>{sr.ticker}</div><div style={{fontSize:12,color:"#475569",marginTop:2}}>{sr.name}</div></div>
                 <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector} | {sr.exchange}</div></div>
-                <div><div style={{fontSize:11,color:"#475569"}}>52w: {sr.fiftyTwoWeekLow} â {sr.fiftyTwoWeekHigh}</div><div style={{fontSize:11,color:"#475569",marginTop:2}}>Mkt Cap: {sr.marketCap}</div></div>
+                <div><div style={{fontSize:11,color:"#475569"}}>52w: {sr.fiftyTwoWeekLow} - {sr.fiftyTwoWeekHigh}</div><div style={{fontSize:11,color:"#475569",marginTop:2}}>Mkt Cap: {sr.marketCap}</div></div>
               </div>
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:v.bg,color:v.c,border:"1px solid "+v.b,display:"flex",alignItems:"center",gap:6}}>
@@ -797,7 +797,7 @@ function LosersTab(props){
             </div>
             <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
               {watchlist.find(function(w){return w.ticker===sr.ticker;})?
-                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>â In Watchlist</button>:
+                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>- In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(sr.ticker,sr.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
               <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ð 90-Day Chart</button>
@@ -841,7 +841,7 @@ function LosersTab(props){
         <div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:14,padding:"40px 30px",textAlign:"center"}}>
           <div style={{fontSize:36,marginBottom:12}}>{cat.icon}</div>
           <div style={{fontSize:18,fontWeight:700,color:cat.color,marginBottom:8}}>{cat.label}</div>
-          <div style={{fontSize:13,color:"#475569",maxWidth:460,margin:"0 auto",lineHeight:1.7,marginBottom:28}}>{cat.desc} â Claude analyzes each drop and verdicts whether it is a buying opportunity or a falling knife.</div>
+          <div style={{fontSize:13,color:"#475569",maxWidth:460,margin:"0 auto",lineHeight:1.7,marginBottom:28}}>{cat.desc} - Claude analyzes each drop and verdicts whether it is a buying opportunity or a falling knife.</div>
           <button onClick={runAnalysis} style={{background:"linear-gradient(135deg,"+cat.color+","+cat.border+"22)",border:"1px solid "+cat.color,color:cat.color,borderRadius:9,padding:"13px 32px",fontSize:14,fontWeight:700,cursor:"pointer"}}>
             {cat.icon} Run {cat.label} Analysis
           </button>
@@ -922,7 +922,7 @@ function LosersTab(props){
               </div>
               {isBuy&&<button onClick={function(){var m=props.stocks.find(function(s){return s.ticker===l.ticker;});props.setModal(m?Object.assign({},m,{side:"BUY"}):{ticker:l.ticker,cur:parseFloat((l.price||"0").replace(/[^0-9.]/g,"")),sl:0,tp:0,side:"BUY"});props.setTab("paper");props.setQty(1);}} style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Paper Buy {l.ticker}</button>}
               {watchlist.find(function(w){return w.ticker===l.ticker;})?
-                <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>â In Watchlist</button>:
+                <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>- In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(l.ticker,l.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
               <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>ð Chart</button>
@@ -985,7 +985,7 @@ export default function App(){
       ", Volume "+s.vr+"x average, 1D change "+s.chg+"%"+
       ", Score "+s.score+"/100. "+
       "In 3-4 sentences, explain the specific justification for the "+s.sig.replace("_"," ")+" signal based on these exact numbers. "+
-      "Be specific â reference the RSI, DIP, and MACD values. Keep it factual and concise.";
+      "Be specific - reference the RSI, DIP, and MACD values. Keep it factual and concise.";
     fetch("/api/analyze",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
@@ -1102,7 +1102,7 @@ export default function App(){
     var c=cfgRef.current;
     var symbols=TICKERS.join(",");
     var cacheKey="apex_quotes_daily";
-    // Check daily cache â only fetch from API once per day unless forced
+    // Check daily cache - only fetch from API once per day unless forced
     var cached=null;
     try{
       var cv=localStorage.getItem(cacheKey);
@@ -1113,7 +1113,7 @@ export default function App(){
         if(sameDay&&!forceRefresh){cached=cp.data;}
       }
     }catch(e){}
-    // If we have today's data, use it immediately â no API call
+    // If we have today's data, use it immediately - no API call
     if(cached){
       setDataLoading(false);setDataSource("live");
       (function buildFromCache(batch){
@@ -1160,7 +1160,7 @@ export default function App(){
       })(cached);
       return;
     }
-    // No cache â fetch from API
+    // No cache - fetch from API
     setDataLoading(true);setDataSource("live");
     fetch("/api/market?source=td&endpoint=quote?symbol="+symbols)
       .then(function(r){return r.json();})
@@ -1186,7 +1186,7 @@ export default function App(){
             var h52lo=parseFloat((q.fifty_two_week||{}).low)||cur*0.7;
             var dip=(h52hi-cur)/h52hi*100;
             // Build deterministic price path from real anchor points
-            // Uses 52w low to current price trajectory â no randomness
+            // Uses 52w low to current price trajectory - no randomness
             var days=90;
             var prices=[];
             for(var d=0;d<days;d++){
@@ -1229,7 +1229,7 @@ export default function App(){
 
   useEffect(function(){refresh();},[refresh]);
 
-  // ââ Load portfolio from database on mount ââ
+  // -- Load portfolio from database on mount --
   useEffect(function(){
     fetch("/api/portfolio?action=load")
       .then(function(r){return r.json();})
@@ -1256,7 +1256,7 @@ export default function App(){
     if(s)setBtResult(runBT(s.prices,cfgRef.current));
   },[btTicker,stocks]);
 
-  // ââ Manual trade ââ
+  // -- Manual trade --
   function execTrade(stock,side,q){
     var cost=stock.cur*q;
     if(side==="BUY"){
@@ -1324,7 +1324,7 @@ export default function App(){
 
   function addLog(entry){setApLog(function(prev){return[entry].concat(prev).slice(0,100);});}
 
-  // ââ Self-tune ââ
+  // -- Self-tune --
   function runTune(){
     var s=stocksRef.current.find(function(s){return s.ticker===btTicker;})||stocksRef.current[0];
     if(!s)return;
@@ -1337,7 +1337,7 @@ export default function App(){
     notify(tuned.changes.length>0?"Self-tune: "+tuned.changes.length+" param(s) adjusted":"Self-tune: strategy performing well");
   }
 
-  // ââ Autopilot scan cycle ââ
+  // -- Autopilot scan cycle --
   function runScan(){
     var cur=stocksRef.current,p=portRef.current,c=cfgRef.current;
     var posCount=Object.keys(p.pos).length;
@@ -1373,7 +1373,7 @@ export default function App(){
     if(scanCountRef.current%4===0){runTune();}
   }
 
-  // ââ Autopilot interval ââ
+  // -- Autopilot interval --
   useEffect(function(){
     if(apOn){
       countRef.current=AP_SEC;
@@ -1393,7 +1393,7 @@ export default function App(){
     return function(){if(intervalRef.current){clearInterval(intervalRef.current);intervalRef.current=null;}};
   },[apOn]);
 
-  // ââ Portfolio calculations ââ
+  // -- Portfolio calculations --
   var portVal=port.cash+Object.values(port.pos).reduce(function(s,p){
     var st=stocks.find(function(x){return x.ticker===p.ticker;});
     return s+(st?st.cur*p.shares:p.avg*p.shares);
@@ -1416,7 +1416,7 @@ export default function App(){
     <div style={{minHeight:"100vh",background:"#030712",fontFamily:"'IBM Plex Mono','Courier New',monospace",color:"#e2e8f0",paddingBottom:60}}>
       <div style={{background:"#0a0f1a",borderBottom:"1px solid #0f172a",padding:"8px 20px",display:"flex",alignItems:"center",gap:12}}>
         <div style={{fontSize:9,color:"#334155",letterSpacing:2,flexShrink:0,whiteSpace:"nowrap"}}>ANTHROPIC API KEY</div>
-        <input type="password" placeholder="sk-ant-...  (optional â only needed if running as a local HTML file)" value={anthropicKey} onChange={function(e){var v=e.target.value;setAnthropicKey(v);}} style={{flex:1,background:"#030712",border:"1px solid #1e293b",color:"#4ade80",borderRadius:5,padding:"5px 10px",fontSize:11,outline:"none",fontFamily:"monospace"}}/>
+        <input type="password" placeholder="sk-ant-...  (optional - only needed if running as a local HTML file)" value={anthropicKey} onChange={function(e){var v=e.target.value;setAnthropicKey(v);}} style={{flex:1,background:"#030712",border:"1px solid #1e293b",color:"#4ade80",borderRadius:5,padding:"5px 10px",fontSize:11,outline:"none",fontFamily:"monospace"}}/>
         <div style={{fontSize:9,color:"#1e293b",flexShrink:0}}>Never sent anywhere except Anthropic.</div>
       </div>
       <style>{`
@@ -1463,7 +1463,7 @@ export default function App(){
             </div>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>APEX TRADER</div>
-              <div style={{fontSize:9,color:"#334155",letterSpacing:2}}>{(lastR?lastR.toLocaleTimeString():"loading...")+" â PAPER MODE"}</div>
+              <div style={{fontSize:9,color:"#334155",letterSpacing:2}}>{(lastR?lastR.toLocaleTimeString():"loading...")+" - PAPER MODE"}</div>
             </div>
           </div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
@@ -1480,14 +1480,14 @@ export default function App(){
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>PORTFOLIO</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{"$"+portVal.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>RETURN</div><div style={{fontSize:14,fontWeight:700,color:portPct>=0?"#22c55e":"#ef4444"}}>{(portPct>=0?"+":"")+portPct.toFixed(2)+"%"}</div></div>
             <button onClick={function(){refresh(false);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>
-                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">â» New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="simulated"&&<span style={{fontSize:9,background:"#1c1917",color:"#78716c",border:"1px solid #292524",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>SIM</span>}
+                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">-» New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="simulated"&&<span style={{fontSize:9,background:"#1c1917",color:"#78716c",border:"1px solid #292524",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>SIM</span>}
           </div>
         </div>
       </div>
 
       <div style={{maxWidth:1200,margin:"0 auto",padding:"20px 20px 0"}}>
 
-        {/* ââ SCREENER ââ */}
+        {/* -- SCREENER -- */}
         {tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             {/* Ticker Detail Panel */}
@@ -1535,17 +1535,17 @@ export default function App(){
                     <div style={{fontSize:11,color:"#475569"}}>{s.sector} | ${s.cur} | Score {s.score}/100</div>
                   </div>
                   <button onClick={function(){setTickerDetail(null);setTickerAI(null);}}
-                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>â</button>
+                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>-</button>
                 </div>
                 {/* Signal Breakdown */}
                 <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
                   <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:14}}>SIGNAL BREAKDOWN</div>
                   <Gauge label="DIP FROM 52W HIGH" display={s.dip.toFixed(1)+"%"} pct={dipPct}
                     good goodMin={17} goodMax={67}
-                    note={"Target: 5â20% | 52W High: $"+s.h52}/>
+                    note={"Target: 5-20% | 52W High: $"+s.h52}/>
                   <Gauge label="RSI (14)" display={s.rsi} pct={rsiPct}
                     good goodMin={35} goodMax={55}
-                    note="Buy zone: 35â55 | Oversold <35 | Overbought >70"/>
+                    note="Buy zone: 35-55 | Oversold <35 | Overbought >70"/>
                   <Gauge label="MACD HISTOGRAM" display={(s.mh>0?"+":"")+s.mh} pct={macdPct}
                     good goodMin={50} goodMax={100}
                     note={s.mh>0?"Bullish momentum":"Bearish momentum"}/>
@@ -1571,7 +1571,7 @@ export default function App(){
                       <span style={{fontSize:12,color:"#334155"}}>Analyzing {s.ticker}...</span>
                     </div>
                   ):(
-                    <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.8}}>{tickerAI||"â"}</div>
+                    <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.8}}>{tickerAI||"-"}</div>
                   )}
                 </div>
                 {/* Actions */}
@@ -1595,7 +1595,7 @@ export default function App(){
               <div style={{marginBottom:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>â­ Watchlist</div>
+                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>-­ Watchlist</div>
                     <div style={{fontSize:11,color:"#334155",marginTop:2}}>{appWatchlist.length} stocks from AI Analysis</div>
                   </div>
                   <button onClick={refreshWatchlist} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"5px 11px",fontSize:11}}>Refresh</button>
@@ -1606,16 +1606,16 @@ export default function App(){
                   </div>
                   {watchlistStocks.map(function(w){
                     var chgCol=w.chg>=0?"#4ade80":"#f87171";
-                    var vr=w.avgVol>0?(w.vol/w.avgVol).toFixed(1):"â";
+                    var vr=w.avgVol>0?(w.vol/w.avgVol).toFixed(1):"-";
                     return(
                       <div key={w.ticker} style={{display:"grid",gridTemplateColumns:"70px 1fr 78px 64px 56px 56px 56px 80px",gap:7,padding:"9px 10px",borderBottom:"1px solid #0a0f1a",alignItems:"center"}}
                         onMouseEnter={function(e){e.currentTarget.style.background="#0f172a";}} onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
                         <div style={{fontWeight:700,color:"#f1f5f9",fontSize:12}}>{w.ticker}</div>
                         <div style={{fontSize:10,color:"#475569",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.name}</div>
-                        <div style={{fontSize:12,fontWeight:600,color:"#f1f5f9"}}>{w.cur>0?"$"+w.cur:"â"}</div>
+                        <div style={{fontSize:12,fontWeight:600,color:"#f1f5f9"}}>{w.cur>0?"$"+w.cur:"-"}</div>
                         <div style={{fontSize:11,fontWeight:600,color:chgCol}}>{w.chg>0?"+":""}{w.chg}%</div>
-                        <div style={{fontSize:10,color:"#64748b"}}>{w.hi52>0?"$"+w.hi52.toFixed(0):"â"}</div>
-                        <div style={{fontSize:10,color:"#64748b"}}>{w.lo52>0?"$"+w.lo52.toFixed(0):"â"}</div>
+                        <div style={{fontSize:10,color:"#64748b"}}>{w.hi52>0?"$"+w.hi52.toFixed(0):"-"}</div>
+                        <div style={{fontSize:10,color:"#64748b"}}>{w.lo52>0?"$"+w.lo52.toFixed(0):"-"}</div>
                         <div style={{fontSize:10,color:parseFloat(vr)>1.5?"#f59e0b":"#64748b"}}>{vr}x</div>
                         <button onClick={function(){
                           fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})})
@@ -1664,7 +1664,7 @@ export default function App(){
           </div>
         )}
 
-        {/* ââ SIGNALS ââ */}
+        {/* -- SIGNALS -- */}
         {tab==="signals"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Entry / Exit Signals</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Buy-dip and momentum confirmation strategy</div></div>
@@ -1700,7 +1700,7 @@ export default function App(){
           </div>
         )}
 
-        {/* ââ PAPER TRADE ââ */}
+        {/* -- PAPER TRADE -- */}
         {tab==="paper"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
@@ -1767,7 +1767,7 @@ export default function App(){
           </div>
         )}
 
-        {/* ââ BACKTEST ââ */}
+        {/* -- BACKTEST -- */}
         {tab==="backtest"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12,alignItems:"flex-end"}}>
@@ -1783,7 +1783,7 @@ export default function App(){
           </div>
         )}
 
-        {/* ââ AUTOPILOT ââ */}
+        {/* -- AUTOPILOT -- */}
         {tab==="autopilot"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:14,alignItems:"flex-start"}}>
@@ -1846,7 +1846,7 @@ export default function App(){
                   tuneLog.map(function(e,i){
                     return(
                       <div key={i} style={{padding:"8px 14px",borderBottom:"1px solid #0a0f1a"}}>
-                        <div style={{fontSize:9,color:"#334155",marginBottom:4}}>{e.time+" â "+e.ticker}</div>
+                        <div style={{fontSize:9,color:"#334155",marginBottom:4}}>{e.time+" - "+e.ticker}</div>
                         {e.changes.length===0?<div style={{fontSize:10,color:"#1e293b"}}>No changes needed.</div>:e.changes.map(function(c,j){return<div key={j} style={{fontSize:10,color:"#a78bfa",marginBottom:2}}>{"+ "+c}</div>;})}
                       </div>
                     );
@@ -1883,10 +1883,10 @@ export default function App(){
           </div>
         )}
 
-        {/* ââ AI ANALYSIS ââ */}
+        {/* -- AI ANALYSIS -- */}
         {tab==="ai"&&<LosersTab stocks={stocks} setModal={setModal} setTab={setTab} setQty={setQty} anthropicKey={anthropicKey} fhKey={fhKey} fmpKey={fmpKey}/>}
 
-        {/* ââ SETTINGS ââ */}
+        {/* -- SETTINGS -- */}
         {tab==="settings"&&(
           <div style={{animation:"fu 0.3s ease",maxWidth:560}}>
             <div style={{marginBottom:18}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Settings</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Alpaca integration and strategy parameters</div></div>
@@ -1917,7 +1917,7 @@ export default function App(){
                   return(<div key={i} style={{background:"#052e16",border:"1px solid #15803d",borderRadius:7,padding:"10px 12px"}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#4ade80"}}>{s.label}</div>
                     <div style={{fontSize:10,color:"#334155"}}>{s.sub}</div>
-                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>â ACTIVE</div>
+                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>- ACTIVE</div>
                   </div>);
                 })}
               </div>
