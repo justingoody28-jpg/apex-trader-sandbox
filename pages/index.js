@@ -425,6 +425,18 @@ function LosersTab(props){
         var pct2=total>0?score/total:0;
         var confidence=pct2>=0.6?"HIGH":pct2>=0.4?"MEDIUM":"LOW";
         newVal[t]={loading:false,checks,score,total,confidence};
+        // Save validation score to Supabase
+        fetch("/api/portfolio?action=validation",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            ticker:t,
+            confidence,
+            score,
+            checks_passed:score,
+            checks_total:total,
+            checks_detail:Object.entries(checks).map(function(e){return e[0]+": "+e[1];}).join(" | ")
+          })
+        }).catch(function(){});
         done();
       }).catch(function(){newVal[t]={loading:false,checks:{},score:0,total:0,confidence:"LOW"};done();});
     });
@@ -468,6 +480,11 @@ function LosersTab(props){
       var avgUp=upArr.length>0?(upArr.reduce(function(s,l){return s+l.upsideNum;},0)/upArr.length).toFixed(0):"0";
       setSummary({over,total:parsed.length,avgDrop,avgUp});
       setLoading(false);
+      // Save results to Supabase
+      fetch("/api/portfolio?action=ai_analysis",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({results:parsed,category:cat.id})
+      }).catch(function(){});
     })
     .catch(function(err){var m=err.message||"Unknown error";setLoading(false);setError("Analysis failed: "+m+(m.includes("401")?" — Invalid API key.":" — Try again."));});
   }
