@@ -136,15 +136,15 @@ function runBT(prices,cfg){
 // ── Self-tuning engine ────────────────────────────────────────────────────────
 function tuneCFG(res,cfg){
   var n=Object.assign({},cfg),changes=[];
-  if(res.sharpe<0.5){n.sl=Math.max(3,cfg.sl-1);changes.push("Sharpe "+res.sharpe+" low → SL tightened to "+n.sl+"%");}
-  if(res.sharpe>2&&cfg.sl<10){n.sl=Math.min(10,cfg.sl+1);changes.push("Sharpe "+res.sharpe+" strong → SL loosened to "+n.sl+"%");}
-  if(res.wr<40&&res.totalTrades>3){n.rsiRecovery=Math.min(55,cfg.rsiRecovery+2);changes.push("Win rate "+res.wr+"% low → RSI recovery raised to "+n.rsiRecovery);}
-  if(res.wr>70&&res.totalTrades>3){n.rsiRecovery=Math.max(38,cfg.rsiRecovery-2);changes.push("Win rate "+res.wr+"% high → RSI recovery lowered to "+n.rsiRecovery);}
-  if(res.pf<1.2&&res.totalTrades>2){n.tp=Math.min(35,cfg.tp+2);changes.push("Profit factor "+res.pf+" low → TP extended to "+n.tp+"%");}
-  if(res.pf>3){n.tp=Math.max(12,cfg.tp-2);changes.push("Profit factor "+res.pf+" high → TP trimmed to "+n.tp+"%");}
-  if(res.mdd>25){n.dipMax=Math.max(15,cfg.dipMax-2);changes.push("Drawdown "+res.mdd+"% high → dip max narrowed to "+n.dipMax+"%");}
-  if(res.totalTrades<2){n.rsiOversold=Math.max(28,cfg.rsiOversold-3);changes.push("Only "+res.totalTrades+" trades → RSI oversold lowered to "+n.rsiOversold);}
-  if(res.sortino<0.8&&res.sharpe>0.5){n.rsiOversold=Math.min(42,cfg.rsiOversold+2);changes.push("Sortino "+res.sortino+" poor → RSI floor raised to "+n.rsiOversold);}
+  if(res.sharpe<0.5){n.sl=Math.max(3,cfg.sl-1);changes.push("Sharpe "+res.sharpe+" low to SL tightened to "+n.sl+"%");}
+  if(res.sharpe>2&&cfg.sl<10){n.sl=Math.min(10,cfg.sl+1);changes.push("Sharpe "+res.sharpe+" strong to SL loosened to "+n.sl+"%");}
+  if(res.wr<40&&res.totalTrades>3){n.rsiRecovery=Math.min(55,cfg.rsiRecovery+2);changes.push("Win rate "+res.wr+"% low to RSI recovery raised to "+n.rsiRecovery);}
+  if(res.wr>70&&res.totalTrades>3){n.rsiRecovery=Math.max(38,cfg.rsiRecovery-2);changes.push("Win rate "+res.wr+"% high to RSI recovery lowered to "+n.rsiRecovery);}
+  if(res.pf<1.2&&res.totalTrades>2){n.tp=Math.min(35,cfg.tp+2);changes.push("Profit factor "+res.pf+" low to TP extended to "+n.tp+"%");}
+  if(res.pf>3){n.tp=Math.max(12,cfg.tp-2);changes.push("Profit factor "+res.pf+" high to TP trimmed to "+n.tp+"%");}
+  if(res.mdd>25){n.dipMax=Math.max(15,cfg.dipMax-2);changes.push("Drawdown "+res.mdd+"% high to dip max narrowed to "+n.dipMax+"%");}
+  if(res.totalTrades<2){n.rsiOversold=Math.max(28,cfg.rsiOversold-3);changes.push("Only "+res.totalTrades+" trades to RSI oversold lowered to "+n.rsiOversold);}
+  if(res.sortino<0.8&&res.sharpe>0.5){n.rsiOversold=Math.min(42,cfg.rsiOversold+2);changes.push("Sortino "+res.sortino+" poor to RSI floor raised to "+n.rsiOversold);}
   return{cfg:n,changes};
 }
 
@@ -369,7 +369,7 @@ function PriceChart(props){
 function AnalystChart(props){
   var data=props.data;
   if(!data||!Array.isArray(data)||data.length===0)return <div style={{color:"#334155",fontSize:11,padding:"8px 0"}}>No analyst data</div>;
-  var recent=data.slice(0,4).reverse(); // oldest → newest
+  var recent=data.slice(0,4).reverse(); // oldest to newest
   var maxTotal=Math.max.apply(null,recent.map(function(d){return(d.buy||0)+(d.strongBuy||0)+(d.hold||0)+(d.sell||0)+(d.strongSell||0)||1;}));
   var W=520,H=80,barW=60,gap=16,PL=8;
   return(
@@ -1186,7 +1186,7 @@ export default function App(){
             var h52lo=parseFloat((q.fifty_two_week||{}).low)||cur*0.7;
             var dip=(h52hi-cur)/h52hi*100;
             // Build deterministic price path from real anchor points
-            // Uses 52w low → current price trajectory — no randomness
+            // Uses 52w low to current price trajectory — no randomness
             var days=90;
             var prices=[];
             for(var d=0;d<days;d++){
@@ -1554,7 +1554,7 @@ export default function App(){
                     note="Target: >1.3x average · Current: "+s.vr+"x"/>
                   <Gauge label="52-WEEK RANGE POSITION" display={Math.round(h52pos)+"%"} pct={h52pos}
                     good goodMin={0} goodMax={40}
-                    note={"Low: $"+(s.h52*0.7).toFixed(0)+" → High: $"+s.h52}/>
+                    note={"Low: $"+(s.h52*0.7).toFixed(0)+" to High: $"+s.h52}/>
                   <Gauge label="1-DAY CHANGE" display={(s.chg>0?"+":"")+s.chg+"%"} pct={chgPct}
                     good goodMin={45} goodMax={65}
                     note="Neutral around 0%"/>
