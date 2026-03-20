@@ -110,6 +110,28 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // GET watchlist
+    if (req.method === 'GET' && action === 'watchlist') {
+      const { data } = await supabase.from('watchlist').select('*').order('added_at', { ascending: false });
+      return res.json(data ?? []);
+    }
+
+    // POST add to watchlist
+    if (req.method === 'POST' && action === 'watchlist_add') {
+      const { ticker, name, added_from } = req.body;
+      const { data, error } = await supabase.from('watchlist')
+        .upsert({ ticker, name, added_from }, { onConflict: 'ticker' })
+        .select().single();
+      return res.json({ ok: !error, data });
+    }
+
+    // DELETE remove from watchlist
+    if (req.method === 'POST' && action === 'watchlist_remove') {
+      const { ticker } = req.body;
+      await supabase.from('watchlist').delete().eq('ticker', ticker);
+      return res.json({ ok: true });
+    }
+
     return res.status(404).json({ error: 'Unknown action' });
   } catch (e) {
     return res.status(500).json({ error: e.message });
