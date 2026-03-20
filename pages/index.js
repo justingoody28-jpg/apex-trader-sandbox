@@ -342,6 +342,63 @@ function LosersTab(props){
   function setSummary(v){setCache(function(prev){var n=Object.assign({},prev);n[category]=Object.assign({},n[category]||{},{summary:v});return n;});}
   function setValidation(v){setValidationCache(function(prev){var n=Object.assign({},prev);n[category]=v;return n;});}
 
+  // Search state
+  var [searchTicker,setSearchTicker]=useState("");
+  var [searchResult,setSearchResult]=useState(null);
+  var [searchLoading,setSearchLoading]=useState(false);
+  var [searchError,setSearchError]=useState(null);
+
+  function runSearch(){
+    var t=searchTicker.trim().toUpperCase();
+    if(!t)return;
+    setSearchLoading(true);setSearchError(null);setSearchResult(null);
+    var userPrompt="Today is "+new Date().toDateString()+". Analyze the stock "+t+" in depth. "+
+      "Provide a comprehensive fundamental analysis including current price context, recent catalyst, "+
+      "whether it appears overvalued/undervalued/fairly valued, and a clear investment thesis.\n\n"+
+      "Return a JSON object (not array) with these exact fields:\n"+
+      "ticker (string), name (string), sector (string), exchange (string),"+
+      "price (string e.g. \"$142.30\"), marketCap (string e.g. \"$48B\"),"+
+      "fiftyTwoWeekHigh (string), fiftyTwoWeekLow (string),"+
+      "verdict (exactly one of: \"Strong Overreaction\", \"Overreaction\", \"Partial Overreaction\", \"Mixed\", \"Justified\", \"Fairly Valued\", \"Overvalued\"),"+
+      "catalyst (string, 2 sentences — most recent significant development),"+
+      "bull (string, 3 sentences — strongest bull case),"+
+      "bear (string, 3 sentences — strongest bear case),"+
+      "analystTarget (string e.g. \"$185\" or \"N/A\"),"+
+      "upside (string e.g. \"+42%\" or \"N/A\"), upsideNum (number),"+
+      "peRatio (string e.g. \"28.4x\" or \"N/A\"),"+
+      "revenueGrowth (string e.g. \"+12% YoY\" or \"N/A\"),"+
+      "recommendation (exactly one of: \"Strong Buy\", \"Buy\", \"Watch\", \"Avoid\"),"+
+      "summary (string, 3 sentences — your overall take on this stock right now)";
+    fetch("/api/analyze",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:2000,
+        system:"You are a financial data API. Your ENTIRE response must be a valid JSON object starting with { and ending with }. No text before or after. No markdown fences.",
+        messages:[{role:"user",content:userPrompt},{role:"assistant",content:"{"}]
+      }),
+    })
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.error)throw new Error(data.error.message||"API error");
+      var raw=(data.content||[]).map(function(b){return b.text||"";}).join("");
+      var combined="{"+raw;
+      var clean=combined.replace(/```json/g,"").replace(/```/g,"").trim();
+      var start=clean.indexOf("{"),end=clean.lastIndexOf("}");
+      if(start===-1||end===-1)throw new Error("No JSON found");
+      var parsed=JSON.parse(clean.slice(start,end+1));
+      setSearchResult(parsed);
+      setSearchLoading(false);
+      // Save to Supabase
+      fetch("/api/portfolio?action=ai_analysis",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({results:[Object.assign({},parsed,{dropNum:parsed.upsideNum||0,drop:parsed.upside||"N/A"})],category:"search"})
+      }).catch(function(){});
+    })
+    .catch(function(err){setSearchLoading(false);setSearchError("Analysis failed: "+err.message);});
+  }
+
   function validateLosers(losersArr){
     setValidating(true);
     var pending=losersArr.length;
@@ -518,6 +575,96 @@ function LosersTab(props){
           </button>
         )}
       </div>
+
+      {/* Search Bar */}
+      <div style={{background:"#0a0f1a",border:"1px solid #1e293b",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+        <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:8}}>ANALYZE ANY STOCK</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <input
+            value={searchTicker}
+            onChange={function(e){setSearchTicker(e.target.value.toUpperCase());setSearchResult(null);setSearchError(null);}}
+            onKeyDown={function(e){if(e.key==="Enter")runSearch();}}
+            placeholder="Enter ticker e.g. AAPL, NVDA, META..."
+            style={{flex:1,background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"10px 14px",
+              color:"#f1f5f9",fontSize:13,outline:"none",fontFamily:"inherit"}}
+          />
+          <button onClick={runSearch} disabled={searchLoading||!searchTicker.trim()}
+            style={{background:searchLoading||!searchTicker.trim()?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",
+              border:"none",color:searchLoading||!searchTicker.trim()?"#475569":"#fff",
+              borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,
+              cursor:searchLoading||!searchTicker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap"}}>
+            {searchLoading?"Analyzing...":"🔍 Analyze"}
+          </button>
+          {searchResult&&<button onClick={function(){setSearchResult(null);setSearchTicker("");}}
+            style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,
+              padding:"10px 14px",fontSize:12,cursor:"pointer"}}>Clear</button>}
+        </div>
+        {searchError&&<div style={{marginTop:8,fontSize:11,color:"#f87171"}}>{searchError}</div>}
+      </div>
+
+      {/* Search Result Card */}
+      {searchLoading&&<div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"20px 22px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
+        <div style={{width:16,height:16,border:"2px solid #1e293b",borderTopColor:"#3b82f6",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+        <div style={{fontSize:13,color:"#f1f5f9",fontWeight:600}}>Claude is analyzing {searchTicker}...</div>
+      </div>}
+      {searchResult&&!searchLoading&&(function(){
+        var sr=searchResult;
+        var vs={"Strong Overreaction":{c:"#4ade80",bg:"#052e16",b:"#16a34a",dot:"#22c55e"},
+          "Overreaction":{c:"#86efac",bg:"#052e16",b:"#15803d",dot:"#4ade80"},
+          "Partial Overreaction":{c:"#fcd34d",bg:"#1c1917",b:"#d97706",dot:"#f59e0b"},
+          "Mixed":{c:"#94a3b8",bg:"#0f172a",b:"#334155",dot:"#64748b"},
+          "Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c",dot:"#ef4444"},
+          "Fairly Valued":{c:"#60a5fa",bg:"#0c1a2e",b:"#1e3a5f",dot:"#3b82f6"},
+          "Overvalued":{c:"#fb923c",bg:"#1c0a00",b:"#9a3412",dot:"#f97316"}};
+        var v=vs[sr.verdict]||vs["Mixed"];
+        var rc2=sr.recommendation==="Strong Buy"?"#22c55e":sr.recommendation==="Buy"?"#4ade80":sr.recommendation==="Watch"?"#f59e0b":"#f87171";
+        return(
+          <div style={{background:"#0a0f1a",border:"1px solid "+v.b,borderRadius:14,padding:"20px 22px",marginBottom:16,animation:"fu 0.3s ease both"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:10}}>
+              <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+                <div><div style={{fontSize:26,fontWeight:800,color:"#f1f5f9"}}>{sr.ticker}</div><div style={{fontSize:12,color:"#475569",marginTop:2}}>{sr.name}</div></div>
+                <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector} · {sr.exchange}</div></div>
+                <div><div style={{fontSize:11,color:"#475569"}}>52w: {sr.fiftyTwoWeekLow} – {sr.fiftyTwoWeekHigh}</div><div style={{fontSize:11,color:"#475569",marginTop:2}}>Mkt Cap: {sr.marketCap}</div></div>
+              </div>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:v.bg,color:v.c,border:"1px solid "+v.b,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{width:7,height:7,borderRadius:"50%",background:v.dot,display:"inline-block"}}/>{sr.verdict}
+                </span>
+                <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:700,background:"#0f172a",border:"1px solid #1e293b",color:rc2}}>{sr.recommendation}</span>
+              </div>
+            </div>
+            {sr.summary&&<div style={{background:"#030712",border:"1px solid "+v.b,borderRadius:8,padding:"12px 14px",marginBottom:12}}>
+              <div style={{fontSize:9,color:v.c,letterSpacing:2,marginBottom:6,fontWeight:700}}>CLAUDE'S TAKE</div>
+              <div style={{fontSize:13,color:"#e2e8f0",lineHeight:1.7}}>{sr.summary}</div>
+            </div>}
+            <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 14px",marginBottom:12}}>
+              <span style={{fontSize:9,color:"#334155",letterSpacing:2,marginRight:10}}>CATALYST</span>
+              <span style={{fontSize:12,color:"#94a3b8"}}>{sr.catalyst}</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+              <div style={{background:"#030e05",border:"1px solid #14532d",borderRadius:8,padding:"12px 14px"}}>
+                <div style={{fontSize:9,color:"#16a34a",letterSpacing:2,fontWeight:700,marginBottom:7}}>BULL CASE</div>
+                <div style={{fontSize:12,color:"#86efac",lineHeight:1.6}}>{sr.bull}</div>
+              </div>
+              <div style={{background:"#0e0303",border:"1px solid #7f1d1d",borderRadius:8,padding:"12px 14px"}}>
+                <div style={{fontSize:9,color:"#b91c1c",letterSpacing:2,fontWeight:700,marginBottom:7}}>BEAR CASE</div>
+                <div style={{fontSize:12,color:"#fca5a5",lineHeight:1.6}}>{sr.bear}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+              {[
+                {label:"ANALYST TARGET",val:sr.analystTarget,color:"#f1f5f9"},
+                {label:"UPSIDE",val:sr.upside,color:sr.upsideNum>0?"#4ade80":sr.upsideNum<0?"#f87171":"#64748b"},
+                {label:"P/E RATIO",val:sr.peRatio,color:"#94a3b8"},
+                {label:"REVENUE GROWTH",val:sr.revenueGrowth,color:"#94a3b8"},
+              ].map(function(m,i){return(
+                <div key={i}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>{m.label}</div>
+                <div style={{fontSize:14,fontWeight:700,color:m.color}}>{m.val||"N/A"}</div></div>
+              );})}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Category Toggle */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:20}}>
