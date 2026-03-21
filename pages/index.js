@@ -614,16 +614,16 @@ function LosersTab(props){
           "3. Recovery PROBABILITY (High/Medium/Low) and estimated TIMELINE based on the pattern\n"+
           "4. Whether this is a buying opportunity or a falling knife"+
           "Return a JSON array of exactly "+stocksForClaude.length+" objects. Each must have:"+
-          "ticker (string), name (string), sector (string), verdict (one of: Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified),"+
-          "selectedTfChange (string e.g. "-18.4%"), dropNum (negative number e.g. -18.4),"+
-          "price (string e.g. "$142.30"), marketCap (string),"+
-          "catalyst (string, 2 sentences - what caused the drop at the selected timeframe),"+
-          "multiTfAnalysis (string, 2 sentences - what the multi-timeframe pattern tells us about selling pressure),"+
-          "recoveryProbability (one of: High|Medium|Low),"+
-          "recoveryTimeline (string e.g. "4-8 weeks" or "3-6 months" or "unclear"),"+
-          "bull (string, 2 sentences), bear (string, 2 sentences),"+
-          "analystTarget (string e.g. "$185" or "N/A"), upside (string e.g. "+42%" or "N/A"), upsideNum (number),"+
-          "recommendation (one of: Strong Buy|Buy|Watch|Avoid)";
+          "ticker, name, sector, verdict (Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified),"+
+          "selectedTfChange (e.g. -18.4%), dropNum (negative number),"+
+          "price (e.g. $142), marketCap,"+
+          "catalyst (2 sentences on what caused the drop),"+
+          "multiTfAnalysis (2 sentences on the multi-timeframe pattern),"+
+          "recoveryProbability (High|Medium|Low),"+
+          "recoveryTimeline (e.g. 4-8 weeks or 3-6 months or unclear),"+
+          "bull (2 sentences), bear (2 sentences),"+
+          "analystTarget, upside (e.g. +42%), upsideNum (number),"+
+          "recommendation (Strong Buy|Buy|Watch|Avoid)";
 
         fetch("/api/analyze",{
           method:"POST",headers:{"Content-Type":"application/json"},
