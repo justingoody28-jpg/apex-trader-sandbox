@@ -1034,19 +1034,21 @@ export default function App(){
     fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(data){
       setAppWatchlist(Array.isArray(data)?data:[]);
       if(!data||!data.length)return;
-      var syms=data.map(function(w){return w.ticker;}).join(",");
-      fetch("/api/market?source=td&endpoint=quote?symbol="+syms)
-        .then(function(r){return r.json();})
-        .then(function(batch){
-          var ns=data.map(function(w){
-            var q=batch[w.ticker]||{};
-            var cur=parseFloat(q.close)||0;
-            var prev=parseFloat(q.previous_close)||cur;
+      Promise.all(data.map(function(w){
+        return Promise.all([
+          fetch("/api/market?source=fh&endpoint=quote?symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return {};}),
+          fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+w.ticker+"&metric=all").then(function(r){return r.json();}).catch(function(){return {};})
+        ]).then(function(res){return{ticker:w.ticker,name:w.name||w.ticker,q:res[0],m:res[1]};});
+      })).then(function(results){
+          var ns=results.map(function(r){
+            var cur=r.q&&r.q.c?r.q.c:0;
+            var prev=r.q&&r.q.pc?r.q.pc:cur;
             var chg=prev>0?((cur-prev)/prev*100):0;
-            return{ticker:w.ticker,name:w.name||w.ticker,cur:+cur.toFixed(2),chg:+chg.toFixed(2),
-              hi52:parseFloat((q.fifty_two_week||{}).high)||0,lo52:parseFloat((q.fifty_two_week||{}).low)||0,
-              vol:parseFloat(q.volume)||0,avgVol:parseFloat(q.average_volume)||1};
-          });
+            var hi52=r.m&&r.m.metric?r.m.metric["52WeekHigh"]:0;
+            var lo52=r.m&&r.m.metric?r.m.metric["52WeekLow"]:0;
+            return{ticker:r.ticker,name:r.name,cur:+cur.toFixed(2),chg:+chg.toFixed(2),
+              hi52:hi52||0,lo52:lo52||0,vol:0,avgVol:1};
+          }).filter(function(s){return s.cur>0;});
           setWatchlistStocks(ns);
         }).catch(function(){});
     }).catch(function(){});
