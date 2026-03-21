@@ -1172,15 +1172,26 @@ export default function App(){
       })(cached);
       return;
     }
-    // No cache - fetch from API
+    // No cache - fetch from API in 3 batches of 8 max (Twelve Data free tier limit)
     setDataLoading(true);setDataSource("live");
-    fetch("/api/market?source=td&endpoint=quote?symbol="+symbols)
-      .then(function(r){return r.json();})
-      .then(function(batch){
-        if(batch.code===429||batch.status==="error"){
-          setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
-          setLastR(new Date());setDataLoading(false);setDataSource("simulated");return;
-        }
+    var b1=TICKERS.slice(0,7).join(",");
+    var b2=TICKERS.slice(7,14).join(",");
+    var b3=TICKERS.slice(14).join(",");
+    Promise.all([
+      fetch("/api/market?source=td&endpoint=quote?symbol="+b1).then(function(r){return r.json();}).catch(function(){return {};}),
+      fetch("/api/market?source=td&endpoint=quote?symbol="+b2).then(function(r){return r.json();}).catch(function(){return {};}),
+      fetch("/api/market?source=td&endpoint=quote?symbol="+b3).then(function(r){return r.json();}).catch(function(){return {};})
+    ]).then(function(parts){
+      var batch=Object.assign({},
+        (parts[0].code||parts[0].status==="error")?{}:parts[0],
+        (parts[1].code||parts[1].status==="error")?{}:parts[1],
+        (parts[2].code||parts[2].status==="error")?{}:parts[2]
+      );
+      if(Object.keys(batch).length===0){
+        setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
+        setLastR(new Date());setDataLoading(false);setDataSource("simulated");return;
+      }
+      (function(batch){
         // Save to daily cache
         try{localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),data:batch}));}catch(e){}
         // Twelve Data returns object keyed by ticker when multiple symbols requested
@@ -1231,8 +1242,8 @@ export default function App(){
           return detStock(t,i,c);
         });
         setStocks(ns);setLastR(new Date());setDataLoading(false);
-      })
-      .catch(function(){
+      })(batch);
+    }).catch(function(){
         // Fallback to simulated on error
         setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
         setLastR(new Date());setDataLoading(false);setDataSource("simulated");
