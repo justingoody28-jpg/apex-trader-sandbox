@@ -481,7 +481,7 @@ function LosersTab(props){
     else capFilters="&marketCapMoreThan=100000000";
     // Step 1: Get actual biggest losers in this sector over this timeframe using FMP screener
     // FMP screener gives us current data; we'll filter by historical performance using price history
-    fetch("/api/market?source=fmp&endpoint=company-screener?sector="+encodeURIComponent(sector)+"&exchange=NYSE,NASDAQ"+capFilters+"&limit=50&isActivelyTrading=true")
+    fetch("/api/market?source=fmp&endpoint=company-screener&sector="+encodeURIComponent(sector)+"&exchange=NYSE%2CNASDAQ"+capFilters+"&limit=50&isActivelyTrading=true")
       .then(function(r){return r.json();})
       .then(function(screenerData){
         if(!Array.isArray(screenerData)||screenerData.length===0){
