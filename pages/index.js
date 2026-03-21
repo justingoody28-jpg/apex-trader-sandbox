@@ -1563,7 +1563,7 @@ export default function App(){
                     note={s.mh>0?"Bullish momentum":"Bearish momentum"}/>
                   <Gauge label="VOLUME VS AVERAGE" display={s.vr+"x"} pct={vrPct}
                     isGood={true} goodMin={43} goodMax={100}
-                    note="Target: >1.3x average  |  Current: "+s.vr+"x"/>
+                    note={"Target: >1.3x average  |  Current: "+s.vr+"x"}/>
                   <Gauge label="52-WEEK RANGE POSITION" display={Math.round(h52pos)+"%"} pct={h52pos}
                     isGood={true} goodMin={0} goodMax={40}
                     note={"Low: $"+(s.h52*0.7).toFixed(0)+" to High: $"+s.h52}/>
