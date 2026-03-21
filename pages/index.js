@@ -67,7 +67,7 @@ function genStock(ticker,idx,cfg){
     else if(r>=cfg.rsiOversold&&mh>-0.5) sig="BUY";
     else if(r<cfg.rsiOversold) sig="WATCH";
   }else if(dip<5){if(r>70)sig="SELL";}
-  else if(dip>25){sig=r<30?"WATCH":"SELL";}
+  else if(dip>25&&dip<=40){if(r>=45&&mh>0&&vr>=1.3)sig="BUY";else if(r>=35&&mh>-0.5)sig="WATCH";else sig="SELL";}else if(dip>40){sig=r<35?"WATCH":"SELL";}
   var score=Math.min(100,Math.max(0,Math.round(
     (dip>=5&&dip<=20?30:0)+(r>=35&&r<=55?25:r<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0)
   )));
@@ -406,6 +406,11 @@ function AnalystChart(props){
 }
 
 function LosersTab(props){
+  // Helper: get screener signal for a ticker
+  function screenerSig(ticker){
+    var s=(props.stocks||[]).find(function(x){return x.ticker===ticker;});
+    return s?s.sig:null;
+  }
   var CATEGORIES=[
     {id:"fallen_giants",label:"Fallen Giants",icon:"👑",cap:"$100B+",desc:"Household names - Apple, Nike, Disney",color:"#a78bfa",bg:"#1e1b4b",border:"#4c1d95",
      prompt:"Identify 8 iconic, large-cap US companies (S&P 500 household names, market cap $100B+) currently trading significantly below their 52-week highs. Focus on companies everyone has heard of - Apple, Nike, Google, Disney, etc. The drop should appear disproportionate to their long-term fundamentals."},
@@ -775,6 +780,12 @@ function LosersTab(props){
                   <span style={{width:7,height:7,borderRadius:"50%",background:v.dot,display:"inline-block"}}/>{sr.verdict}
                 </span>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:700,background:"#0f172a",border:"1px solid #1e293b",color:rc2}}>{sr.recommendation}</span>
+                {(function(){
+                  var ss=screenerSig(sr.ticker);
+                  if(!ss||ss==="HOLD")return null;
+                  var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":ss==="SELL"?"#f87171":"#94a3b8";
+                  return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;
+                })()}
               </div>
             </div>
             {sr.summary&&<div style={{background:"#030712",border:"1px solid "+v.b,borderRadius:8,padding:"12px 14px",marginBottom:12}}>
@@ -904,6 +915,12 @@ function LosersTab(props){
                   <span style={{width:7,height:7,borderRadius:"50%",background:vs.dot,display:"inline-block"}}/>{l.verdict}
                 </span>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:700,background:"#0f172a",border:"1px solid #1e293b",color:rc2}}>{l.recommendation}</span>
+                {(function(){
+                  var ss=screenerSig(l.ticker);
+                  if(!ss||ss==="HOLD")return null;
+                  var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":ss==="SELL"?"#f87171":"#94a3b8";
+                  return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;
+                })()}
               </div>
             </div>
             <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 14px",marginBottom:12}}>
@@ -1088,7 +1105,7 @@ export default function App(){
       else if(r>=cfg.rsiOversold&&mh>-0.5)sig="BUY";
       else if(r<cfg.rsiOversold)sig="WATCH";
     }else if(dip<5){if(r>70)sig="SELL";}
-    else if(dip>25){sig=r<30?"WATCH":"SELL";}
+    else if(dip>25&&dip<=40){if(r>=45&&mh>0&&vr>=1.3)sig="BUY";else if(r>=35&&mh>-0.5)sig="WATCH";else sig="SELL";}else if(dip>40){sig=r<35?"WATCH":"SELL";}
     var score=Math.min(100,Math.max(0,Math.round(
       (dip>=5&&dip<=20?30:0)+(r>=35&&r<=55?25:r<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0)
     )));
@@ -1105,7 +1122,7 @@ export default function App(){
               for(var d=0;d<days;d++){var progress=d/(days-1);var base=h52lo+(cur-h52lo)*Math.pow(progress,0.7);var osc=((hash*d)%17-8)/8*(h52hi-h52lo)*0.04;prices.push(Math.max(h52lo*0.95,Math.min(h52hi*1.02,base+osc)));}
               prices[prices.length-1]=cur;
               var rsi=lastRSI(prices),mh=macdH(prices),vr=1.0,sig="HOLD";
-              if(dip>=c.dipMin&&dip<=c.dipMax){if(rsi>=c.rsiRecovery&&rsi<60&&mh>0&&vr>=c.volMult)sig="STRONG_BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";else if(rsi<c.rsiOversold)sig="WATCH";}else if(dip<5){if(rsi>70)sig="SELL";}else if(dip>25){sig=rsi<30?"WATCH":"SELL";}
+              if(dip>=c.dipMin&&dip<=c.dipMax){if(rsi>=c.rsiRecovery&&rsi<60&&mh>0&&vr>=c.volMult)sig="STRONG_BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";else if(rsi<c.rsiOversold)sig="WATCH";}else if(dip<5){if(rsi>70)sig="SELL";}else if(dip>25&&dip<=40){if(rsi>=c.rsiRecovery&&mh>0&&vr>=c.volMult)sig="BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="WATCH";else sig="SELL";}else if(dip>40){sig=rsi<35?"WATCH":"SELL";}
               var score=Math.min(100,Math.max(0,Math.round((dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0))));
               return{ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),rsi,mh,chg:0,vr,sig,score,sector:SECTORS[i%20],sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
             }
@@ -1157,7 +1174,7 @@ export default function App(){
               else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";
               else if(rsi<c.rsiOversold)sig="WATCH";
             }else if(dip<5){if(rsi>70)sig="SELL";}
-            else if(dip>25){sig=rsi<30?"WATCH":"SELL";}
+            else if(dip>25&&dip<=40){if(rsi>=c.rsiRecovery&&mh>0&&vr>=c.volMult)sig="BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="WATCH";else sig="SELL";}else if(dip>40){sig=rsi<35?"WATCH":"SELL";}
             var score=Math.min(100,Math.max(0,Math.round(
               (dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0)
             )));
@@ -1245,7 +1262,7 @@ export default function App(){
               else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";
               else if(rsi<c.rsiOversold)sig="WATCH";
             }else if(dip<5){if(rsi>70)sig="SELL";}
-            else if(dip>25){sig=rsi<30?"WATCH":"SELL";}
+            else if(dip>25&&dip<=40){if(rsi>=c.rsiRecovery&&mh>0&&vr>=c.volMult)sig="BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="WATCH";else sig="SELL";}else if(dip>40){sig=rsi<35?"WATCH":"SELL";}
             var score=Math.min(100,Math.max(0,Math.round(
               (dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0)
             )));
