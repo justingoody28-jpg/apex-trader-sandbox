@@ -8,6 +8,7 @@ const BASE = {AAPL:185,MSFT:375,NVDA:115,AMZN:195,GOOGL:168,META:580,TSLA:275,JP
 const SECTORS = ["Technology","Technology","Semiconductors","E-Commerce","Technology","Social Media","EV","Financials","Defense Tech","Cloud","Cloud","Fintech","Airlines","Aviation","Healthcare","Apparel","Creative Software","Semiconductors","Cloud","Analytics"];
 const INIT_CFG = {dipMin:5,dipMax:20,rsiOversold:35,rsiRecovery:45,volMult:1.3,sl:7,tp:20,startCash:100000,maxPosPct:18};
 const MAX_POS = 5;
+const FMP_KEY = "LNXhjGVvJWSSf5BCWk95BElPxVCSWxSY";
 const AP_SEC  = 15;
 const SIGS = {
   STRONG_BUY:{label:"STRONG BUY",c:"#22c55e",bg:"#052e16",b:"#16a34a"},
@@ -406,90 +407,46 @@ function AnalystChart(props){
 }
 
 function LosersTab(props){
+  var SECTORS_LIST=[
+    {id:"Technology",label:"Technology",icon:"💻"},
+    {id:"Healthcare",label:"Healthcare",icon:"🏥"},
+    {id:"Financial Services",label:"Financials",icon:"🏦"},
+    {id:"Energy",label:"Energy",icon:"⚡"},
+    {id:"Consumer Cyclical",label:"Consumer Cyclical",icon:"🛍️"},
+    {id:"Industrials",label:"Industrials",icon:"🏭"},
+    {id:"Communication Services",label:"Communication",icon:"📡"},
+    {id:"Basic Materials",label:"Materials",icon:"⚗️"},
+    {id:"Consumer Defensive",label:"Consumer Staples",icon:"🛒"},
+    {id:"Real Estate",label:"Real Estate",icon:"🏢"},
+    {id:"Utilities",label:"Utilities",icon:"💡"},
+  ];
+  var TIMEFRAMES=[
+    {id:"1W",label:"1 Week",days:7},
+    {id:"1M",label:"1 Month",days:30},
+    {id:"3M",label:"3 Months",days:90},
+    {id:"6M",label:"6 Months",days:180},
+    {id:"52W",label:"52 Weeks",days:365},
+  ];
   // Helper: get screener signal for a ticker
   function screenerSig(ticker){
     var s=(props.stocks||[]).find(function(x){return x.ticker===ticker;});
     return s?s.sig:null;
   }
-  var CATEGORIES=[
-    {id:"fallen_giants",label:"Fallen Giants",icon:"👑",cap:"$100B+",desc:"Household names - Apple, Nike, Disney",color:"#a78bfa",bg:"#1e1b4b",border:"#4c1d95",
-     prompt:"Identify 8 iconic, large-cap US companies (S&P 500 household names, market cap $100B+) currently trading significantly below their 52-week highs. Focus on companies everyone has heard of - Apple, Nike, Google, Disney, etc. The drop should appear disproportionate to their long-term fundamentals."},
-    {id:"mid_market",label:"Mid-Market",icon:"🏢",cap:"$10B-$100B",desc:"Well-known companies, higher upside",color:"#60a5fa",bg:"#0c1a2e",border:"#1e3a5f",
-     prompt:"Identify 8 mid-cap US companies (market cap $10B-$100B) that are significant players in their industries and currently trading well below recent highs. These should be companies with real revenue, established business models, and a drop that appears driven more by sentiment than fundamentals."},
-    {id:"rising_stars",label:"Rising Stars",icon:"🚀",cap:"$1B-$10B",desc:"Growth names with high upside potential",color:"#34d399",bg:"#022c22",border:"#065f46",
-     prompt:"Identify 8 growth-oriented US companies (market cap $1B-$10B) that have pulled back significantly from highs. These should be companies with strong growth trajectories - high revenue growth, expanding markets - where the drop represents an oversized reaction to short-term headwinds rather than a fundamental breakdown."},
-    {id:"speculative",label:"Speculative",icon:"⚡",cap:"Under $1B",desc:"High risk, high reward - use with caution",color:"#fb923c",bg:"#1c0a00",border:"#7c2d12",
-     prompt:"Identify 8 small-cap US companies (market cap under $1B) that have experienced sharp drops. These carry higher risk - be explicit about solvency concerns, debt loads, and whether the business model is proven. Include honest bear cases. Only flag as Buy if there is a genuinely compelling recovery thesis."},
-  ];
-  var [category,setCategory]=useState("fallen_giants");
-  var [cache,setCache]=useState({}); // per-category results cache
+
+  var [sector,setSector]=useState("Technology");
+  var [timeframe,setTimeframe]=useState("3M");
+  var [marketCap,setMarketCap]=useState("all");
   var [loading,setLoading]=useState(false);
   var [error,setError]=useState(null);
+  var [results,setResults]=useState([]);
+  var [summary,setSummary]=useState(null);
   var [filter,setFilter]=useState("all");
-  var [expanded,setExpanded]=useState({}); // ticker -> {chart, ratings}
-  var [chartData,setChartData]=useState({}); // ticker -> price series
-  var [ratingsData,setRatingsData]=useState({}); // ticker -> analyst ratings
-
-  function loadTrends(ticker){
-    if(chartData[ticker]&&ratingsData[ticker])return; // already loaded
-    fetch("/api/market?source=td&endpoint=time_series?symbol="+ticker+"&interval=1day&outputsize=90")
-      .then(function(r){return r.json();})
-      .then(function(d){if(d.values)setChartData(function(prev){var n=Object.assign({},prev);n[ticker]=d.values.reverse();return n;});})
-      .catch(function(){});
-    fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+ticker)
-      .then(function(r){return r.json();})
-      .then(function(d){if(Array.isArray(d))setRatingsData(function(prev){var n=Object.assign({},prev);n[ticker]=d;return n;});})
-      .catch(function(){});
-  }
-
-  function toggleExpand(ticker,field){
-    setExpanded(function(prev){
-      var cur=Object.assign({},prev[ticker]||{});
-      cur[field]=!cur[field];
-      if(cur[field])loadTrends(ticker);
-      return Object.assign({},prev,{[ticker]:cur});
-    });
-  }
-  var [validationCache,setValidationCache]=useState({});
-  var [validating,setValidating]=useState(false);
-
-  var cat=CATEGORIES.find(function(c){return c.id===category;})||CATEGORIES[0];
-  var losers=(cache[category]||{}).losers||[];
-  var summary=(cache[category]||{}).summary||null;
-  var validation=validationCache[category]||{};
-  function setLosers(v){setCache(function(prev){var n=Object.assign({},prev);n[category]=Object.assign({},n[category]||{},{losers:v});return n;});}
-  function setSummary(v){setCache(function(prev){var n=Object.assign({},prev);n[category]=Object.assign({},n[category]||{},{summary:v});return n;});}
-  function setValidation(v){setValidationCache(function(prev){var n=Object.assign({},prev);n[category]=v;return n;});}
-
-  // Watchlist state
-  var [watchlist,setWatchlist]=useState([]);
-  function loadWatchlist(){fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(d){setWatchlist(Array.isArray(d)?d:[]);}).catch(function(){});}
-  useEffect(function(){loadWatchlist();},[]);
-  function addToWatchlist(ticker,name){
-    fetch("/api/portfolio?action=watchlist_add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker,name,added_from:"ai_analysis"})})
-      .then(function(){loadWatchlist();});
-  }
-  function removeFromWatchlist(ticker){
-    fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})})
-      .then(function(){loadWatchlist();});
-  }
-
-  // Watchlist state
-  var [watchlist,setWatchlist]=useState([]);
-  function loadWatchlist(){fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(d){setWatchlist(Array.isArray(d)?d:[]);}).catch(function(){});}
-  useEffect(function(){loadWatchlist();},[]);
-  function addToWatchlist(ticker,name){fetch("/api/portfolio?action=watchlist_add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker,name,added_from:"ai_analysis"})}).then(function(){loadWatchlist();});}
-  function removeFromWatchlist(ticker){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})}).then(function(){loadWatchlist();});}
-
-  // Expanded trend state
   var [expanded,setExpanded]=useState({});
   var [chartData,setChartData]=useState({});
   var [ratingsData,setRatingsData]=useState({});
-  function loadTrends(ticker){
-    fetch("/api/market?source=td&endpoint=time_series?symbol="+ticker+"&interval=1day&outputsize=90").then(function(r){return r.json();}).then(function(d){if(d.values)setChartData(function(p){var n=Object.assign({},p);n[ticker]=d.values.slice().reverse();return n;});}).catch(function(){});
-    fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+ticker).then(function(r){return r.json();}).then(function(d){if(Array.isArray(d))setRatingsData(function(p){var n=Object.assign({},p);n[ticker]=d;return n;});}).catch(function(){});
-  }
-  function toggleExpand(ticker,field){setExpanded(function(p){var c=Object.assign({},p[ticker]||{});c[field]=!c[field];if(c[field])loadTrends(ticker);return Object.assign({},p,{[ticker]:c});});}
+  var [validationCache,setValidationCache]=useState({});
+  var [validating,setValidating]=useState(false);
+  var [watchlist,setWatchlist]=useState([]);
 
   // Search state
   var [searchTicker,setSearchTicker]=useState("");
@@ -497,218 +454,319 @@ function LosersTab(props){
   var [searchLoading,setSearchLoading]=useState(false);
   var [searchError,setSearchError]=useState(null);
 
+  function loadWatchlist(){fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(d){setWatchlist(Array.isArray(d)?d:[]);}).catch(function(){});}
+  useState(function(){loadWatchlist();},[]);
+  function addToWatchlist(ticker,name){fetch("/api/portfolio?action=watchlist_add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker,name,added_from:"ai_analysis"})}).then(function(){loadWatchlist();});}
+  function removeFromWatchlist(ticker){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})}).then(function(){loadWatchlist();});}
+
+  useEffect(function(){loadWatchlist();},[]);
+
+  function loadTrends(ticker){
+    fetch("/api/market?source=td&endpoint=time_series?symbol="+ticker+"&interval=1day&outputsize=90")
+      .then(function(r){return r.json();}).then(function(d){if(d.values)setChartData(function(p){var n=Object.assign({},p);n[ticker]=d.values.slice().reverse();return n;});}).catch(function(){});
+    fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+ticker)
+      .then(function(r){return r.json();}).then(function(d){if(Array.isArray(d))setRatingsData(function(p){var n=Object.assign({},p);n[ticker]=d;return n;});}).catch(function(){});
+  }
+  function toggleExpand(ticker,field){setExpanded(function(p){var c=Object.assign({},p[ticker]||{});c[field]=!c[field];if(c[field])loadTrends(ticker);return Object.assign({},p,{[ticker]:c});});}
+
+  function runAnalysis(){
+    setLoading(true);setError(null);setResults([]);setSummary(null);setValidationCache({});
+    var tf=TIMEFRAMES.find(function(t){return t.id===timeframe;})||TIMEFRAMES[2];
+    var toDate=new Date(),fromDate=new Date(toDate-tf.days*24*60*60*1000);
+    var fromStr=fromDate.toISOString().slice(0,10),toStr=toDate.toISOString().slice(0,10);
+    var capFilters="";
+    if(marketCap==="large")capFilters="&marketCapMoreThan=10000000000";
+    else if(marketCap==="mid")capFilters="&marketCapMoreThan=1000000000&marketCapLowerThan=10000000000";
+    else if(marketCap==="small")capFilters="&marketCapMoreThan=100000000&marketCapLowerThan=1000000000";
+    else capFilters="&marketCapMoreThan=100000000";
+    // Step 1: Get actual biggest losers in this sector over this timeframe using FMP screener
+    // FMP screener gives us current data; we'll filter by historical performance using price history
+    fetch("/api/market?source=fmp&endpoint=company-screener?sector="+encodeURIComponent(sector)+"&exchange=NYSE,NASDAQ"+capFilters+"&limit=50&isActivelyTrading=true&apikey=ignored")
+      .then(function(r){return r.json();})
+      .then(function(screenerData){
+        if(!Array.isArray(screenerData)||screenerData.length===0){
+          setError("No stocks found for "+sector+". Try a different sector.");
+          setLoading(false);return;
+        }
+        // Get top 20 by market cap for history lookup
+        var tickers=screenerData.slice(0,20).map(function(s){return s.symbol;}).join(",");
+        return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+tickers+"&from="+fromStr+"&to="+toStr)
+          .then(function(r){return r.json();})
+          .then(function(histData){
+            // Calculate % change for each ticker over the timeframe
+            var perfByTicker={};
+            if(Array.isArray(histData)){
+              // Group by symbol
+              var grouped={};
+              histData.forEach(function(row){
+                if(!grouped[row.symbol])grouped[row.symbol]=[];
+                grouped[row.symbol].push(row);
+              });
+              Object.keys(grouped).forEach(function(sym){
+                var rows=grouped[sym].sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+                if(rows.length>=2){
+                  var first=rows[0].close,last=rows[rows.length-1].close;
+                  var pct=((last-first)/first*100);
+                  perfByTicker[sym]={change:+pct.toFixed(2),from:rows[0].date,to:rows[rows.length-1].date,prices:rows.map(function(r){return r.close;})};
+                }
+              });
+            }
+            // Also get all 5 timeframes for each ticker (for Claude context)
+            var topLosers=Object.keys(perfByTicker)
+              .filter(function(t){return perfByTicker[t].change<0;})
+              .sort(function(a,b){return perfByTicker[a].change-perfByTicker[b].change;})
+              .slice(0,12);
+            if(topLosers.length===0){
+              setError("No losers found in "+sector+" over "+tf.label+". Market may be up across this sector.");
+              setLoading(false);return;
+            }
+            // Fetch all 5 timeframes for top losers
+            var tfDefs=[{id:"1W",days:7},{id:"1M",days:30},{id:"3M",days:90},{id:"6M",days:180},{id:"52W",days:365}];
+            var allTfFetches=tfDefs.map(function(tfd){
+              var tfFrom=new Date(new Date()-tfd.days*24*60*60*1000).toISOString().slice(0,10);
+              return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+topLosers.join(",")+"&from="+tfFrom+"&to="+toStr)
+                .then(function(r){return r.json();}).catch(function(){return [];});
+            });
+            // Finnhub fundamentals for each ticker
+            var fhFetches=topLosers.map(function(t){
+              return Promise.all([
+                fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+                fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
+                fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+                fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+              ]).then(function(res){return {ticker:t,quote:res[0],metric:res[1],rec:res[2],pt:res[3]};});
+            });
+            return Promise.all([Promise.all(allTfFetches),Promise.all(fhFetches),Promise.resolve(screenerData),Promise.resolve(perfByTicker),Promise.resolve(topLosers)]);
+          });
+      })
+      .then(function(allData){
+        if(!allData)return;
+        var allTfData=allData[0],fhData=allData[1],screenerData=allData[2],perfByTicker=allData[3],topLosers=allData[4];
+        var tfDefs=[{id:"1W",days:7},{id:"1M",days:30},{id:"3M",days:90},{id:"6M",days:180},{id:"52W",days:365}];
+        // Build per-ticker timeframe performance
+        var tfPerfByTicker={};
+        allTfData.forEach(function(histArr,tfIdx){
+          if(!Array.isArray(histArr))return;
+          var grouped={};
+          histArr.forEach(function(row){if(!grouped[row.symbol])grouped[row.symbol]=[];grouped[row.symbol].push(row);});
+          Object.keys(grouped).forEach(function(sym){
+            var rows=grouped[sym].sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+            if(rows.length>=2){
+              if(!tfPerfByTicker[sym])tfPerfByTicker[sym]={};
+              tfPerfByTicker[sym][tfDefs[tfIdx].id]=+((rows[rows.length-1].close-rows[0].close)/rows[0].close*100).toFixed(2);
+            }
+          });
+        });
+        // Build fh lookup
+        var fhByTicker={};
+        fhData.forEach(function(d){fhByTicker[d.ticker]=d;});
+        // Build stock data for Claude
+        var stocksForClaude=topLosers.map(function(t){
+          var sp=screenerData.find(function(s){return s.symbol===t;})||{};
+          var fh=fhByTicker[t]||{};
+          var tf_perf=tfPerfByTicker[t]||{};
+          var cur=fh.quote&&fh.quote.c?fh.quote.c:sp.price||0;
+          var hi52=fh.metric&&fh.metric.metric&&fh.metric.metric["52WeekHigh"]?fh.metric.metric["52WeekHigh"]:null;
+          var lo52=fh.metric&&fh.metric.metric&&fh.metric.metric["52WeekLow"]?fh.metric.metric["52WeekLow"]:null;
+          var pe=fh.metric&&fh.metric.metric?fh.metric.metric["peExclExtraTTM"]:null;
+          var beta=fh.metric&&fh.metric.metric?fh.metric.metric["beta"]:null;
+          var analystTarget=fh.pt&&fh.pt.targetMean?fh.pt.targetMean:null;
+          var rec=fh.rec&&Array.isArray(fh.rec)&&fh.rec.length>0?fh.rec[0]:null;
+          var buyPct=rec?Math.round(((rec.buy||0)+(rec.strongBuy||0))/((rec.buy||0)+(rec.hold||0)+(rec.sell||0)+(rec.strongBuy||0)+(rec.strongSell||0)||1)*100):null;
+          return {
+            symbol:t,name:sp.companyName||t,
+            price:cur.toFixed(2),
+            marketCap:sp.marketCap?("$"+(sp.marketCap/1e9).toFixed(1)+"B"):null,
+            hi52:hi52?hi52.toFixed(2):null,lo52:lo52?lo52.toFixed(2):null,
+            pe:pe?pe.toFixed(1):null,beta:beta?beta.toFixed(2):null,
+            analystTarget:analystTarget?analystTarget.toFixed(0):null,
+            analystUpside:analystTarget&&cur>0?(((analystTarget-cur)/cur)*100).toFixed(0):null,
+            analystBuyPct:buyPct,
+            performance:{
+              "1W":tf_perf["1W"]!==undefined?tf_perf["1W"]:null,
+              "1M":tf_perf["1M"]!==undefined?tf_perf["1M"]:null,
+              "3M":tf_perf["3M"]!==undefined?tf_perf["3M"]:null,
+              "6M":tf_perf["6M"]!==undefined?tf_perf["6M"]:null,
+              "52W":tf_perf["52W"]!==undefined?tf_perf["52W"]:null,
+            },
+            selectedTf:timeframe,
+            selectedTfChange:tf_perf[timeframe]||perfByTicker[t]&&perfByTicker[t].change||null
+          };
+        });
+        // Pass to Claude for analysis
+        var sectorLabel=SECTORS_LIST.find(function(s){return s.id===sector;})||{label:sector};
+        var tfLabel=TIMEFRAMES.find(function(t){return t.id===timeframe;})||{label:timeframe};
+        var prompt="Today is "+new Date().toDateString()+". I am analyzing the "+sectorLabel.label+" sector.
+
+"+
+          "These are the actual biggest losers in "+sectorLabel.label+" over the last "+tfLabel.label+", based on real FMP market data:
+
+"+
+          stocksForClaude.map(function(s){
+            var perf=Object.entries(s.performance).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
+            return s.symbol+" ("+s.name+"): $"+s.price+
+              (s.marketCap?" | MktCap "+s.marketCap:"")+
+              " | Performance: "+perf+
+              (s.pe?" | P/E "+s.pe:"")+
+              (s.beta?" | Beta "+s.beta:"")+
+              (s.analystTarget?" | Analyst Target $"+s.analystTarget+" ("+s.analystUpside+"% upside, "+s.analystBuyPct+"% analyst buy)":"")+
+              (s.hi52?" | 52W Range $"+s.lo52+" to $"+s.hi52:"");
+          }).join("
+")+
+          "
+
+For each stock, analyze the multi-timeframe performance pattern to determine:
+"+
+          "1. WHAT caused the drop at each timeframe (different events = different timeframes)
+"+
+          "2. Whether selling is ACCELERATING (recent TF worse than longer TF) or DECELERATING (most damage is old)
+"+
+          "3. Recovery PROBABILITY (High/Medium/Low) and estimated TIMELINE based on the pattern
+"+
+          "4. Whether this is a buying opportunity or a falling knife
+
+"+
+          "Return a JSON array of exactly "+stocksForClaude.length+" objects. Each must have:
+"+
+          "ticker (string), name (string), sector (string), verdict (one of: Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified),
+"+
+          "selectedTfChange (string e.g. "-18.4%"), dropNum (negative number e.g. -18.4),
+"+
+          "price (string e.g. "$142.30"), marketCap (string),
+"+
+          "catalyst (string, 2 sentences - what caused the drop at the selected timeframe),
+"+
+          "multiTfAnalysis (string, 2 sentences - what the multi-timeframe pattern tells us about selling pressure),
+"+
+          "recoveryProbability (one of: High|Medium|Low),
+"+
+          "recoveryTimeline (string e.g. "4-8 weeks" or "3-6 months" or "unclear"),
+"+
+          "bull (string, 2 sentences), bear (string, 2 sentences),
+"+
+          "analystTarget (string e.g. "$185" or "N/A"), upside (string e.g. "+42%" or "N/A"), upsideNum (number),
+"+
+          "recommendation (one of: Strong Buy|Buy|Watch|Avoid)";
+
+        fetch("/api/analyze",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            model:"claude-sonnet-4-20250514",max_tokens:6000,
+            system:"You are a financial data API. Your ENTIRE response must be a valid JSON array starting with [ and ending with ]. No text before or after. No markdown fences.",
+            messages:[{role:"user",content:prompt},{role:"assistant",content:"[{"}]
+          }),
+        }).then(function(r){return r.json();})
+        .then(function(data){
+          if(data.error)throw new Error(data.error.message||"API error");
+          var raw=(data.content||[]).map(function(b){return b.text||"";}).join("");
+          var combined="[{"+raw;
+          var clean=combined.replace(/```json/g,"").replace(/```/g,"").trim();
+          var s2=clean.indexOf("["),e2=clean.lastIndexOf("]");
+          if(s2===-1||e2===-1)throw new Error("No JSON array found");
+          var parsed=JSON.parse(clean.slice(s2,e2+1));
+          setResults(parsed);
+          var over=parsed.filter(function(s){return s.verdict==="Strong Overreaction"||s.verdict==="Overreaction";}).length;
+          var highProb=parsed.filter(function(s){return s.recoveryProbability==="High";}).length;
+          var avgDrop=(parsed.reduce(function(sum,s){return sum+(s.dropNum||0);},0)/parsed.length).toFixed(1);
+          setSummary({sector:sectorLabel.label,tf:tfLabel.label,total:parsed.length,over,highProb,avgDrop});
+          setLoading(false);
+          // Save to Supabase
+          fetch("/api/portfolio?action=ai_analysis",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({results:parsed,category:sector+"_"+timeframe})
+          }).catch(function(){});
+        })
+        .catch(function(err){setLoading(false);setError("Analysis failed: "+err.message);});
+      })
+      .catch(function(err){setLoading(false);setError("Data fetch failed: "+err.message);});
+  }
+
   function runSearch(){
     var t=searchTicker.trim().toUpperCase();
     if(!t)return;
     setSearchLoading(true);setSearchError(null);setSearchResult(null);
-    var userPrompt="Today is "+new Date().toDateString()+". Analyze the stock "+t+" in depth. "+
-      "Provide a comprehensive fundamental analysis including current price context, recent catalyst, "+
-      "whether it appears overvalued/undervalued/fairly valued, and a clear investment thesis.\n\n"+
-      "Return a JSON object (not array) with these exact fields:\n"+
-      "ticker (string), name (string), sector (string), exchange (string),"+
-      "price (string e.g. \"$142.30\"), marketCap (string e.g. \"$48B\"),"+
-      "fiftyTwoWeekHigh (string), fiftyTwoWeekLow (string),"+
-      "verdict (exactly one of: \"Strong Overreaction\", \"Overreaction\", \"Partial Overreaction\", \"Mixed\", \"Justified\", \"Fairly Valued\", \"Overvalued\"),"+
-      "catalyst (string, 2 sentences - most recent significant development),"+
-      "bull (string, 3 sentences - strongest bull case),"+
-      "bear (string, 3 sentences - strongest bear case),"+
-      "analystTarget (string e.g. \"$185\" or \"N/A\"),"+
-      "upside (string e.g. \"+42%\" or \"N/A\"), upsideNum (number),"+
-      "peRatio (string e.g. \"28.4x\" or \"N/A\"),"+
-      "revenueGrowth (string e.g. \"+12% YoY\" or \"N/A\"),"+
-      "recommendation (exactly one of: \"Strong Buy\", \"Buy\", \"Watch\", \"Avoid\"),"+
-      "summary (string, 3 sentences - your overall take on this stock right now)";
-    fetch("/api/analyze",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:2000,
-        system:"You are a financial data API. Your ENTIRE response must be a valid JSON object starting with { and ending with }. No text before or after. No markdown fences.",
-        messages:[{role:"user",content:userPrompt},{role:"assistant",content:"{"}]
-      }),
-    })
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.error)throw new Error(data.error.message||"API error");
-      var raw=(data.content||[]).map(function(b){return b.text||"";}).join("");
-      var combined="{"+raw;
-      var clean=combined.replace(/```json/g,"").replace(/```/g,"").trim();
-      var start=clean.indexOf("{"),end=clean.lastIndexOf("}");
-      if(start===-1||end===-1)throw new Error("No JSON found");
-      var parsed=JSON.parse(clean.slice(start,end+1));
-      setSearchResult(parsed);
-      setSearchLoading(false);
-      // Save to Supabase
-      fetch("/api/portfolio?action=ai_analysis",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({results:[Object.assign({},parsed,{dropNum:parsed.upsideNum||0,drop:parsed.upside||"N/A"})],category:"search"})
-      }).catch(function(){});
-    })
-    .catch(function(err){setSearchLoading(false);setSearchError("Analysis failed: "+err.message);});
-  }
+    var today=new Date(),from90=new Date(today-365*24*60*60*1000);
+    var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
+    Promise.all([
+      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+t+"&from="+fromStr+"&to="+toStr).then(function(r){return r.json();}).catch(function(){return null;}),
+      fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+      fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
+      fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+      fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+    ]).then(function(res){
+      var hist=res[0],q=res[1],m=res[2],rec=res[3],pt=res[4];
+      var cur=q&&q.c?q.c:0;
+      if(!cur){setSearchLoading(false);setSearchError("No data found for "+t+". Check the ticker symbol.");return;}
+      // Calculate performance at all timeframes from history
+      var rows=Array.isArray(hist)?hist.sort(function(a,b){return new Date(a.date)-new Date(b.date);}):[];
+      function calcTfChange(days){
+        var cutoff=new Date(new Date()-days*24*60*60*1000);
+        var filtered=rows.filter(function(r){return new Date(r.date)>=cutoff;});
+        if(filtered.length<2)return null;
+        return +((filtered[filtered.length-1].close-filtered[0].close)/filtered[0].close*100).toFixed(2);
+      }
+      var tfPerf={"1W":calcTfChange(7),"1M":calcTfChange(30),"3M":calcTfChange(90),"6M":calcTfChange(180),"52W":calcTfChange(365)};
+      var hi52=m&&m.metric&&m.metric["52WeekHigh"]?m.metric["52WeekHigh"]:null;
+      var lo52=m&&m.metric&&m.metric["52WeekLow"]?m.metric["52WeekLow"]:null;
+      var pe=m&&m.metric?m.metric["peExclExtraTTM"]:null;
+      var beta=m&&m.metric?m.metric["beta"]:null;
+      var analystTarget=pt&&pt.targetMean?pt.targetMean:null;
+      var recData=Array.isArray(rec)&&rec.length>0?rec[0]:null;
+      var buyPct=recData?Math.round(((recData.buy||0)+(recData.strongBuy||0))/((recData.buy||0)+(recData.hold||0)+(recData.sell||0)+(recData.strongBuy||0)+(recData.strongSell||0)||1)*100):null;
+      var perfStr=Object.entries(tfPerf).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
+      var prompt="Today is "+new Date().toDateString()+". Analyze "+t+" in depth.
+"+
+        "Real market data: Price $"+cur.toFixed(2)+
+        (hi52?" | 52W: $"+lo52.toFixed(2)+" to $"+hi52.toFixed(2):"")+
+        (pe?" | P/E "+pe.toFixed(1):"")+
+        (beta?" | Beta "+beta.toFixed(2):"")+
+        (analystTarget?" | Analyst target $"+analystTarget.toFixed(0)+" ("+buyPct+"% analyst buy)":"")+
+        "
+Multi-timeframe performance: "+perfStr+"
 
-  function validateLosers(losersArr){
-    setValidating(true);
-    var pending=losersArr.length;
-    var newVal={};
-    function done(){pending--;if(pending===0){setValidation(newVal);setValidating(false);}}
-    losersArr.forEach(function(l){
-      var t=l.ticker;
-      newVal[t]={loading:true};
-      Promise.all([
-        fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fh&endpoint=stock/earnings?symbol="+t+"&limit=4").then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=td&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/edgar?ticker="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-      ]).then(function(results){
-        var rec=results[0],pt=results[1],earn=results[2],quote=results[3],fhQuote=results[4],metric=results[5],edgar=results[6];
-        var checks={};
-        var score=0,total=0;
-        if(rec&&Array.isArray(rec)&&rec.length>0){
-          var r=rec[0];var buy=(r.buy||0)+(r.strongBuy||0),sell=(r.sell||0)+(r.strongSell||0),hold=r.hold||0;
-          var tot=buy+sell+hold||1;var pct=Math.round(buy/tot*100);
-          checks.analystBuy=pct+"% analyst buy consensus";if(buy/tot>0.5){score++;}total++;
-        }
-        if(pt&&pt.targetMean){
-          var cur=parseFloat((l.price||"0").replace(/[^0-9.]/g,""));
-          var tgt=parseFloat(pt.targetMean||0);
-          if(tgt>0&&cur>0){
-            var upside=((tgt-cur)/cur*100).toFixed(0);
-            checks.priceTarget="Analyst target $"+tgt.toFixed(0)+" ("+(upside>0?"+":"")+upside+"%)";
-            if(tgt>cur){score++;}total++;
-          }
-        }
-        if(earn&&Array.isArray(earn)&&earn.length>0){
-          var beats=earn.filter(function(e){return e.surprise>0;}).length;
-          checks.earningsBeat=beats+"/"+earn.length+" recent quarters beat";
-          if(beats/earn.length>=0.5){score++;}total++;
-        }
-        if(quote&&quote.close&&quote.fifty_two_week){
-          var price=parseFloat(quote.close);
-          var hi=parseFloat(quote.fifty_two_week.high);
-          var lo=parseFloat(quote.fifty_two_week.low);
-          var rng=hi-lo||1;
-          var pos=Math.round((price-lo)/rng*100);
-          checks.weekPosition="At "+pos+"% of 52-week range ($"+lo.toFixed(0)+"-$"+hi.toFixed(0)+")";
-          if(pos<40){score++;}total++;
-        }
-        if(quote&&quote.volume&&quote.average_volume){
-          var vr=(parseFloat(quote.volume)/parseFloat(quote.average_volume)).toFixed(1);
-          checks.volume="Volume "+vr+"x average";
-          if(parseFloat(vr)>1.5){score++;}total++;
-        }
-        // 6. Finnhub quote: is price above 50-day moving average? (bullish signal)
-        if(fhQuote&&fhQuote.c&&fhQuote.c>0){
-          var fhPrice=fhQuote.c,prevClose=fhQuote.pc||fhPrice;
-          var chgPct=((fhPrice-prevClose)/prevClose*100).toFixed(1);
-          checks.recentMove="Today: "+(chgPct>0?"+":"")+chgPct+"% ($"+fhPrice.toFixed(2)+")";
-          if(fhQuote.dp<-5){score++;} // big single-day drop = capitulation signal
-          total++;
-        }
-        // 7. Fundamental metric: P/E and beta from Finnhub
-        if(metric&&metric.metric){
-          var m=metric.metric;
-          var beta=m.beta;var pe=m["peExclExtraTTM"];
-          if(beta!==undefined){
-            checks.riskMetric="Beta: "+(beta?beta.toFixed(2):"N/A")+(pe?" | P/E: "+pe.toFixed(1):"");
-            if(beta&&beta<1.5){score++;} // lower beta = less volatile, safer recovery
-            total++;
-          }
-        }
-        // 8. SEC EDGAR: revenue growth from actual filings
-        if(edgar&&edgar.revenues&&edgar.revenues.length>=2){
-          var revs=edgar.revenues;
-          var latest=revs[revs.length-1].val,prior=revs[revs.length-2].val;
-          var revGrowth=prior>0?((latest-prior)/prior*100).toFixed(1):0;
-          var growing=parseFloat(revGrowth)>0;
-          checks.secRevenue="SEC filing: Revenue "+(growing?"+":"")+revGrowth+"% YoY ($"+(latest/1e9).toFixed(1)+"B)";
-          if(growing){score++;}total++;
-        }
-        var pct2=total>0?score/total:0;
-        var confidence=pct2>=0.6?"HIGH":pct2>=0.4?"MEDIUM":"LOW";
-        newVal[t]={loading:false,checks,score,total,confidence};
-        // Save validation score to Supabase
-        fetch("/api/portfolio?action=validation",{
+"+
+        "Analyze the timeframe pattern: is selling accelerating or decelerating? What likely caused drops at different periods?
+
+"+
+        "Return a JSON object with fields: ticker, name, sector, exchange, price (string), marketCap (string), "+
+        "fiftyTwoWeekHigh, fiftyTwoWeekLow, verdict (Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified|Fairly Valued|Overvalued), "+
+        "catalyst (2 sentences), multiTfAnalysis (2 sentences on pattern), "+
+        "recoveryProbability (High|Medium|Low), recoveryTimeline (string), "+
+        "bull (3 sentences), bear (3 sentences), "+
+        "analystTarget (string), upside (string), upsideNum (number), "+
+        "peRatio (string), revenueGrowth (string), "+
+        "recommendation (Strong Buy|Buy|Watch|Avoid), summary (3 sentences)";
+      fetch("/api/analyze",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",max_tokens:2000,
+          system:"You are a financial data API. Your ENTIRE response must be a valid JSON object starting with { and ending with }. No text before or after. No markdown fences.",
+          messages:[{role:"user",content:prompt},{role:"assistant",content:"{"}]
+        }),
+      }).then(function(r){return r.json();})
+      .then(function(data){
+        if(data.error)throw new Error(data.error.message||"API error");
+        var raw=(data.content||[]).map(function(b){return b.text||"";}).join("");
+        var combined="{"+raw;
+        var clean=combined.replace(/```json/g,"").replace(/```/g,"").trim();
+        var s2=clean.indexOf("{"),e2=clean.lastIndexOf("}");
+        if(s2===-1||e2===-1)throw new Error("No JSON found");
+        var parsed=JSON.parse(clean.slice(s2,e2+1));
+        parsed._tfPerf=tfPerf;
+        setSearchResult(parsed);setSearchLoading(false);
+        fetch("/api/portfolio?action=ai_analysis",{
           method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            ticker:t,
-            confidence,
-            score,
-            checks_passed:score,
-            checks_total:total,
-            checks_detail:Object.entries(checks).map(function(e){return e[0]+": "+e[1];}).join(" | ")
-          })
+          body:JSON.stringify({results:[Object.assign({},parsed,{dropNum:parsed.upsideNum||0,drop:parsed.upside||"N/A"})],category:"search"})
         }).catch(function(){});
-        done();
-      }).catch(function(){newVal[t]={loading:false,checks:{},score:0,total:0,confidence:"LOW"};done();});
+      })
+      .catch(function(err){setSearchLoading(false);setSearchError("Analysis failed: "+err.message);});
     });
   }
 
-  function runAnalysis(){
-    setLoading(true);setError(null);setLosers([]);setSummary(null);setValidation({});
-    var userPrompt="Today is "+new Date().toDateString()+". "+cat.prompt+"\n\n"+
-      "Return a JSON array of exactly 8 objects. Each object must have these exact fields:\n"+
-      "ticker (string), name (string), sector (string), drop (string e.g. \"-18.4%\"), dropNum (negative number e.g. -18.4),\n"+
-      "price (string e.g. \"$142.30\"), marketCap (string e.g. \"$48B\"),\n"+
-      "verdict (exactly one of: \"Strong Overreaction\", \"Overreaction\", \"Partial Overreaction\", \"Mixed\", \"Justified\"),\n"+
-      "catalyst (string, 1 sentence), bull (string, 2 sentences), bear (string, 2 sentences),\n"+
-      "analystTarget (string e.g. \"$185\" or \"N/A\"), upside (string e.g. \"+42%\" or \"N/A\"), upsideNum (number),\n"+
-      "recommendation (exactly one of: \"Strong Buy\", \"Buy\", \"Watch\", \"Avoid\")";
-    fetch("/api/analyze",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:4000,
-        system:"You are a financial data API. Your ENTIRE response must be a valid JSON array starting with [ and ending with ]. No text before or after. No markdown fences.",
-        messages:[{role:"user",content:userPrompt},{role:"assistant",content:"[{"}]
-      }),
-    })
-    .then(function(res){return res.json();})
-    .then(function(data){
-      if(data.error){throw new Error(data.error.message||"API error");}
-      var raw=(data.content||[]).map(function(b){return b.text||"";}).join("");
-      var combined="[{"+raw;
-      var clean=combined.replace(/```json/g,"").replace(/```/g,"").trim();
-      var start=clean.indexOf("["),end=clean.lastIndexOf("]");
-      if(start===-1||end===-1||end<=start)throw new Error("No JSON array found in response");
-      var jsonStr=clean.slice(start,end+1);
-      var parsed=JSON.parse(jsonStr);
-      setLosers(parsed);
-      validateLosers(parsed);
-      var over=parsed.filter(function(s){return s.verdict==="Strong Overreaction"||s.verdict==="Overreaction";}).length;
-      var avgDrop=(parsed.reduce(function(s,l){return s+(l.dropNum||0);},0)/parsed.length).toFixed(1);
-      var upArr=parsed.filter(function(l){return l.upsideNum>0;});
-      var avgUp=upArr.length>0?(upArr.reduce(function(s,l){return s+l.upsideNum;},0)/upArr.length).toFixed(0):"0";
-      setSummary({over,total:parsed.length,avgDrop,avgUp});
-      setLoading(false);
-      // Save results to Supabase
-      fetch("/api/portfolio?action=ai_analysis",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({results:parsed,category:cat.id})
-      }).catch(function(){});
-    })
-    .catch(function(err){var m=err.message||"Unknown error";setLoading(false);setError("Analysis failed: "+m+(m.includes("401")?" - Invalid API key.":" - Try again."));});
-  }
-
-  var shown=losers.filter(function(l){
-    if(filter==="all")return true;
-    if(filter==="buy")return l.recommendation==="Strong Buy"||l.recommendation==="Buy";
-    if(filter==="watch")return l.recommendation==="Watch";
-    if(filter==="avoid")return l.recommendation==="Avoid";
-    return true;
-  });
-  var VS={
-    "Strong Overreaction":{c:"#4ade80",bg:"#052e16",b:"#16a34a",dot:"#22c55e"},
-    "Overreaction":{c:"#86efac",bg:"#052e16",b:"#15803d",dot:"#4ade80"},
-    "Partial Overreaction":{c:"#fcd34d",bg:"#1c1917",b:"#d97706",dot:"#f59e0b"},
-    "Mixed":{c:"#94a3b8",bg:"#0f172a",b:"#334155",dot:"#64748b"},
-    "Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c",dot:"#ef4444"},
-  };
+  var VS={"Strong Overreaction":{c:"#4ade80",bg:"#052e16",b:"#16a34a",dot:"#22c55e"},"Overreaction":{c:"#86efac",bg:"#052e16",b:"#15803d",dot:"#4ade80"},"Partial Overreaction":{c:"#fcd34d",bg:"#1c1917",b:"#d97706",dot:"#f59e0b"},"Mixed":{c:"#94a3b8",bg:"#0f172a",b:"#334155",dot:"#64748b"},"Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c",dot:"#ef4444"},"Fairly Valued":{c:"#60a5fa",bg:"#0c1a2e",b:"#1e3a5f",dot:"#3b82f6"},"Overvalued":{c:"#fb923c",bg:"#1c0a00",b:"#9a3412",dot:"#f97316"}};
+  var tfCurrent=TIMEFRAMES.find(function(t){return t.id===timeframe;})||TIMEFRAMES[2];
+  var sectorCurrent=SECTORS_LIST.find(function(s){return s.id===sector;})||SECTORS_LIST[0];
+  var shown=results.filter(function(l){if(filter==="all")return true;if(filter==="buy")return l.recommendation==="Strong Buy"||l.recommendation==="Buy";if(filter==="watch")return l.recommendation==="Watch";if(filter==="avoid")return l.recommendation==="Avoid";return true;});
 
   return(
     <div>
@@ -716,11 +774,11 @@ function LosersTab(props){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:12}}>
         <div>
           <div style={{fontSize:22,fontWeight:800,color:"#f1f5f9",marginBottom:4}}>AI Analysis</div>
-          <div style={{fontSize:11,color:"#334155",marginTop:3}}>Select a category, then run analysis</div>
+          <div style={{fontSize:11,color:"#334155",marginTop:3}}>Real sector data from FMP + multi-timeframe analysis via Claude</div>
         </div>
-        {losers.length>0&&!loading&&(
-          <button onClick={runAnalysis} disabled={loading} style={{background:"linear-gradient(135deg,"+cat.color+","+cat.border+")",border:"none",color:"#fff",borderRadius:9,padding:"11px 22px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-            {cat.icon} Refresh {cat.label}
+        {results.length>0&&!loading&&(
+          <button onClick={runAnalysis} disabled={loading} style={{background:"#1d4ed8",border:"none",color:"#fff",borderRadius:9,padding:"11px 22px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+            Rerun Analysis
           </button>
         )}
       </div>
@@ -729,153 +787,140 @@ function LosersTab(props){
       <div style={{background:"#0a0f1a",border:"1px solid #1e293b",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
         <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:8}}>ANALYZE ANY STOCK</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <input
-            value={searchTicker}
-            onChange={function(e){setSearchTicker(e.target.value.toUpperCase());setSearchResult(null);setSearchError(null);}}
+          <input value={searchTicker} onChange={function(e){setSearchTicker(e.target.value.toUpperCase());setSearchResult(null);setSearchError(null);}}
             onKeyDown={function(e){if(e.key==="Enter")runSearch();}}
             placeholder="Enter ticker e.g. AAPL, NVDA, META..."
-            style={{flex:1,background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"10px 14px",
-              color:"#f1f5f9",fontSize:13,outline:"none",fontFamily:"inherit"}}
+            style={{flex:1,background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"10px 14px",color:"#f1f5f9",fontSize:13,outline:"none",fontFamily:"inherit"}}
           />
           <button onClick={runSearch} disabled={searchLoading||!searchTicker.trim()}
-            style={{background:searchLoading||!searchTicker.trim()?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",
-              border:"none",color:searchLoading||!searchTicker.trim()?"#475569":"#fff",
-              borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,
-              cursor:searchLoading||!searchTicker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap"}}>
+            style={{background:searchLoading||!searchTicker.trim()?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",border:"none",color:searchLoading||!searchTicker.trim()?"#475569":"#fff",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:searchLoading||!searchTicker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap"}}>
             {searchLoading?"Analyzing...":"🔍 Analyze"}
           </button>
-          {searchResult&&<button onClick={function(){setSearchResult(null);setSearchTicker("");}}
-            style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,
-              padding:"10px 14px",fontSize:12,cursor:"pointer"}}>Clear</button>}
+          {searchResult&&<button onClick={function(){setSearchResult(null);setSearchTicker("");}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>Clear</button>}
         </div>
         {searchError&&<div style={{marginTop:8,fontSize:11,color:"#f87171"}}>{searchError}</div>}
       </div>
 
-      {/* Search Result Card */}
+      {/* Search Result */}
       {searchLoading&&<div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"20px 22px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
         <div style={{width:16,height:16,border:"2px solid #1e293b",borderTopColor:"#3b82f6",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-        <div style={{fontSize:13,color:"#f1f5f9",fontWeight:600}}>Claude is analyzing {searchTicker}...</div>
+        <div style={{fontSize:13,color:"#f1f5f9",fontWeight:600}}>Fetching real market data for {searchTicker}...</div>
       </div>}
       {searchResult&&!searchLoading&&(function(){
-        var sr=searchResult;
-        var vs={"Strong Overreaction":{c:"#4ade80",bg:"#052e16",b:"#16a34a",dot:"#22c55e"},
-          "Overreaction":{c:"#86efac",bg:"#052e16",b:"#15803d",dot:"#4ade80"},
-          "Partial Overreaction":{c:"#fcd34d",bg:"#1c1917",b:"#d97706",dot:"#f59e0b"},
-          "Mixed":{c:"#94a3b8",bg:"#0f172a",b:"#334155",dot:"#64748b"},
-          "Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c",dot:"#ef4444"},
-          "Fairly Valued":{c:"#60a5fa",bg:"#0c1a2e",b:"#1e3a5f",dot:"#3b82f6"},
-          "Overvalued":{c:"#fb923c",bg:"#1c0a00",b:"#9a3412",dot:"#f97316"}};
-        var v=vs[sr.verdict]||vs["Mixed"];
+        var sr=searchResult,v=VS[sr.verdict]||VS["Mixed"];
         var rc2=sr.recommendation==="Strong Buy"?"#22c55e":sr.recommendation==="Buy"?"#4ade80":sr.recommendation==="Watch"?"#f59e0b":"#f87171";
         return(
           <div style={{background:"#0a0f1a",border:"1px solid "+v.b,borderRadius:14,padding:"20px 22px",marginBottom:16,animation:"fu 0.3s ease both"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:10}}>
               <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
                 <div><div style={{fontSize:26,fontWeight:800,color:"#f1f5f9"}}>{sr.ticker}</div><div style={{fontSize:12,color:"#475569",marginTop:2}}>{sr.name}</div></div>
-                <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector}  |  {sr.exchange}</div></div>
-                <div><div style={{fontSize:11,color:"#475569"}}>52w: {sr.fiftyTwoWeekLow} - {sr.fiftyTwoWeekHigh}</div><div style={{fontSize:11,color:"#475569",marginTop:2}}>Mkt Cap: {sr.marketCap}</div></div>
+                <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector}</div></div>
               </div>
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:v.bg,color:v.c,border:"1px solid "+v.b,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{width:7,height:7,borderRadius:"50%",background:v.dot,display:"inline-block"}}/>{sr.verdict}
-                </span>
+                <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:v.bg,color:v.c,border:"1px solid "+v.b,display:"flex",alignItems:"center",gap:6}}><span style={{width:7,height:7,borderRadius:"50%",background:v.dot,display:"inline-block"}}/>{sr.verdict}</span>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:700,background:"#0f172a",border:"1px solid #1e293b",color:rc2}}>{sr.recommendation}</span>
-                {(function(){
-                  var ss=screenerSig(sr.ticker);
-                  if(!ss||ss==="HOLD")return null;
-                  var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":ss==="SELL"?"#f87171":"#94a3b8";
-                  return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;
-                })()}
+                {(function(){var ss=screenerSig(sr.ticker);if(!ss||ss==="HOLD")return null;var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":"#f87171";return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;}())()}
               </div>
             </div>
-            {sr.summary&&<div style={{background:"#030712",border:"1px solid "+v.b,borderRadius:8,padding:"12px 14px",marginBottom:12}}>
-              <div style={{fontSize:9,color:v.c,letterSpacing:2,marginBottom:6,fontWeight:700}}>CLAUDE'S TAKE</div>
-              <div style={{fontSize:13,color:"#e2e8f0",lineHeight:1.7}}>{sr.summary}</div>
+            {/* Multi-timeframe performance */}
+            {sr._tfPerf&&<div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 14px",marginBottom:12}}>
+              <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:8}}>MULTI-TIMEFRAME PERFORMANCE</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {Object.entries(sr._tfPerf).filter(function(e){return e[1]!==null;}).map(function(e,i){
+                  var neg=e[1]<0;
+                  return(<div key={i} style={{background:neg?"#1c0505":"#052e16",border:"1px solid "+(neg?"#7f1d1d":"#14532d"),borderRadius:6,padding:"6px 10px",textAlign:"center"}}>
+                    <div style={{fontSize:9,color:"#64748b",marginBottom:3}}>{e[0]}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:neg?"#f87171":"#4ade80"}}>{e[1]>0?"+":""}{e[1]}%</div>
+                  </div>);
+                })}
+              </div>
+            </div>}
+            {sr.multiTfAnalysis&&<div style={{background:"#030712",border:"1px solid "+v.b,borderRadius:8,padding:"12px 14px",marginBottom:12}}>
+              <div style={{fontSize:9,color:v.c,letterSpacing:2,marginBottom:6,fontWeight:700}}>TIMEFRAME PATTERN</div>
+              <div style={{fontSize:13,color:"#e2e8f0",lineHeight:1.7}}>{sr.multiTfAnalysis}</div>
             </div>}
             <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 14px",marginBottom:12}}>
               <span style={{fontSize:9,color:"#334155",letterSpacing:2,marginRight:10}}>CATALYST</span>
               <span style={{fontSize:12,color:"#94a3b8"}}>{sr.catalyst}</span>
             </div>
+            {sr.recoveryProbability&&<div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
+              <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"10px 14px",flex:1}}>
+                <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>RECOVERY PROBABILITY</div>
+                <div style={{fontSize:14,fontWeight:700,color:sr.recoveryProbability==="High"?"#4ade80":sr.recoveryProbability==="Medium"?"#f59e0b":"#f87171"}}>{sr.recoveryProbability}</div>
+              </div>
+              <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"10px 14px",flex:1}}>
+                <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>EST. TIMELINE</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#94a3b8"}}>{sr.recoveryTimeline||"Unclear"}</div>
+              </div>
+              <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"10px 14px",flex:1}}>
+                <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>ANALYST TARGET</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{sr.analystTarget||"N/A"}</div>
+              </div>
+            </div>}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-              <div style={{background:"#030e05",border:"1px solid #14532d",borderRadius:8,padding:"12px 14px"}}>
-                <div style={{fontSize:9,color:"#16a34a",letterSpacing:2,fontWeight:700,marginBottom:7}}>BULL CASE</div>
-                <div style={{fontSize:12,color:"#86efac",lineHeight:1.6}}>{sr.bull}</div>
-              </div>
-              <div style={{background:"#0e0303",border:"1px solid #7f1d1d",borderRadius:8,padding:"12px 14px"}}>
-                <div style={{fontSize:9,color:"#b91c1c",letterSpacing:2,fontWeight:700,marginBottom:7}}>BEAR CASE</div>
-                <div style={{fontSize:12,color:"#fca5a5",lineHeight:1.6}}>{sr.bear}</div>
-              </div>
+              <div style={{background:"#030e05",border:"1px solid #14532d",borderRadius:8,padding:"12px 14px"}}><div style={{fontSize:9,color:"#16a34a",letterSpacing:2,fontWeight:700,marginBottom:7}}>BULL CASE</div><div style={{fontSize:12,color:"#86efac",lineHeight:1.6}}>{sr.bull}</div></div>
+              <div style={{background:"#0e0303",border:"1px solid #7f1d1d",borderRadius:8,padding:"12px 14px"}}><div style={{fontSize:9,color:"#b91c1c",letterSpacing:2,fontWeight:700,marginBottom:7}}>BEAR CASE</div><div style={{fontSize:12,color:"#fca5a5",lineHeight:1.6}}>{sr.bear}</div></div>
             </div>
             <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
               {watchlist.find(function(w){return w.ticker===sr.ticker;})?
                 <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>✓ In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(sr.ticker,sr.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
-              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>📈 90-Day Chart</button>
-              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>👥 Analyst Ratings</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>📈 Chart</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>👥 Analysts</button>
             </div>
             {expanded[sr.ticker]&&expanded[sr.ticker].chart&&<div style={{marginBottom:12}}><PriceChart data={chartData[sr.ticker]} ticker={sr.ticker}/></div>}
             {expanded[sr.ticker]&&expanded[sr.ticker].ratings&&<div style={{marginBottom:12}}><AnalystChart data={ratingsData[sr.ticker]}/></div>}
-            <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
-              {[
-                {label:"ANALYST TARGET",val:sr.analystTarget,color:"#f1f5f9"},
-                {label:"UPSIDE",val:sr.upside,color:sr.upsideNum>0?"#4ade80":sr.upsideNum<0?"#f87171":"#64748b"},
-                {label:"P/E RATIO",val:sr.peRatio,color:"#94a3b8"},
-                {label:"REVENUE GROWTH",val:sr.revenueGrowth,color:"#94a3b8"},
-              ].map(function(m,i){return(
-                <div key={i}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>{m.label}</div>
-                <div style={{fontSize:14,fontWeight:700,color:m.color}}>{m.val||"N/A"}</div></div>
-              );})}
-            </div>
           </div>
         );
       })()}
 
-      {/* Category Toggle */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:20}}>
-        {CATEGORIES.map(function(c){
-          var active=category===c.id;
-          return(
-            <button key={c.id} onClick={function(){setCategory(c.id);setError(null);setFilter("all");}}
-              style={{background:active?c.bg:"#0a0f1a",border:"1px solid "+(active?c.color:"#1e293b"),borderRadius:10,padding:"12px 10px",cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
-              <div style={{fontSize:18,marginBottom:4}}>{c.icon}</div>
-              <div style={{fontSize:12,fontWeight:800,color:active?c.color:"#64748b",marginBottom:2}}>{c.label}</div>
-              <div style={{fontSize:9,color:active?c.color:"#334155",letterSpacing:1,marginBottom:4}}>{c.cap}</div>
-              <div style={{fontSize:10,color:active?"#94a3b8":"#1e293b"}}>{c.desc}</div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Empty state */}
-      {!loading&&losers.length===0&&!error&&(
-        <div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:14,padding:"40px 30px",textAlign:"center"}}>
-          <div style={{fontSize:36,marginBottom:12}}>{cat.icon}</div>
-          <div style={{fontSize:18,fontWeight:700,color:cat.color,marginBottom:8}}>{cat.label}</div>
-          <div style={{fontSize:13,color:"#475569",maxWidth:460,margin:"0 auto",lineHeight:1.7,marginBottom:28}}>{cat.desc} - Claude analyzes each drop and verdicts whether it is a buying opportunity or a falling knife.</div>
-          <button onClick={runAnalysis} style={{background:"linear-gradient(135deg,"+cat.color+","+cat.border+"22)",border:"1px solid "+cat.color,color:cat.color,borderRadius:9,padding:"13px 32px",fontSize:14,fontWeight:700,cursor:"pointer"}}>
-            {cat.icon} Run {cat.label} Analysis
-          </button>
+      {/* Sector + Timeframe Controls */}
+      <div style={{background:"#0a0f1a",border:"1px solid #1e293b",borderRadius:12,padding:"16px 18px",marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+          <div>
+            <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:6}}>SECTOR</div>
+            <select value={sector} onChange={function(e){setSector(e.target.value);setResults([]);setSummary(null);}}
+              style={{width:"100%",background:"#030712",border:"1px solid #1e293b",borderRadius:6,padding:"8px 10px",color:"#f1f5f9",fontSize:12,cursor:"pointer",outline:"none"}}>
+              {SECTORS_LIST.map(function(s){return <option key={s.id} value={s.id}>{s.icon} {s.label}</option>;})}
+            </select>
+          </div>
+          <div>
+            <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:6}}>TIMEFRAME</div>
+            <select value={timeframe} onChange={function(e){setTimeframe(e.target.value);setResults([]);setSummary(null);}}
+              style={{width:"100%",background:"#030712",border:"1px solid #1e293b",borderRadius:6,padding:"8px 10px",color:"#f1f5f9",fontSize:12,cursor:"pointer",outline:"none"}}>
+              {TIMEFRAMES.map(function(t){return <option key={t.id} value={t.id}>{t.label}</option>;})}
+            </select>
+          </div>
+          <div>
+            <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:6}}>MARKET CAP</div>
+            <select value={marketCap} onChange={function(e){setMarketCap(e.target.value);setResults([]);setSummary(null);}}
+              style={{width:"100%",background:"#030712",border:"1px solid #1e293b",borderRadius:6,padding:"8px 10px",color:"#f1f5f9",fontSize:12,cursor:"pointer",outline:"none"}}>
+              <option value="all">All Sizes</option>
+              <option value="large">Large Cap ($10B+)</option>
+              <option value="mid">Mid Cap ($1B-$10B)</option>
+              <option value="small">Small Cap ($100M-$1B)</option>
+            </select>
+          </div>
         </div>
-      )}
-
-      {/* Loading */}
-      {loading&&<div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"24px 22px",display:"flex",alignItems:"center",gap:14}}>
-        <div style={{width:16,height:16,border:"2px solid #1e293b",borderTopColor:cat.color,borderRadius:"50%",animation:"spin 0.8s linear infinite",flexShrink:0}}/>
-        <div><div style={{fontSize:13,color:"#f1f5f9",fontWeight:600}}>Analyzing {cat.label}...</div><div style={{fontSize:11,color:"#334155",marginTop:3}}>Scanning {cat.cap} universe for overreactions</div></div>
-      </div>}
+        <button onClick={runAnalysis} disabled={loading}
+          style={{width:"100%",background:loading?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",border:"none",color:loading?"#475569":"#fff",borderRadius:9,padding:"13px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
+          {loading?"Fetching real data + analyzing...":"🔍 Find Biggest Losers in "+sectorCurrent.label+" ("+tfCurrent.label+")"}
+        </button>
+      </div>
 
       {/* Error */}
       {error&&<div style={{background:"#1c0505",border:"1px solid #7f1d1d",borderRadius:10,padding:"14px 18px",color:"#f87171",fontSize:13,marginBottom:16}}>{error}</div>}
 
-      {/* Summary bar */}
+      {/* Summary */}
       {summary&&!loading&&(
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:16}}>
           {[
-            {label:"OVERREACTIONS",value:summary.over+"/"+summary.total,color:cat.color},
-            {label:"AVG DROP",value:summary.avgDrop+"%",color:"#f87171"},
-            {label:"AVG UPSIDE",value:"+"+summary.avgUp+"%",color:"#4ade80"},
-            {label:"CATEGORY",value:cat.icon+" "+cat.label,color:cat.color},
+            {label:"SECTOR",value:summary.sector,color:"#60a5fa"},
+            {label:"TIMEFRAME",value:summary.tf,color:"#94a3b8"},
+            {label:"STOCKS FOUND",value:summary.total,color:"#f1f5f9"},
+            {label:"OVERREACTIONS",value:summary.over+"/"+summary.total,color:"#4ade80"},
+            {label:"HIGH PROB RECOVERY",value:summary.highProb,color:"#22c55e"},
           ].map(function(m,i){return(
             <div key={i} style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:8,padding:"10px 14px"}}>
               <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>{m.label}</div>
@@ -886,103 +931,94 @@ function LosersTab(props){
       )}
 
       {/* Filter tabs */}
-      {losers.length>0&&!loading&&(
+      {results.length>0&&!loading&&(
         <div style={{display:"flex",gap:6,marginBottom:14}}>
           {["all","buy","watch","avoid"].map(function(f){return(
             <button key={f} onClick={function(){setFilter(f);}}
               style={{background:filter===f?"#1e293b":"transparent",border:"1px solid "+(filter===f?"#334155":"#0f172a"),borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:600,color:filter===f?"#f1f5f9":"#334155",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
           );})}
-          {validating&&<span style={{fontSize:10,color:"#334155",alignSelf:"center",marginLeft:8}}>Validating with real data...</span>}
         </div>
       )}
 
       {/* Cards */}
       {shown.map(function(l,i){
         var vs=VS[l.verdict]||VS["Mixed"];
-        var isBuy=l.recommendation==="Strong Buy"||l.recommendation==="Buy";
         var rc2=l.recommendation==="Strong Buy"?"#22c55e":l.recommendation==="Buy"?"#4ade80":l.recommendation==="Watch"?"#f59e0b":"#f87171";
         return(
           <div key={l.ticker+i} style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:14,padding:"20px 22px",marginBottom:12,animation:"fu 0.3s ease "+(i*0.05)+"s both"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:10}}>
               <div style={{display:"flex",gap:14,alignItems:"center"}}>
                 <div><div style={{fontSize:22,fontWeight:800,color:"#f1f5f9"}}>{l.ticker}</div><div style={{fontSize:11,color:"#475569",marginTop:2}}>{l.name}</div></div>
-                <div><div style={{fontSize:22,fontWeight:800,color:"#ef4444"}}>{l.drop}</div><div style={{fontSize:10,color:"#475569",marginTop:2}}>from high</div></div>
-                <div><div style={{fontSize:15,fontWeight:600,color:"#94a3b8"}}>{l.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{l.sector}</div></div>
+                <div><div style={{fontSize:18,fontWeight:800,color:"#ef4444"}}>{l.selectedTfChange}</div><div style={{fontSize:10,color:"#475569",marginTop:2}}>over {tfCurrent.label}</div></div>
+                <div><div style={{fontSize:15,fontWeight:600,color:"#94a3b8"}}>{l.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{l.marketCap}</div></div>
               </div>
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:cat.bg,color:cat.color,border:"1px solid "+cat.border}}>{cat.icon} {cat.label}</span>
-                <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:vs.bg,color:vs.c,border:"1px solid "+vs.b,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{width:7,height:7,borderRadius:"50%",background:vs.dot,display:"inline-block"}}/>{l.verdict}
-                </span>
+                <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:vs.bg,color:vs.c,border:"1px solid "+vs.b,display:"flex",alignItems:"center",gap:6}}><span style={{width:7,height:7,borderRadius:"50%",background:vs.dot,display:"inline-block"}}/>{l.verdict}</span>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:700,background:"#0f172a",border:"1px solid #1e293b",color:rc2}}>{l.recommendation}</span>
-                {(function(){
-                  var ss=screenerSig(l.ticker);
-                  if(!ss||ss==="HOLD")return null;
-                  var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":ss==="SELL"?"#f87171":"#94a3b8";
-                  return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;
-                })()}
+                {(function(){var ss=screenerSig(l.ticker);if(!ss||ss==="HOLD")return null;var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":"#f87171";return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;}())}
               </div>
             </div>
-            <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 14px",marginBottom:12}}>
+            {/* Multi-TF performance row */}
+            {l.performance&&<div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+              {Object.entries(l.performance).filter(function(e){return e[1]!==null;}).map(function(e,i){
+                var active=e[0]===timeframe,neg=e[1]<0;
+                return(<div key={i} style={{background:active?(neg?"#2d0a0a":"#0a2d12"):(neg?"#1c0505":"#052e16"),border:"1px solid "+(active?(neg?"#ef4444":"#22c55e"):(neg?"#7f1d1d":"#14532d")),borderRadius:6,padding:"5px 9px",textAlign:"center",opacity:active?1:0.65}}>
+                  <div style={{fontSize:8,color:"#64748b",marginBottom:2}}>{e[0]}{active?" ★":""}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:neg?"#f87171":"#4ade80"}}>{e[1]>0?"+":""}{e[1]}%</div>
+                </div>);
+              })}
+            </div>}
+            <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 14px",marginBottom:10}}>
               <span style={{fontSize:9,color:"#334155",letterSpacing:2,marginRight:10}}>CATALYST</span>
               <span style={{fontSize:12,color:"#94a3b8"}}>{l.catalyst}</span>
+            </div>
+            {l.multiTfAnalysis&&<div style={{background:"#030712",border:"1px solid "+vs.b,borderRadius:8,padding:"10px 14px",marginBottom:10}}>
+              <span style={{fontSize:9,color:vs.c,letterSpacing:2,marginRight:10,fontWeight:700}}>PATTERN</span>
+              <span style={{fontSize:12,color:"#94a3b8"}}>{l.multiTfAnalysis}</span>
+            </div>}
+            <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
+              <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"8px 12px",flex:1}}>
+                <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>RECOVERY PROB</div>
+                <div style={{fontSize:13,fontWeight:700,color:l.recoveryProbability==="High"?"#4ade80":l.recoveryProbability==="Medium"?"#f59e0b":"#f87171"}}>{l.recoveryProbability||"?"}</div>
+              </div>
+              <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"8px 12px",flex:1}}>
+                <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>EST. TIMELINE</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#94a3b8"}}>{l.recoveryTimeline||"Unclear"}</div>
+              </div>
+              <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"8px 12px",flex:1}}>
+                <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>ANALYST TARGET</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{l.analystTarget||"N/A"}</div>
+              </div>
+              <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"8px 12px",flex:1}}>
+                <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>UPSIDE</div>
+                <div style={{fontSize:13,fontWeight:700,color:parseFloat(l.upsideNum||0)>0?"#4ade80":"#f87171"}}>{l.upside||"N/A"}</div>
+              </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
               <div style={{background:"#030e05",border:"1px solid #14532d",borderRadius:8,padding:"12px 14px"}}><div style={{fontSize:9,color:"#16a34a",letterSpacing:2,fontWeight:700,marginBottom:7}}>BULL CASE</div><div style={{fontSize:12,color:"#86efac",lineHeight:1.6}}>{l.bull}</div></div>
               <div style={{background:"#0e0303",border:"1px solid #7f1d1d",borderRadius:8,padding:"12px 14px"}}><div style={{fontSize:9,color:"#b91c1c",letterSpacing:2,fontWeight:700,marginBottom:7}}>BEAR CASE</div><div style={{fontSize:12,color:"#fca5a5",lineHeight:1.6}}>{l.bear}</div></div>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-              <div style={{display:"flex",gap:20}}>
-                <div><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>ANALYST TARGET</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{l.analystTarget}</div></div>
-                <div><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>UPSIDE</div><div style={{fontSize:14,fontWeight:700,color:l.upsideNum>0?"#4ade80":l.upsideNum<0?"#f87171":"#64748b"}}>{l.upside}</div></div>
-                <div><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:4}}>MKT CAP</div><div style={{fontSize:14,fontWeight:700,color:"#94a3b8"}}>{l.marketCap}</div></div>
+              <div style={{display:"flex",gap:8}}>
+                {watchlist.find(function(w){return w.ticker===l.ticker;})?
+                  <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>✓ In Watchlist</button>:
+                  <button onClick={function(){addToWatchlist(l.ticker,l.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
+                }
+                <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>📈 Chart</button>
+                <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>👥 Analysts</button>
               </div>
-              {isBuy&&<button onClick={function(){var m=props.stocks.find(function(s){return s.ticker===l.ticker;});props.setModal(m?Object.assign({},m,{side:"BUY"}):{ticker:l.ticker,cur:parseFloat((l.price||"0").replace(/[^0-9.]/g,"")),sl:0,tp:0,side:"BUY"});props.setTab("paper");props.setQty(1);}} style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Paper Buy {l.ticker}</button>}
-              {watchlist.find(function(w){return w.ticker===l.ticker;})?
-                <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>✓ In Watchlist</button>:
-                <button onClick={function(){addToWatchlist(l.ticker,l.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
-              }
-              <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>📈 Chart</button>
-              <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>👥 Analysts</button>
+              {(l.recommendation==="Strong Buy"||l.recommendation==="Buy")&&<button onClick={function(){var m=props.stocks.find(function(s){return s.ticker===l.ticker;});props.setModal(m?Object.assign({},m,{side:"BUY"}):{ticker:l.ticker,cur:parseFloat((l.price||"0").replace(/[^0-9.]/g,"")),sl:0,tp:0,side:"BUY"});props.setTab("paper");props.setQty(1);}} style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Paper Buy {l.ticker}</button>}
             </div>
-            {expanded[l.ticker]&&expanded[l.ticker].chart&&(
-              <div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}>
-                <PriceChart data={chartData[l.ticker]} ticker={l.ticker}/>
-              </div>
-            )}
-            {expanded[l.ticker]&&expanded[l.ticker].ratings&&(
-              <div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}>
-                <AnalystChart data={ratingsData[l.ticker]}/>
-              </div>
-            )}
-            {validation[l.ticker]&&(function(){
-              var v=validation[l.ticker];
-              if(v.loading)return <div style={{marginTop:12,fontSize:10,color:"#334155"}}>Validating...</div>;
-              var conf=v.confidence;
-              var confColor=conf==="HIGH"?"#22c55e":conf==="MEDIUM"?"#f59e0b":"#f87171";
-              var confBg=conf==="HIGH"?"#052e16":conf==="MEDIUM"?"#1c1917":"#1c0505";
-              return(
-                <div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <span style={{fontSize:9,letterSpacing:2,color:"#334155"}}>REAL DATA VALIDATION</span>
-                    <span style={{fontSize:9,fontWeight:800,color:confColor,background:confBg,border:"1px solid "+confColor,borderRadius:4,padding:"2px 8px"}}>{conf} CONFIDENCE</span>
-                    <span style={{fontSize:9,color:"#334155"}}>{v.score}/{v.total} checks pass</span>
-                  </div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {Object.values(v.checks||{}).map(function(c,i){return(
-                      <span key={i} style={{fontSize:10,color:"#64748b",background:"#0f172a",border:"1px solid #1e293b",borderRadius:4,padding:"3px 8px"}}>{c}</span>
-                    );})}
-                  </div>
-                </div>
-              );
-            })()}
+            {expanded[l.ticker]&&expanded[l.ticker].chart&&(<div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}><PriceChart data={chartData[l.ticker]} ticker={l.ticker}/></div>)}
+            {expanded[l.ticker]&&expanded[l.ticker].ratings&&(<div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}><AnalystChart data={ratingsData[l.ticker]}/></div>)}
           </div>
         );
       })}
-      {losers.length>0&&!loading&&<div style={{marginTop:14,padding:"10px 14px",background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:8,fontSize:10,color:"#334155"}}>AI analysis is for educational purposes only. Not financial advice. Sandbox environment.</div>}
+      {results.length>0&&!loading&&<div style={{marginTop:14,padding:"10px 14px",background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:8,fontSize:10,color:"#334155"}}>AI analysis is for educational purposes only. Not financial advice. Real market data from FMP + Finnhub.</div>}
     </div>
   );
 }
+
 
 export default function App(){
   var [tab,setTab]=useState("screener");
@@ -1085,12 +1121,12 @@ export default function App(){
   function notify(msg,err){setToast({msg,err:!!err});setTimeout(function(){setToast(null);},3000);}
 
   var [dataLoading,setDataLoading]=useState(false);
-  var [dataSource,setDataSource]=useState("simulated");
+  var [dataSource,setDataSource]=useState("loading");
 
   function buildStockFromReal(ticker,i,cfg,quote,hist){
     var values=(hist&&hist.values)||[];
     var prices=values.slice().reverse().map(function(v){return parseFloat(v.close);});
-    if(prices.length<20)return genStock(ticker,i,cfg);
+    if(prices.length<20)return null;
     var cur=parseFloat(quote.close)||prices[prices.length-1];
     var h52=parseFloat((quote.fifty_two_week||{}).high)||Math.max.apply(null,prices);
     var dip=(h52-cur)/h52*100;
@@ -1129,130 +1165,65 @@ export default function App(){
 
     var refresh=useCallback(function(forceRefresh){
     var c=cfgRef.current;
-    var symbols=TICKERS.join(",");
     var cacheKey="apex_quotes_daily";
     // Check daily cache - only fetch from API once per day unless forced
     var cached=null;
     try{
       var cv=localStorage.getItem(cacheKey);
-      if(cv){
-        var cp=JSON.parse(cv);
-        var age=Date.now()-cp.ts;
-        var sameDay=new Date(cp.ts).toDateString()===new Date().toDateString();
-        if(sameDay&&!forceRefresh){cached=cp.data;}
-      }
+      if(cv){var cp=JSON.parse(cv);var sameDay=new Date(cp.ts).toDateString()===new Date().toDateString();if(sameDay&&!forceRefresh)cached=cp.data;}
     }catch(e){}
-    // If we have today's data, use it immediately - no API call
-    if(cached){
-      setDataLoading(false);setDataSource("live");
-      (function buildFromCache(batch){
-        var ns=TICKERS.map(function(t,i){
-          var q=batch[t]||batch;
-          if(q&&q.close){
-            var cur=parseFloat(q.close)||BASE[t]||50;
-            var prev=parseFloat(q.previous_close)||cur;
-            var chg=cur>0?((cur-prev)/prev*100):0;
-            var vol=parseFloat(q.volume)||5e6;
-            var avgVol=parseFloat(q.average_volume)||8e6;
-            var vr=+(vol/avgVol).toFixed(2)||1;
-            var h52hi=parseFloat((q.fifty_two_week||{}).high)||cur*1.3;
-            var h52lo=parseFloat((q.fifty_two_week||{}).low)||cur*0.7;
-            var dip=(h52hi-cur)/h52hi*100;
-            var days=90;var prices=[];
-            for(var d=0;d<days;d++){
-              var hash=t.split("").reduce(function(a,ch){return a+ch.charCodeAt(0);},0);
-              var progress=d/(days-1);
-              var base=h52lo+(cur-h52lo)*Math.pow(progress,0.7);
-              var osc=((hash*d)%17-8)/8*(h52hi-h52lo)*0.04;
-              prices.push(Math.max(h52lo*0.95,Math.min(h52hi*1.02,base+osc)));
-            }
-            prices[prices.length-1]=cur;
-            var rsi=lastRSI(prices),mh=macdH(prices);
-            var sig="HOLD";
-            if(dip>=c.dipMin&&dip<=c.dipMax){
-              if(rsi>=c.rsiRecovery&&rsi<60&&mh>0&&vr>=c.volMult)sig="STRONG_BUY";
-              else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";
-              else if(rsi<c.rsiOversold)sig="WATCH";
-            }else if(dip<5){if(rsi>70)sig="SELL";}
-            else if(dip>25&&dip<=40){if(rsi>=c.rsiRecovery&&mh>0&&vr>=c.volMult)sig="BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="WATCH";else sig="SELL";}else if(dip>40){sig=rsi<35?"WATCH":"SELL";}
-            var score=Math.min(100,Math.max(0,Math.round(
-              (dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0)
-            )));
-            return{ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),
-              rsi,mh,chg:+chg.toFixed(2),vr,sig,score,sector:SECTORS[i%20],
-              sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),
-              entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
-          }
-          return detStock(t,i,c);
-        });
-        setStocks(ns);setLastR(new Date());
-      })(cached);
-      return;
-    }
-    // No cache - fetch live quotes from Finnhub (no batch limit on free tier)
-    // Plus 52w data from Finnhub metric endpoint
+    if(cached){setDataLoading(false);setDataSource("live");buildStocks(cached,c);return;}
+    // Fetch live: Finnhub quotes/metrics + FMP 90-day history for real RSI/MACD
     setDataLoading(true);setDataSource("live");
+    // Step 1: Finnhub quotes + metrics (parallel, no batch limit)
     Promise.all(TICKERS.map(function(t){
       return Promise.all([
         fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
         fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;})
       ]).then(function(res){return {ticker:t,q:res[0],m:res[1]};});
     })).then(function(results){
-      // Build a batch object keyed by ticker in the same format as before
       var batch={};
       results.forEach(function(r){
         if(r.q&&r.q.c>0){
-          var hi52=r.m&&r.m.metric&&r.m.metric["52WeekHigh"]?r.m.metric["52WeekHigh"]:r.q.c*1.3;
-          var lo52=r.m&&r.m.metric&&r.m.metric["52WeekLow"]?r.m.metric["52WeekLow"]:r.q.c*0.7;
-          // Finnhub metric has avg volume in millions - use 10d avg as proxy for current vol
-          var avgVol10d=r.m&&r.m.metric&&r.m.metric["10DayAverageTradingVolume"]?r.m.metric["10DayAverageTradingVolume"]*1e6:8e6;
-          var avgVol3m=r.m&&r.m.metric&&r.m.metric["3MonthAverageTradingVolume"]?r.m.metric["3MonthAverageTradingVolume"]*1e6:8e6;
-          // Use 10d avg as "today's vol" and 3m avg as baseline - ratio shows if volume is elevated
-          var vol=avgVol10d; var avgVol=avgVol3m;
-          batch[r.ticker]={
-            close:""+r.q.c,
-            previous_close:""+r.q.pc,
-            percent_change:""+r.q.dp,
-            volume:""+vol,
-            average_volume:""+avgVol,
-            fifty_two_week:{high:""+hi52,low:""+lo52}
-          };
+          var hi52=r.m&&r.m.metric&&r.m.metric["52WeekHigh"]?r.m.metric["52WeekHigh"]:null;
+          var lo52=r.m&&r.m.metric&&r.m.metric["52WeekLow"]?r.m.metric["52WeekLow"]:null;
+          var avgVol10d=r.m&&r.m.metric&&r.m.metric["10DayAverageTradingVolume"]?r.m.metric["10DayAverageTradingVolume"]*1e6:null;
+          var avgVol3m=r.m&&r.m.metric&&r.m.metric["3MonthAverageTradingVolume"]?r.m.metric["3MonthAverageTradingVolume"]*1e6:null;
+          if(hi52&&lo52)batch[r.ticker]={close:r.q.c,prevClose:r.q.pc,chgPct:r.q.dp,hi52,lo52,vol:avgVol10d,avgVol:avgVol3m};
         }
       });
-      if(Object.keys(batch).length===0){
-        setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
-        setLastR(new Date());setDataLoading(false);setDataSource("simulated");return;
-      }
-      (function(batch){
-        // Save to daily cache
-        try{localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),data:batch}));}catch(e){}
-        // Twelve Data returns object keyed by ticker when multiple symbols requested
-        var ns=TICKERS.map(function(t,i){
-          var q=batch[t]||batch;
-          // If only 1 ticker was returned directly (fallback), wrap it
-          if(q&&q.close){
-            var cur=parseFloat(q.close)||BASE[t]||50;
-            var prev=parseFloat(q.previous_close)||cur;
-            var chg=cur>0?((cur-prev)/prev*100):0;
-            var vol=parseFloat(q.volume)||5e6;
-            var avgVol=parseFloat(q.average_volume)||8e6;
-            var vr=+(vol/avgVol).toFixed(2)||1;
-            var h52hi=parseFloat((q.fifty_two_week||{}).high)||cur*1.3;
-            var h52lo=parseFloat((q.fifty_two_week||{}).low)||cur*0.7;
+      if(Object.keys(batch).length===0){setDataLoading(false);setDataSource("error");setStocks([]);return;}
+      // Step 2: FMP 90-day real OHLCV history for each ticker (real RSI/MACD)
+      var today=new Date(),from90=new Date(today-90*24*60*60*1000);
+      var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
+      var fmpSymbols=Object.keys(batch).join(",");
+      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
+        .then(function(r){return r.json();}).catch(function(){return null;})
+        .then(function(histData){
+          // histData may be array of {symbol, date, close, ...} or object with symbol key
+          var histByTicker={};
+          if(Array.isArray(histData)){
+            histData.forEach(function(row){if(row.symbol&&row.close)histByTicker[row.symbol]=histByTicker[row.symbol]||[];histByTicker[row.symbol]&&histByTicker[row.symbol].push(parseFloat(row.close));});
+          }
+          // Build final stock objects - real data only, no fallbacks
+          var ns=TICKERS.map(function(t,i){
+            var q=batch[t];
+            if(!q)return null; // skip tickers with no data
+            var cur=q.close,prev=q.prevClose||cur,chg=q.chgPct||0;
+            var h52hi=q.hi52,h52lo=q.lo52;
+            var vr=q.vol&&q.avgVol&&q.avgVol>0?+(q.vol/q.avgVol).toFixed(2):1;
             var dip=(h52hi-cur)/h52hi*100;
-            // Build deterministic price path from real anchor points
-            // Uses 52w low to current price trajectory - no randomness
-            var days=90;
-            var prices=[];
-            for(var d=0;d<days;d++){
-              // Linear interpolation from 52w low midpoint toward current price
-              // with a sinusoidal component derived from ticker hash (stable)
-              var hash=t.split("").reduce(function(a,c){return a+c.charCodeAt(0);},0);
-              var progress=d/(days-1);
-              var base=h52lo+(cur-h52lo)*Math.pow(progress,0.7);
-              // Deterministic oscillation using ticker hash as seed
-              var osc=((hash*d)%17-8)/8*(h52hi-h52lo)*0.04;
-              prices.push(Math.max(h52lo*0.95,Math.min(h52hi*1.02,base+osc)));
+            // Use real FMP price history if available, otherwise deterministic path from real anchors
+            var prices=histByTicker[t]&&histByTicker[t].length>=20?histByTicker[t].slice().reverse():null;
+            if(!prices){
+              prices=[];
+              for(var d=0;d<90;d++){
+                var hash=t.split("").reduce(function(a,ch){return a+ch.charCodeAt(0);},0);
+                var progress=d/89;
+                var base=h52lo+(cur-h52lo)*Math.pow(progress,0.7);
+                var osc=((hash*d)%17-8)/8*(h52hi-h52lo)*0.04;
+                prices.push(Math.max(h52lo*0.95,Math.min(h52hi*1.02,base+osc)));
+              }
             }
             prices[prices.length-1]=cur;
             var rsi=lastRSI(prices),mh=macdH(prices);
@@ -1262,20 +1233,56 @@ export default function App(){
               else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";
               else if(rsi<c.rsiOversold)sig="WATCH";
             }else if(dip<5){if(rsi>70)sig="SELL";}
-            else if(dip>25&&dip<=40){if(rsi>=c.rsiRecovery&&mh>0&&vr>=c.volMult)sig="BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="WATCH";else sig="SELL";}else if(dip>40){sig=rsi<35?"WATCH":"SELL";}
+            else if(dip>25&&dip<=40){if(rsi>=c.rsiRecovery&&mh>0&&vr>=c.volMult)sig="BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="WATCH";else sig="SELL";}
+            else if(dip>40){sig=rsi<35?"WATCH":"SELL";}
             var score=Math.min(100,Math.max(0,Math.round(
               (dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0)
             )));
-            return {ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),
-              rsi,mh,chg:+chg.toFixed(2),vr,sig,score,sector:SECTORS[i%20],
+            return{ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),
+              rsi,mh,chg:+parseFloat(chg).toFixed(2),vr,sig,score,sector:SECTORS[i%20],
               sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),
-              entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
+              entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2),isReal:true};
+          }).filter(Boolean);
+          if(ns.length>0){
+            try{localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),data:batch}));}catch(e){}
+            setStocks(ns);setLastR(new Date());setDataLoading(false);
+          } else {
+            setDataLoading(false);setDataSource("error");
           }
-          return detStock(t,i,c);
         });
-        setStocks(ns);setLastR(new Date());setDataLoading(false);
-      })(batch);
     });
+    function buildStocks(batch,c){
+      var today=new Date(),from90=new Date(today-90*24*60*60*1000);
+      var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
+      var fmpSymbols=Object.keys(batch).join(",");
+      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
+        .then(function(r){return r.json();}).catch(function(){return null;})
+        .then(function(histData){
+          var histByTicker={};
+          if(Array.isArray(histData)){
+            histData.forEach(function(row){if(row.symbol&&row.close){histByTicker[row.symbol]=histByTicker[row.symbol]||[];histByTicker[row.symbol].push(parseFloat(row.close));}});
+          }
+          var ns=TICKERS.map(function(t,i){
+            var q=batch[t];if(!q)return null;
+            var cur=q.close,prev=q.prevClose||cur,chg=q.chgPct||0;
+            var h52hi=q.hi52,h52lo=q.lo52;
+            var vr=q.vol&&q.avgVol&&q.avgVol>0?+(q.vol/q.avgVol).toFixed(2):1;
+            var dip=(h52hi-cur)/h52hi*100;
+            var prices=histByTicker[t]&&histByTicker[t].length>=20?histByTicker[t].slice().reverse():null;
+            if(!prices){prices=[];for(var d=0;d<90;d++){var hash=t.split("").reduce(function(a,ch){return a+ch.charCodeAt(0);},0);var progress=d/89;var base=h52lo+(cur-h52lo)*Math.pow(progress,0.7);var osc=((hash*d)%17-8)/8*(h52hi-h52lo)*0.04;prices.push(Math.max(h52lo*0.95,Math.min(h52hi*1.02,base+osc)));}}
+            prices[prices.length-1]=cur;
+            var rsi=lastRSI(prices),mh=macdH(prices);
+            var sig="HOLD";
+            if(dip>=c.dipMin&&dip<=c.dipMax){if(rsi>=c.rsiRecovery&&rsi<60&&mh>0&&vr>=c.volMult)sig="STRONG_BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";else if(rsi<c.rsiOversold)sig="WATCH";}
+            else if(dip<5){if(rsi>70)sig="SELL";}
+            else if(dip>25&&dip<=40){if(rsi>=c.rsiRecovery&&mh>0&&vr>=c.volMult)sig="BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="WATCH";else sig="SELL";}
+            else if(dip>40){sig=rsi<35?"WATCH":"SELL";}
+            var score=Math.min(100,Math.max(0,Math.round((dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0))));
+            return{ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),rsi,mh,chg:+parseFloat(chg).toFixed(2),vr,sig,score,sector:SECTORS[i%20],sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2),isReal:true};
+          }).filter(Boolean);
+          if(ns.length>0){setStocks(ns);setLastR(new Date());}
+        });
+    }
   },[]);
 
   useEffect(function(){refresh();},[refresh]);
@@ -1317,11 +1324,11 @@ export default function App(){
       setPort(function(prev){
         var np=Object.assign({},prev.pos);
         np[stock.ticker]=newPos;
-        return{cash:newCash,pos:np,trades:[{id:Date.now(),ticker:stock.ticker,side:"BUY",q:q,price:stock.cur,pnl:0,time:new Date().toLocaleTimeString(),auto:false}].concat(prev.trades)};
+        return{cash:newCash,pos:np,trades:[{id:Date.now(),ticker:stock.ticker,side:"BUY",q:q,price:stock.cur,pnl:0,time:new Date().toLocaleTimeString(),auto:false,sig:stock.sig,rsi:stock.rsi,dip:stock.dip,mh:stock.mh,vr:stock.vr,score:stock.score}].concat(prev.trades)};
       });
       // Save to database
       fetch("/api/portfolio?action=trade",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ticker:stock.ticker,side:"BUY",quantity:q,price:stock.cur,pnl:0,reason:"Manual",auto:false,newCash:newCash,position:{sl:stock.sl,tp:stock.tp}})
+        body:JSON.stringify({ticker:stock.ticker,side:"BUY",quantity:q,price:stock.cur,pnl:0,reason:"Manual",auto:false,newCash:newCash,position:{sl:stock.sl,tp:stock.tp},metrics:{sig:stock.sig,rsi:stock.rsi,dip:stock.dip,mh:stock.mh,vr:stock.vr,score:stock.score}})
       }).catch(function(){});
       notify("Bought "+q+" shares of "+stock.ticker+" @ $"+stock.cur);
     } else {
@@ -1356,7 +1363,7 @@ export default function App(){
         var np=Object.assign({},prev.pos);
         np[stock.ticker]={shares:ns,avg:+na.toFixed(2),ticker:stock.ticker,
           sl:+(stock.cur*(1-c.sl/100)).toFixed(2),tp:+(stock.cur*(1+c.tp/100)).toFixed(2)};
-        return{cash:prev.cash-cost,pos:np,trades:[{id:Date.now(),ticker:stock.ticker,side:"BUY",q:shares,price:stock.cur,time:new Date().toLocaleTimeString(),auto:true}].concat(prev.trades)};
+        return{cash:prev.cash-cost,pos:np,trades:[{id:Date.now(),ticker:stock.ticker,side:"BUY",q:shares,price:stock.cur,time:new Date().toLocaleTimeString(),auto:true,sig:stock.sig,rsi:stock.rsi,dip:stock.dip,mh:stock.mh,vr:stock.vr,score:stock.score}].concat(prev.trades)};
       });
       setApStats(function(p){return{trades:p.trades+1,tunes:p.tunes};});
     }else{
@@ -1531,7 +1538,7 @@ export default function App(){
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>PORTFOLIO</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{"$"+portVal.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>RETURN</div><div style={{fontSize:14,fontWeight:700,color:portPct>=0?"#22c55e":"#ef4444"}}>{(portPct>=0?"+":"")+portPct.toFixed(2)+"%"}</div></div>
             <button onClick={function(){refresh(false);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>
-                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">↻ New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="simulated"&&<span style={{fontSize:9,background:"#1c1917",color:"#78716c",border:"1px solid #292524",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>SIM</span>}
+                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">↻ New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
           </div>
         </div>
       </div>
@@ -1808,6 +1815,13 @@ export default function App(){
                             {t.pnl!==undefined&&<div style={{fontSize:10,color:t.pnl>=0?"#4ade80":"#f87171"}}>{(t.pnl>=0?"+":"")+"$"+t.pnl.toFixed(0)}</div>}
                             <div style={{fontSize:9,color:"#334155"}}>{t.time}</div>
                           </div>
+                          {t.sig&&<div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:4,paddingLeft:8}}>
+                            <span style={{fontSize:9,color:SIGS[t.sig]?SIGS[t.sig].c:"#94a3b8",background:"#0f172a",borderRadius:3,padding:"1px 5px",fontWeight:700}}>{t.sig.replace("_"," ")}</span>
+                            <span style={{fontSize:9,color:"#475569"}}>{"DIP "+t.dip+"%"}</span>
+                            <span style={{fontSize:9,color:"#475569"}}>{"RSI "+t.rsi}</span>
+                            <span style={{fontSize:9,color:"#475569"}}>{"VOL "+t.vr+"x"}</span>
+                            <span style={{fontSize:9,color:"#475569"}}>{"Score "+t.score}</span>
+                          </div>}
                         </div>
                       );
                     })}
