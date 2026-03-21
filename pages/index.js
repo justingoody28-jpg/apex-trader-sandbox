@@ -490,7 +490,7 @@ function LosersTab(props){
         }
         // Get top 20 by market cap for history lookup
         var tickers=screenerData.slice(0,20).map(function(s){return s.symbol;}).join(",");
-        return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full?symbol="+tickers+"&from="+fromStr+"&to="+toStr)
+        return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+tickers+"&from="+fromStr+"&to="+toStr)
           .then(function(r){return r.json();})
           .then(function(histData){
             // Calculate % change for each ticker over the timeframe
@@ -524,7 +524,7 @@ function LosersTab(props){
             var tfDefs=[{id:"1W",days:7},{id:"1M",days:30},{id:"3M",days:90},{id:"6M",days:180},{id:"52W",days:365}];
             var allTfFetches=tfDefs.map(function(tfd){
               var tfFrom=new Date(new Date()-tfd.days*24*60*60*1000).toISOString().slice(0,10);
-              return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full?symbol="+topLosers.join(",")+"&from="+tfFrom+"&to="+toStr)
+              return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+topLosers.join(",")+"&from="+tfFrom+"&to="+toStr)
                 .then(function(r){return r.json();}).catch(function(){return [];});
             });
             // Finnhub fundamentals for each ticker
@@ -665,7 +665,7 @@ function LosersTab(props){
     var today=new Date(),from90=new Date(today-365*24*60*60*1000);
     var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
     Promise.all([
-      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full?symbol="+t+"&from="+fromStr+"&to="+toStr).then(function(r){return r.json();}).catch(function(){return null;}),
+      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+t+"&from="+fromStr+"&to="+toStr).then(function(r){return r.json();}).catch(function(){return null;}),
       fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
       fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
       fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
@@ -1168,7 +1168,7 @@ export default function App(){
       var today=new Date(),from90=new Date(today-90*24*60*60*1000);
       var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
       var fmpSymbols=Object.keys(batch).join(",");
-      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full?symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
+      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
         .then(function(r){return r.json();}).catch(function(){return null;})
         .then(function(histData){
           // histData may be array of {symbol, date, close, ...} or object with symbol key
@@ -1226,7 +1226,7 @@ export default function App(){
       var today=new Date(),from90=new Date(today-90*24*60*60*1000);
       var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
       var fmpSymbols=Object.keys(batch).join(",");
-      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full?symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
+      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
         .then(function(r){return r.json();}).catch(function(){return null;})
         .then(function(histData){
           var histByTicker={};
