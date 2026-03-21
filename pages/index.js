@@ -459,8 +459,6 @@ function LosersTab(props){
   function addToWatchlist(ticker,name){fetch("/api/portfolio?action=watchlist_add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker,name,added_from:"ai_analysis"})}).then(function(){loadWatchlist();});}
   function removeFromWatchlist(ticker){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker})}).then(function(){loadWatchlist();});}
 
-  useEffect(function(){loadWatchlist();},[]);
-
   function loadTrends(ticker){
     fetch("/api/market?source=td&endpoint=time_series?symbol="+ticker+"&interval=1day&outputsize=90")
       .then(function(r){return r.json();}).then(function(d){if(d.values)setChartData(function(p){var n=Object.assign({},p);n[ticker]=d.values.slice().reverse();return n;});}).catch(function(){});
@@ -1542,7 +1540,7 @@ export default function App(){
             </div>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>APEX TRADER</div>
-              <div style={{fontSize:9,color:"#334155",letterSpacing:2}}>{(lastR?lastR.toLocaleTimeString():"loading...")+" - PAPER MODE"}</div>
+              <div style={{fontSize:9,color:"#334155",letterSpacing:2}}>{(typeof window!=="undefined"&&lastR?lastR.toLocaleTimeString():"loading...")+" - PAPER MODE"}</div>
             </div>
           </div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
@@ -1688,7 +1686,7 @@ export default function App(){
                     var recCol=w.recommendation?rC[w.recommendation]||"#94a3b8":"#334155";
                     var pC={"High":"#22c55e","Medium":"#f59e0b","Low":"#f87171"};
                     var probCol=w.recoveryProb?pC[w.recoveryProb]||"#94a3b8":"#94a3b8";
-                    var aDate=w.aiAnalyzedAt?new Date(w.aiAnalyzedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):null;
+                    var aDate=(typeof window!=="undefined"&&w.aiAnalyzedAt)?new Date(w.aiAnalyzedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):null;
                     return(
                       <div key={w.ticker} style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"14px 16px"}}>
                         <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
@@ -1757,7 +1755,7 @@ export default function App(){
                           </details>
                         )}
                         {(w.bull||w.bear)&&(
-                          <details open style={{borderTop:"1px solid #0f172a",paddingTop:4}}>
+                          <details style={{borderTop:"1px solid #0f172a",paddingTop:4}}>
                             <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"▶ BULL / BEAR CASES"}</summary>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:6}}>
                               {w.bull&&<div style={{background:"#052e1615",border:"1px solid #16a34a30",borderRadius:7,padding:"7px 10px"}}>
