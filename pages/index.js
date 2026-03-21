@@ -25,7 +25,7 @@ const VS = {
   "Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c",dot:"#ef4444"},
 };
 
-// -- Math helpers --------------------------------------------------------------
+// ── Math helpers ──────────────────────────────────────────────────────────────
 function genPrices(base,days,vol){
   var p=[base];
   for(var i=1;i<days;i++) p.push(Math.max(p[i-1]+(Math.random()-0.48)*vol*p[i-1],1));
@@ -52,7 +52,7 @@ function macdH(prices){
   return +(m-m*0.85).toFixed(3);
 }
 
-// -- Stock generator -----------------------------------------------------------
+// ── Stock generator ───────────────────────────────────────────────────────────
 function genStock(ticker,idx,cfg){
   cfg=cfg||INIT_CFG;
   var base=BASE[ticker]||50,vol=0.018+Math.random()*0.012;
@@ -77,7 +77,7 @@ function genStock(ticker,idx,cfg){
     entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
 }
 
-// -- Backtester ----------------------------------------------------------------
+// ── Backtester ────────────────────────────────────────────────────────────────
 function runBT(prices,cfg){
   cfg=cfg||INIT_CFG;
   var S=10000,cash=S,sh=0,ep=0,ed=0,trades=[],equity=[];
@@ -133,7 +133,7 @@ function runBT(prices,cfg){
   return{fv,ret,bhR,bhF,trades,equity,dds,bheq,wr,totalTrades:closed.length,aw,al,pf,avgDur,lw,ll,mcw,mcl,sharpe,sortino,mdd,calmar,exp,monthly,alpha};
 }
 
-// -- Self-tuning engine --------------------------------------------------------
+// ── Self-tuning engine ────────────────────────────────────────────────────────
 function tuneCFG(res,cfg){
   var n=Object.assign({},cfg),changes=[];
   if(res.sharpe<0.5){n.sl=Math.max(3,cfg.sl-1);changes.push("Sharpe "+res.sharpe+" low to SL tightened to "+n.sl+"%");}
@@ -148,7 +148,7 @@ function tuneCFG(res,cfg){
   return{cfg:n,changes};
 }
 
-// -- Small UI components -------------------------------------------------------
+// ── Small UI components ───────────────────────────────────────────────────────
 function Spark(props){
   var p=props.prices.slice(-20),mn=Math.min.apply(null,p),mx=Math.max.apply(null,p),rng=mx-mn||1;
   var pts=p.map(function(v,i){return (i/(p.length-1)*80)+","+(28-(v-mn)/rng*28);}).join(" ");
@@ -173,7 +173,7 @@ function rc(m,v){
   return v>=0?"#4ade80":"#f87171";
 }
 
-// -- Charts --------------------------------------------------------------------
+// ── Charts ────────────────────────────────────────────────────────────────────
 function EqChart(props){
   var eq=props.equity,bh=props.bheq,tr=props.trades;
   if(!eq||eq.length<2)return null;
@@ -224,7 +224,7 @@ function DDChart(props){
   );
 }
 
-// -- BacktestResults component -------------------------------------------------
+// ── BacktestResults component ─────────────────────────────────────────────────
 function BTResults(props){
   var r=props.r,ticker=props.ticker;
   if(!r)return null;
@@ -314,9 +314,9 @@ function BTResults(props){
   );
 }
 
-// -- AI Losers Tab -------------------------------------------------------------
+// ── AI Losers Tab ─────────────────────────────────────────────────────────────
 
-// -- Price Chart Component --------------------------------------------------
+// ── Price Chart Component ──────────────────────────────────────────────────
 function PriceChart(props){
   var data=props.data,ticker=props.ticker;
   if(!data||data.length<2)return <div style={{color:"#334155",fontSize:11,padding:"20px 0",textAlign:"center"}}>Loading chart...</div>;
@@ -365,7 +365,7 @@ function PriceChart(props){
   );
 }
 
-// -- Analyst Ratings Chart --------------------------------------------------
+// ── Analyst Ratings Chart ──────────────────────────────────────────────────
 function AnalystChart(props){
   var data=props.data;
   if(!data||!Array.isArray(data)||data.length===0)return <div style={{color:"#334155",fontSize:11,padding:"8px 0"}}>No analyst data</div>;
@@ -407,13 +407,13 @@ function AnalystChart(props){
 
 function LosersTab(props){
   var CATEGORIES=[
-    {id:"fallen_giants",label:"Fallen Giants",icon:"ð",cap:"$100B+",desc:"Household names - Apple, Nike, Disney",color:"#a78bfa",bg:"#1e1b4b",border:"#4c1d95",
+    {id:"fallen_giants",label:"Fallen Giants",icon:"👑",cap:"$100B+",desc:"Household names - Apple, Nike, Disney",color:"#a78bfa",bg:"#1e1b4b",border:"#4c1d95",
      prompt:"Identify 8 iconic, large-cap US companies (S&P 500 household names, market cap $100B+) currently trading significantly below their 52-week highs. Focus on companies everyone has heard of - Apple, Nike, Google, Disney, etc. The drop should appear disproportionate to their long-term fundamentals."},
-    {id:"mid_market",label:"Mid-Market",icon:"ð¢",cap:"$10B-$100B",desc:"Well-known companies, higher upside",color:"#60a5fa",bg:"#0c1a2e",border:"#1e3a5f",
+    {id:"mid_market",label:"Mid-Market",icon:"🏢",cap:"$10B-$100B",desc:"Well-known companies, higher upside",color:"#60a5fa",bg:"#0c1a2e",border:"#1e3a5f",
      prompt:"Identify 8 mid-cap US companies (market cap $10B-$100B) that are significant players in their industries and currently trading well below recent highs. These should be companies with real revenue, established business models, and a drop that appears driven more by sentiment than fundamentals."},
-    {id:"rising_stars",label:"Rising Stars",icon:"ð",cap:"$1B-$10B",desc:"Growth names with high upside potential",color:"#34d399",bg:"#022c22",border:"#065f46",
+    {id:"rising_stars",label:"Rising Stars",icon:"🚀",cap:"$1B-$10B",desc:"Growth names with high upside potential",color:"#34d399",bg:"#022c22",border:"#065f46",
      prompt:"Identify 8 growth-oriented US companies (market cap $1B-$10B) that have pulled back significantly from highs. These should be companies with strong growth trajectories - high revenue growth, expanding markets - where the drop represents an oversized reaction to short-term headwinds rather than a fundamental breakdown."},
-    {id:"speculative",label:"Speculative",icon:"-¡",cap:"Under $1B",desc:"High risk, high reward - use with caution",color:"#fb923c",bg:"#1c0a00",border:"#7c2d12",
+    {id:"speculative",label:"Speculative",icon:"⚡",cap:"Under $1B",desc:"High risk, high reward - use with caution",color:"#fb923c",bg:"#1c0a00",border:"#7c2d12",
      prompt:"Identify 8 small-cap US companies (market cap under $1B) that have experienced sharp drops. These carry higher risk - be explicit about solvency concerns, debt loads, and whether the business model is proven. Include honest bear cases. Only flag as Buy if there is a genuinely compelling recovery thesis."},
   ];
   var [category,setCategory]=useState("fallen_giants");
@@ -737,7 +737,7 @@ function LosersTab(props){
               border:"none",color:searchLoading||!searchTicker.trim()?"#475569":"#fff",
               borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,
               cursor:searchLoading||!searchTicker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap"}}>
-            {searchLoading?"Analyzing...":"ð Analyze"}
+            {searchLoading?"Analyzing...":"🔍 Analyze"}
           </button>
           {searchResult&&<button onClick={function(){setSearchResult(null);setSearchTicker("");}}
             style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,
@@ -767,7 +767,7 @@ function LosersTab(props){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:10}}>
               <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
                 <div><div style={{fontSize:26,fontWeight:800,color:"#f1f5f9"}}>{sr.ticker}</div><div style={{fontSize:12,color:"#475569",marginTop:2}}>{sr.name}</div></div>
-                <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector} | {sr.exchange}</div></div>
+                <div><div style={{fontSize:20,fontWeight:700,color:"#94a3b8"}}>{sr.price}</div><div style={{fontSize:10,color:"#334155",marginTop:2}}>{sr.sector}  |  {sr.exchange}</div></div>
                 <div><div style={{fontSize:11,color:"#475569"}}>52w: {sr.fiftyTwoWeekLow} - {sr.fiftyTwoWeekHigh}</div><div style={{fontSize:11,color:"#475569",marginTop:2}}>Mkt Cap: {sr.marketCap}</div></div>
               </div>
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
@@ -797,11 +797,11 @@ function LosersTab(props){
             </div>
             <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
               {watchlist.find(function(w){return w.ticker===sr.ticker;})?
-                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>- In Watchlist</button>:
+                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>✓ In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(sr.ticker,sr.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
-              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ð 90-Day Chart</button>
-              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ð¥ Analyst Ratings</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>📈 90-Day Chart</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>👥 Analyst Ratings</button>
             </div>
             {expanded[sr.ticker]&&expanded[sr.ticker].chart&&<div style={{marginBottom:12}}><PriceChart data={chartData[sr.ticker]} ticker={sr.ticker}/></div>}
             {expanded[sr.ticker]&&expanded[sr.ticker].ratings&&<div style={{marginBottom:12}}><AnalystChart data={ratingsData[sr.ticker]}/></div>}
@@ -922,11 +922,11 @@ function LosersTab(props){
               </div>
               {isBuy&&<button onClick={function(){var m=props.stocks.find(function(s){return s.ticker===l.ticker;});props.setModal(m?Object.assign({},m,{side:"BUY"}):{ticker:l.ticker,cur:parseFloat((l.price||"0").replace(/[^0-9.]/g,"")),sl:0,tp:0,side:"BUY"});props.setTab("paper");props.setQty(1);}} style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Paper Buy {l.ticker}</button>}
               {watchlist.find(function(w){return w.ticker===l.ticker;})?
-                <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>- In Watchlist</button>:
+                <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>✓ In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(l.ticker,l.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
-              <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>ð Chart</button>
-              <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>ð¥ Analysts</button>
+              <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>📈 Chart</button>
+              <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>👥 Analysts</button>
             </div>
             {expanded[l.ticker]&&expanded[l.ticker].chart&&(
               <div style={{marginTop:12,borderTop:"1px solid #0f172a",paddingTop:12}}>
@@ -1098,7 +1098,19 @@ export default function App(){
       entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2),isReal:true};
   }
 
-  var refresh=useCallback(function(forceRefresh){
+  function detStock(t,i,c){
+              var cur=BASE[t]||50;
+              var h52hi=cur*1.3,h52lo=cur*0.75,dip=(h52hi-cur)/h52hi*100;
+              var days=90,prices=[],hash=t.split("").reduce(function(a,ch){return a+ch.charCodeAt(0);},0);
+              for(var d=0;d<days;d++){var progress=d/(days-1);var base=h52lo+(cur-h52lo)*Math.pow(progress,0.7);var osc=((hash*d)%17-8)/8*(h52hi-h52lo)*0.04;prices.push(Math.max(h52lo*0.95,Math.min(h52hi*1.02,base+osc)));}
+              prices[prices.length-1]=cur;
+              var rsi=lastRSI(prices),mh=macdH(prices),vr=1.0,sig="HOLD";
+              if(dip>=c.dipMin&&dip<=c.dipMax){if(rsi>=c.rsiRecovery&&rsi<60&&mh>0&&vr>=c.volMult)sig="STRONG_BUY";else if(rsi>=c.rsiOversold&&mh>-0.5)sig="BUY";else if(rsi<c.rsiOversold)sig="WATCH";}else if(dip<5){if(rsi>70)sig="SELL";}else if(dip>25){sig=rsi<30?"WATCH":"SELL";}
+              var score=Math.min(100,Math.max(0,Math.round((dip>=5&&dip<=20?30:0)+(rsi>=35&&rsi<=55?25:rsi<35?15:0)+(mh>0?25:0)+(vr>=1.3?20:vr>=1?10:0))));
+              return{ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),rsi,mh,chg:0,vr,sig,score,sector:SECTORS[i%20],sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
+            }
+
+    var refresh=useCallback(function(forceRefresh){
     var c=cfgRef.current;
     var symbols=TICKERS.join(",");
     var cacheKey="apex_quotes_daily";
@@ -1154,7 +1166,7 @@ export default function App(){
               sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),
               entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
           }
-          return genStock(t,i,c);
+          return detStock(t,i,c);
         });
         setStocks(ns);setLastR(new Date());
       })(cached);
@@ -1166,7 +1178,7 @@ export default function App(){
       .then(function(r){return r.json();})
       .then(function(batch){
         if(batch.code===429||batch.status==="error"){
-          setStocks(TICKERS.map(function(t,i){return genStock(t,i,c);}));
+          setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
           setLastR(new Date());setDataLoading(false);setDataSource("simulated");return;
         }
         // Save to daily cache
@@ -1216,20 +1228,20 @@ export default function App(){
               sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),
               entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
           }
-          return genStock(t,i,c);
+          return detStock(t,i,c);
         });
         setStocks(ns);setLastR(new Date());setDataLoading(false);
       })
       .catch(function(){
         // Fallback to simulated on error
-        setStocks(TICKERS.map(function(t,i){return genStock(t,i,c);}));
+        setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
         setLastR(new Date());setDataLoading(false);setDataSource("simulated");
       });
   },[]);
 
   useEffect(function(){refresh();},[refresh]);
 
-  // -- Load portfolio from database on mount --
+  // ── Load portfolio from database on mount ──
   useEffect(function(){
     fetch("/api/portfolio?action=load")
       .then(function(r){return r.json();})
@@ -1256,7 +1268,7 @@ export default function App(){
     if(s)setBtResult(runBT(s.prices,cfgRef.current));
   },[btTicker,stocks]);
 
-  // -- Manual trade --
+  // ── Manual trade ──
   function execTrade(stock,side,q){
     var cost=stock.cur*q;
     if(side==="BUY"){
@@ -1324,7 +1336,7 @@ export default function App(){
 
   function addLog(entry){setApLog(function(prev){return[entry].concat(prev).slice(0,100);});}
 
-  // -- Self-tune --
+  // ── Self-tune ──
   function runTune(){
     var s=stocksRef.current.find(function(s){return s.ticker===btTicker;})||stocksRef.current[0];
     if(!s)return;
@@ -1337,7 +1349,7 @@ export default function App(){
     notify(tuned.changes.length>0?"Self-tune: "+tuned.changes.length+" param(s) adjusted":"Self-tune: strategy performing well");
   }
 
-  // -- Autopilot scan cycle --
+  // ── Autopilot scan cycle ──
   function runScan(){
     var cur=stocksRef.current,p=portRef.current,c=cfgRef.current;
     var posCount=Object.keys(p.pos).length;
@@ -1373,7 +1385,7 @@ export default function App(){
     if(scanCountRef.current%4===0){runTune();}
   }
 
-  // -- Autopilot interval --
+  // ── Autopilot interval ──
   useEffect(function(){
     if(apOn){
       countRef.current=AP_SEC;
@@ -1393,7 +1405,7 @@ export default function App(){
     return function(){if(intervalRef.current){clearInterval(intervalRef.current);intervalRef.current=null;}};
   },[apOn]);
 
-  // -- Portfolio calculations --
+  // ── Portfolio calculations ──
   var portVal=port.cash+Object.values(port.pos).reduce(function(s,p){
     var st=stocks.find(function(x){return x.ticker===p.ticker;});
     return s+(st?st.cur*p.shares:p.avg*p.shares);
@@ -1480,14 +1492,14 @@ export default function App(){
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>PORTFOLIO</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{"$"+portVal.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>RETURN</div><div style={{fontSize:14,fontWeight:700,color:portPct>=0?"#22c55e":"#ef4444"}}>{(portPct>=0?"+":"")+portPct.toFixed(2)+"%"}</div></div>
             <button onClick={function(){refresh(false);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>
-                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">-» New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="simulated"&&<span style={{fontSize:9,background:"#1c1917",color:"#78716c",border:"1px solid #292524",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>SIM</span>}
+                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">↻ New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="simulated"&&<span style={{fontSize:9,background:"#1c1917",color:"#78716c",border:"1px solid #292524",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>SIM</span>}
           </div>
         </div>
       </div>
 
       <div style={{maxWidth:1200,margin:"0 auto",padding:"20px 20px 0"}}>
 
-        {/* -- SCREENER -- */}
+        {/* ── SCREENER ── */}
         {tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             {/* Ticker Detail Panel */}
@@ -1496,7 +1508,7 @@ export default function App(){
             var sg=SIGS[s.sig]||SIGS.HOLD;
             function Gauge(props){
               var pct=Math.min(100,Math.max(0,props.pct));
-              var col=props.good?
+              var col=props.isGood?
                 (pct>=props.goodMin&&pct<=props.goodMax?"#22c55e":pct>props.goodMax?"#f87171":"#f59e0b"):
                 (pct>50?"#22c55e":"#f87171");
               return(
@@ -1532,35 +1544,35 @@ export default function App(){
                       <span style={{fontSize:24,fontWeight:800,color:"#f1f5f9"}}>{s.ticker}</span>
                       <span style={{padding:"4px 10px",borderRadius:5,fontSize:11,fontWeight:800,background:sg.bg,color:sg.c,border:"1px solid "+sg.b}}>{sg.label}</span>
                     </div>
-                    <div style={{fontSize:11,color:"#475569"}}>{s.sector} | ${s.cur} | Score {s.score}/100</div>
+                    <div style={{fontSize:11,color:"#475569"}}>{s.sector}  |  ${s.cur}  |  Score {s.score}/100</div>
                   </div>
                   <button onClick={function(){setTickerDetail(null);setTickerAI(null);}}
-                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>-</button>
+                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>✕</button>
                 </div>
                 {/* Signal Breakdown */}
                 <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
                   <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:14}}>SIGNAL BREAKDOWN</div>
                   <Gauge label="DIP FROM 52W HIGH" display={s.dip.toFixed(1)+"%"} pct={dipPct}
-                    good goodMin={17} goodMax={67}
-                    note={"Target: 5-20% | 52W High: $"+s.h52}/>
+                    isGood={true} goodMin={17} goodMax={67}
+                    note={"Target: 5-20%  |  52W High: $"+s.h52}/>
                   <Gauge label="RSI (14)" display={s.rsi} pct={rsiPct}
-                    good goodMin={35} goodMax={55}
-                    note="Buy zone: 35-55 | Oversold <35 | Overbought >70"/>
+                    isGood={true} goodMin={35} goodMax={55}
+                    note="Buy zone: 35-55  |  Oversold <35  |  Overbought >70"/>
                   <Gauge label="MACD HISTOGRAM" display={(s.mh>0?"+":"")+s.mh} pct={macdPct}
-                    good goodMin={50} goodMax={100}
+                    isGood={true} goodMin={50} goodMax={100}
                     note={s.mh>0?"Bullish momentum":"Bearish momentum"}/>
                   <Gauge label="VOLUME VS AVERAGE" display={s.vr+"x"} pct={vrPct}
-                    good goodMin={43} goodMax={100}
-                    note="Target: >1.3x average | Current: "+s.vr+"x"/>
+                    isGood={true} goodMin={43} goodMax={100}
+                    note="Target: >1.3x average  |  Current: "+s.vr+"x"/>
                   <Gauge label="52-WEEK RANGE POSITION" display={Math.round(h52pos)+"%"} pct={h52pos}
-                    good goodMin={0} goodMax={40}
+                    isGood={true} goodMin={0} goodMax={40}
                     note={"Low: $"+(s.h52*0.7).toFixed(0)+" to High: $"+s.h52}/>
                   <Gauge label="1-DAY CHANGE" display={(s.chg>0?"+":"")+s.chg+"%"} pct={chgPct}
-                    good goodMin={45} goodMax={65}
+                    isGood={true} goodMin={45} goodMax={65}
                     note="Neutral around 0%"/>
                   <Gauge label="COMPOSITE SCORE" display={s.score+"/100"} pct={scorePct}
-                    good goodMin={60} goodMax={100}
-                    note="Weighted: DIP 30pts | RSI 25pts | MACD 25pts | VOL 20pts"/>
+                    isGood={true} goodMin={60} goodMax={100}
+                    note="Weighted: DIP 30pts  |  RSI 25pts  |  MACD 25pts  |  VOL 20pts"/>
                 </div>
                 {/* AI Justification */}
                 <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
@@ -1595,7 +1607,7 @@ export default function App(){
               <div style={{marginBottom:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>-­ Watchlist</div>
+                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>⭐ Watchlist</div>
                     <div style={{fontSize:11,color:"#334155",marginTop:2}}>{appWatchlist.length} stocks from AI Analysis</div>
                   </div>
                   <button onClick={refreshWatchlist} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"5px 11px",fontSize:11}}>Refresh</button>
@@ -1664,7 +1676,7 @@ export default function App(){
           </div>
         )}
 
-        {/* -- SIGNALS -- */}
+        {/* ── SIGNALS ── */}
         {tab==="signals"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Entry / Exit Signals</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Buy-dip and momentum confirmation strategy</div></div>
@@ -1700,7 +1712,7 @@ export default function App(){
           </div>
         )}
 
-        {/* -- PAPER TRADE -- */}
+        {/* ── PAPER TRADE ── */}
         {tab==="paper"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
@@ -1767,7 +1779,7 @@ export default function App(){
           </div>
         )}
 
-        {/* -- BACKTEST -- */}
+        {/* ── BACKTEST ── */}
         {tab==="backtest"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12,alignItems:"flex-end"}}>
@@ -1783,7 +1795,7 @@ export default function App(){
           </div>
         )}
 
-        {/* -- AUTOPILOT -- */}
+        {/* ── AUTOPILOT ── */}
         {tab==="autopilot"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:14,alignItems:"flex-start"}}>
@@ -1883,10 +1895,10 @@ export default function App(){
           </div>
         )}
 
-        {/* -- AI ANALYSIS -- */}
+        {/* ── AI ANALYSIS ── */}
         {tab==="ai"&&<LosersTab stocks={stocks} setModal={setModal} setTab={setTab} setQty={setQty} anthropicKey={anthropicKey} fhKey={fhKey} fmpKey={fmpKey}/>}
 
-        {/* -- SETTINGS -- */}
+        {/* ── SETTINGS ── */}
         {tab==="settings"&&(
           <div style={{animation:"fu 0.3s ease",maxWidth:560}}>
             <div style={{marginBottom:18}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Settings</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Alpaca integration and strategy parameters</div></div>
@@ -1917,7 +1929,7 @@ export default function App(){
                   return(<div key={i} style={{background:"#052e16",border:"1px solid #15803d",borderRadius:7,padding:"10px 12px"}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#4ade80"}}>{s.label}</div>
                     <div style={{fontSize:10,color:"#334155"}}>{s.sub}</div>
-                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>- ACTIVE</div>
+                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>● ACTIVE</div>
                   </div>);
                 })}
               </div>
