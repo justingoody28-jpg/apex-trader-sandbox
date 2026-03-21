@@ -599,9 +599,7 @@ function LosersTab(props){
         var prompt="Today is "+new Date().toDateString()+". I am analyzing the "+sectorLabel.label+" sector.
 
 "+
-          "These are the actual biggest losers in "+sectorLabel.label+" over the last "+tfLabel.label+", based on real FMP market data:
-
-"+
+          "These are the actual biggest losers in "+sectorLabel.label+" over the last "+tfLabel.label+", based on real FMP market data:"+
           stocksForClaude.map(function(s){
             var perf=Object.entries(s.performance).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
             return s.symbol+" ("+s.name+"): $"+s.price+
@@ -616,29 +614,17 @@ function LosersTab(props){
           "1. WHAT caused the drop at each timeframe (different events = different timeframes)\n"+
           "2. Whether selling is ACCELERATING (recent TF worse than longer TF) or DECELERATING (most damage is old)\n"+
           "3. Recovery PROBABILITY (High/Medium/Low) and estimated TIMELINE based on the pattern\n"+
-          "4. Whether this is a buying opportunity or a falling knife
-
-"+
-          "Return a JSON array of exactly "+stocksForClaude.length+" objects. Each must have:
-"+
-          "ticker (string), name (string), sector (string), verdict (one of: Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified),
-"+
-          "selectedTfChange (string e.g. "-18.4%"), dropNum (negative number e.g. -18.4),
-"+
-          "price (string e.g. "$142.30"), marketCap (string),
-"+
-          "catalyst (string, 2 sentences - what caused the drop at the selected timeframe),
-"+
-          "multiTfAnalysis (string, 2 sentences - what the multi-timeframe pattern tells us about selling pressure),
-"+
-          "recoveryProbability (one of: High|Medium|Low),
-"+
-          "recoveryTimeline (string e.g. "4-8 weeks" or "3-6 months" or "unclear"),
-"+
-          "bull (string, 2 sentences), bear (string, 2 sentences),
-"+
-          "analystTarget (string e.g. "$185" or "N/A"), upside (string e.g. "+42%" or "N/A"), upsideNum (number),
-"+
+          "4. Whether this is a buying opportunity or a falling knife"+
+          "Return a JSON array of exactly "+stocksForClaude.length+" objects. Each must have:"+
+          "ticker (string), name (string), sector (string), verdict (one of: Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified),"+
+          "selectedTfChange (string e.g. "-18.4%"), dropNum (negative number e.g. -18.4),"+
+          "price (string e.g. "$142.30"), marketCap (string),"+
+          "catalyst (string, 2 sentences - what caused the drop at the selected timeframe),"+
+          "multiTfAnalysis (string, 2 sentences - what the multi-timeframe pattern tells us about selling pressure),"+
+          "recoveryProbability (one of: High|Medium|Low),"+
+          "recoveryTimeline (string e.g. "4-8 weeks" or "3-6 months" or "unclear"),"+
+          "bull (string, 2 sentences), bear (string, 2 sentences),"+
+          "analystTarget (string e.g. "$185" or "N/A"), upside (string e.g. "+42%" or "N/A"), upsideNum (number),"+
           "recommendation (one of: Strong Buy|Buy|Watch|Avoid)";
 
         fetch("/api/analyze",{
