@@ -611,18 +611,11 @@ function LosersTab(props){
               (s.beta?" | Beta "+s.beta:"")+
               (s.analystTarget?" | Analyst Target $"+s.analystTarget+" ("+s.analystUpside+"% upside, "+s.analystBuyPct+"% analyst buy)":"")+
               (s.hi52?" | 52W Range $"+s.lo52+" to $"+s.hi52:"");
-          }).join("
-")+
-          "
-
-For each stock, analyze the multi-timeframe performance pattern to determine:
-"+
-          "1. WHAT caused the drop at each timeframe (different events = different timeframes)
-"+
-          "2. Whether selling is ACCELERATING (recent TF worse than longer TF) or DECELERATING (most damage is old)
-"+
-          "3. Recovery PROBABILITY (High/Medium/Low) and estimated TIMELINE based on the pattern
-"+
+          }).join("\n")+
+          "\n\nFor each stock, analyze the multi-timeframe performance pattern to determine:\n"+
+          "1. WHAT caused the drop at each timeframe (different events = different timeframes)\n"+
+          "2. Whether selling is ACCELERATING (recent TF worse than longer TF) or DECELERATING (most damage is old)\n"+
+          "3. Recovery PROBABILITY (High/Medium/Low) and estimated TIMELINE based on the pattern\n"+
           "4. Whether this is a buying opportunity or a falling knife
 
 "+
