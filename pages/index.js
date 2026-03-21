@@ -1034,20 +1034,45 @@ export default function App(){
     fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(data){
       setAppWatchlist(Array.isArray(data)?data:[]);
       if(!data||!data.length)return;
-      Promise.all(data.map(function(w){
-        return Promise.all([
-          fetch("/api/market?source=fh&endpoint=quote?symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return {};}),
-          fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+w.ticker+"&metric=all").then(function(r){return r.json();}).catch(function(){return {};})
-        ]).then(function(res){return{ticker:w.ticker,name:w.name||w.ticker,q:res[0],m:res[1]};});
-      })).then(function(results){
+      // Fetch live quotes + 52W metrics + AI analysis in parallel
+      Promise.all([
+        Promise.all(data.map(function(w){
+          return Promise.all([
+            fetch("/api/market?source=fh&endpoint=quote?symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return {};}),
+            fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+w.ticker+"&metric=all").then(function(r){return r.json();}).catch(function(){return {};}),
+            fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return [];}),
+          ]).then(function(res){return{ticker:w.ticker,name:w.name||w.ticker,q:res[0],m:res[1],rec:res[2]};});
+        })),
+        fetch("/api/portfolio?action=history").then(function(r){return r.json();}).catch(function(){return [];})
+      ]).then(function(all){
+          var results=all[0], aiHistory=Array.isArray(all[1])?all[1]:[];
+          // Build AI lookup by ticker (most recent entry)
+          var aiByTicker={};
+          aiHistory.forEach(function(a){if(!aiByTicker[a.ticker])aiByTicker[a.ticker]=a;});
           var ns=results.map(function(r){
             var cur=r.q&&r.q.c?r.q.c:0;
             var prev=r.q&&r.q.pc?r.q.pc:cur;
             var chg=prev>0?((cur-prev)/prev*100):0;
             var hi52=r.m&&r.m.metric?r.m.metric["52WeekHigh"]:0;
             var lo52=r.m&&r.m.metric?r.m.metric["52WeekLow"]:0;
+            var pe=r.m&&r.m.metric?r.m.metric["peExclExtraTTM"]:null;
+            var beta=r.m&&r.m.metric?r.m.metric["beta"]:null;
+            var recData=Array.isArray(r.rec)&&r.rec.length>0?r.rec[0]:null;
+            var buyPct=recData?Math.round(((recData.buy||0)+(recData.strongBuy||0))/((recData.buy||0)+(recData.hold||0)+(recData.sell||0)+(recData.strongBuy||0)+(recData.strongSell||0)||1)*100):null;
+            var ai=aiByTicker[r.ticker]||null;
+            var dip=hi52>0?+((hi52-cur)/hi52*100).toFixed(1):0;
             return{ticker:r.ticker,name:r.name,cur:+cur.toFixed(2),chg:+chg.toFixed(2),
-              hi52:hi52||0,lo52:lo52||0,vol:0,avgVol:1};
+              hi52:hi52||0,lo52:lo52||0,pe,beta,buyPct,dip,
+              // AI data
+              verdict:ai?ai.verdict:null,
+              catalyst:ai?ai.catalyst:null,
+              bull:ai?ai.bull_case:null,
+              bear:ai?ai.bear_case:null,
+              analystTarget:ai?ai.analyst_target:null,
+              upside:ai?ai.upside:null,
+              recommendation:ai?ai.recommendation:null,
+              dropPct:ai?ai.drop_pct:null,
+            };
           }).filter(function(s){return s.cur>0;});
           setWatchlistStocks(ns);
         }).catch(function(){});
@@ -1643,27 +1668,74 @@ export default function App(){
                   </div>
                   <button onClick={refreshWatchlist} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"5px 11px",fontSize:11}}>Refresh</button>
                 </div>
-                <div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,overflow:"hidden"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"70px 1fr 78px 64px 56px 56px 56px 80px",gap:7,padding:"7px 10px",fontSize:9,color:"#334155",letterSpacing:1,borderBottom:"1px solid #0f172a"}}>
-                    <span>TICKER</span><span>NAME</span><span>PRICE</span><span>1D</span><span>52W HI</span><span>52W LO</span><span>VOL/AVG</span><span>ACTION</span>
-                  </div>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   {watchlistStocks.map(function(w){
                     var chgCol=w.chg>=0?"#4ade80":"#f87171";
-                    var vr=w.avgVol>0?(w.vol/w.avgVol).toFixed(1):"-";
+                    var VS_COLORS={"Strong Overreaction":"#22c55e","Overreaction":"#4ade80","Partial Overreaction":"#fcd34d","Mixed":"#94a3b8","Justified":"#f87171"};
+                    var verdictCol=w.verdict?VS_COLORS[w.verdict]||"#94a3b8":"#334155";
+                    var recColors={"Strong Buy":"#22c55e","Buy":"#4ade80","Watch":"#f59e0b","Avoid":"#f87171"};
+                    var recCol=w.recommendation?recColors[w.recommendation]||"#94a3b8":"#334155";
                     return(
-                      <div key={w.ticker} style={{display:"grid",gridTemplateColumns:"70px 1fr 78px 64px 56px 56px 56px 80px",gap:7,padding:"9px 10px",borderBottom:"1px solid #0a0f1a",alignItems:"center"}}
-                        onMouseEnter={function(e){e.currentTarget.style.background="#0f172a";}} onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
-                        <div style={{fontWeight:700,color:"#f1f5f9",fontSize:12}}>{w.ticker}</div>
-                        <div style={{fontSize:10,color:"#475569",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.name}</div>
-                        <div style={{fontSize:12,fontWeight:600,color:"#f1f5f9"}}>{w.cur>0?"$"+w.cur:"-"}</div>
-                        <div style={{fontSize:11,fontWeight:600,color:chgCol}}>{w.chg>0?"+":""}{w.chg}%</div>
-                        <div style={{fontSize:10,color:"#64748b"}}>{w.hi52>0?"$"+w.hi52.toFixed(0):"-"}</div>
-                        <div style={{fontSize:10,color:"#64748b"}}>{w.lo52>0?"$"+w.lo52.toFixed(0):"-"}</div>
-                        <div style={{fontSize:10,color:parseFloat(vr)>1.5?"#f59e0b":"#64748b"}}>{vr}x</div>
-                        <button onClick={function(){
-                          fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})})
-                            .then(function(){refreshWatchlist();});
-                        }} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:5,padding:"3px 8px",fontSize:10,cursor:"pointer"}}>Remove</button>
+                      <div key={w.ticker} style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"14px 16px"}}>
+                        {/* Row 1: ticker + price + action */}
+                        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+                          <div>
+                            <div style={{fontWeight:800,color:"#f1f5f9",fontSize:15}}>{w.ticker}</div>
+                            <div style={{fontSize:10,color:"#475569"}}>{w.name}</div>
+                          </div>
+                          <div style={{marginLeft:"auto",textAlign:"right"}}>
+                            <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>{w.cur>0?"$"+w.cur.toFixed(2):"-"}</div>
+                            <div style={{fontSize:11,fontWeight:600,color:chgCol}}>{w.chg>0?"+":""}{w.chg.toFixed(2)}%</div>
+                          </div>
+                          {w.verdict&&<div style={{background:verdictCol+"22",border:"1px solid "+verdictCol,color:verdictCol,borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:700,whiteSpace:"nowrap"}}>{w.verdict.toUpperCase()}</div>}
+                          {w.recommendation&&<div style={{background:recCol+"22",border:"1px solid "+recCol,color:recCol,borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:700}}>{w.recommendation.toUpperCase()}</div>}
+                          <button onClick={function(){
+                            fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})})
+                              .then(function(){refreshWatchlist();});
+                          }} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:5,padding:"3px 8px",fontSize:10,cursor:"pointer"}}>✕</button>
+                        </div>
+                        {/* Row 2: screener metrics */}
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:10}}>
+                          {[
+                            {l:"DIP FROM 52W",v:w.dip>0?w.dip.toFixed(1)+"%":"-",c:w.dip>15?"#f59e0b":"#94a3b8"},
+                            {l:"52W HIGH",v:w.hi52>0?"$"+w.hi52.toFixed(0):"-",c:"#64748b"},
+                            {l:"52W LOW",v:w.lo52>0?"$"+w.lo52.toFixed(0):"-",c:"#64748b"},
+                            {l:"P/E",v:w.pe?w.pe.toFixed(1):"-",c:"#94a3b8"},
+                            {l:"ANALYST BUY%",v:w.buyPct!==null?w.buyPct+"%":"-",c:w.buyPct>=60?"#4ade80":w.buyPct>=40?"#f59e0b":"#94a3b8"},
+                          ].map(function(m,i){return(
+                            <div key={i} style={{background:"#060d18",borderRadius:7,padding:"6px 8px"}}>
+                              <div style={{fontSize:8,color:"#334155",letterSpacing:1,marginBottom:2}}>{m.l}</div>
+                              <div style={{fontSize:12,fontWeight:700,color:m.c}}>{m.v}</div>
+                            </div>
+                          );})}</div>
+                        {/* Row 3: analyst target + upside */}
+                        {(w.analystTarget||w.dropPct)&&<div style={{display:"flex",gap:8,marginBottom:10}}>
+                          {w.analystTarget&&<div style={{background:"#060d18",borderRadius:7,padding:"6px 10px",flex:1}}>
+                            <div style={{fontSize:8,color:"#334155",letterSpacing:1,marginBottom:2}}>ANALYST TARGET</div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{w.analystTarget} <span style={{fontSize:10,color:"#4ade80"}}>{w.upside}</span></div>
+                          </div>}
+                          {w.dropPct&&<div style={{background:"#060d18",borderRadius:7,padding:"6px 10px",flex:1}}>
+                            <div style={{fontSize:8,color:"#334155",letterSpacing:1,marginBottom:2}}>DROP WHEN FLAGGED</div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#f87171"}}>{w.dropPct>0?"-":""}{Math.abs(w.dropPct).toFixed(1)}%</div>
+                          </div>}
+                        </div>}
+                        {/* Row 4: catalyst */}
+                        {w.catalyst&&<div style={{marginBottom:8}}>
+                          <div style={{fontSize:8,color:"#334155",letterSpacing:1,marginBottom:3}}>CATALYST</div>
+                          <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.5}}>{w.catalyst}</div>
+                        </div>}
+                        {/* Row 5: bull/bear */}
+                        {(w.bull||w.bear)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                          {w.bull&&<div style={{background:"#052e1620",border:"1px solid #16a34a33",borderRadius:7,padding:"7px 10px"}}>
+                            <div style={{fontSize:8,color:"#16a34a",letterSpacing:1,marginBottom:3}}>▲ BULL CASE</div>
+                            <div style={{fontSize:10,color:"#86efac",lineHeight:1.5}}>{w.bull}</div>
+                          </div>}
+                          {w.bear&&<div style={{background:"#1c050520",border:"1px solid #b91c1c33",borderRadius:7,padding:"7px 10px"}}>
+                            <div style={{fontSize:8,color:"#b91c1c",letterSpacing:1,marginBottom:3}}>▼ BEAR CASE</div>
+                            <div style={{fontSize:10,color:"#fca5a5",lineHeight:1.5}}>{w.bear}</div>
+                          </div>}
+                        </div>}
+                        {!w.verdict&&!w.bull&&<div style={{fontSize:10,color:"#334155",textAlign:"center",padding:"4px 0"}}>Run AI Analysis on this sector to add outlook data</div>}
                       </div>
                     );
                   })}
