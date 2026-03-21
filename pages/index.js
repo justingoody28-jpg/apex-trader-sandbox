@@ -596,9 +596,7 @@ function LosersTab(props){
         // Pass to Claude for analysis
         var sectorLabel=SECTORS_LIST.find(function(s){return s.id===sector;})||{label:sector};
         var tfLabel=TIMEFRAMES.find(function(t){return t.id===timeframe;})||{label:timeframe};
-        var prompt="Today is "+new Date().toDateString()+". I am analyzing the "+sectorLabel.label+" sector.
-
-"+
+        var prompt="Today is "+new Date().toDateString()+". I am analyzing the "+sectorLabel.label+" sector. "+
           "These are the actual biggest losers in "+sectorLabel.label+" over the last "+tfLabel.label+", based on real FMP market data:"+
           stocksForClaude.map(function(s){
             var perf=Object.entries(s.performance).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
@@ -693,20 +691,14 @@ function LosersTab(props){
       var recData=Array.isArray(rec)&&rec.length>0?rec[0]:null;
       var buyPct=recData?Math.round(((recData.buy||0)+(recData.strongBuy||0))/((recData.buy||0)+(recData.hold||0)+(recData.sell||0)+(recData.strongBuy||0)+(recData.strongSell||0)||1)*100):null;
       var perfStr=Object.entries(tfPerf).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
-      var prompt="Today is "+new Date().toDateString()+". Analyze "+t+" in depth.
-"+
+      var prompt="Today is "+new Date().toDateString()+". Analyze "+t+" in depth. "+
         "Real market data: Price $"+cur.toFixed(2)+
         (hi52?" | 52W: $"+lo52.toFixed(2)+" to $"+hi52.toFixed(2):"")+
         (pe?" | P/E "+pe.toFixed(1):"")+
         (beta?" | Beta "+beta.toFixed(2):"")+
         (analystTarget?" | Analyst target $"+analystTarget.toFixed(0)+" ("+buyPct+"% analyst buy)":"")+
-        "
-Multi-timeframe performance: "+perfStr+"
-
-"+
-        "Analyze the timeframe pattern: is selling accelerating or decelerating? What likely caused drops at different periods?
-
-"+
+        " | Multi-timeframe performance: "+perfStr+" "+
+        "Analyze the timeframe pattern: is selling accelerating or decelerating? What likely caused drops at different periods? "+
         "Return a JSON object with fields: ticker, name, sector, exchange, price (string), marketCap (string), "+
         "fiftyTwoWeekHigh, fiftyTwoWeekLow, verdict (Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified|Fairly Valued|Overvalued), "+
         "catalyst (2 sentences), multiTfAnalysis (2 sentences on pattern), "+
