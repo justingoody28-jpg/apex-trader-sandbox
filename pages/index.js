@@ -1493,7 +1493,7 @@ export default function App(){
 
   if(!mounted)return null;
   return(
-    <div style={{{minHeight:"100vh",background:"#030712",fontFamily:"'IBM Plex Mono','Courier New',monospace",color:"#e2e8f0",paddingBottom:60}}>
+    <div style={{minHeight:"100vh",background:"#030712",fontFamily:"'IBM Plex Mono','Courier New',monospace",color:"#e2e8f0",paddingBottom:60}}>
       <div style={{background:"#0a0f1a",borderBottom:"1px solid #0f172a",padding:"8px 20px",display:"flex",alignItems:"center",gap:12}}>
         <div style={{fontSize:9,color:"#334155",letterSpacing:2,flexShrink:0,whiteSpace:"nowrap"}}>ANTHROPIC API KEY</div>
         <input type="password" placeholder="sk-ant-...  (optional - only needed if running as a local HTML file)" value={anthropicKey} onChange={function(e){var v=e.target.value;setAnthropicKey(v);}} style={{flex:1,background:"#030712",border:"1px solid #1e293b",color:"#4ade80",borderRadius:5,padding:"5px 10px",fontSize:11,outline:"none",fontFamily:"monospace"}}/>
