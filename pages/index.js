@@ -1172,21 +1172,36 @@ export default function App(){
       })(cached);
       return;
     }
-    // No cache - fetch from API in 3 batches of 8 max (Twelve Data free tier limit)
+    // No cache - fetch live quotes from Finnhub (no batch limit on free tier)
+    // Plus 52w data from Finnhub metric endpoint
     setDataLoading(true);setDataSource("live");
-    var b1=TICKERS.slice(0,7).join(",");
-    var b2=TICKERS.slice(7,14).join(",");
-    var b3=TICKERS.slice(14).join(",");
-    Promise.all([
-      fetch("/api/market?source=td&endpoint=quote?symbol="+b1).then(function(r){return r.json();}).catch(function(){return {};}),
-      fetch("/api/market?source=td&endpoint=quote?symbol="+b2).then(function(r){return r.json();}).catch(function(){return {};}),
-      fetch("/api/market?source=td&endpoint=quote?symbol="+b3).then(function(r){return r.json();}).catch(function(){return {};})
-    ]).then(function(parts){
-      var batch=Object.assign({},
-        (parts[0].code||parts[0].status==="error")?{}:parts[0],
-        (parts[1].code||parts[1].status==="error")?{}:parts[1],
-        (parts[2].code||parts[2].status==="error")?{}:parts[2]
-      );
+    Promise.all(TICKERS.map(function(t){
+      return Promise.all([
+        fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+        fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;})
+      ]).then(function(res){return {ticker:t,q:res[0],m:res[1]};});
+    })).then(function(results){
+      // Build a batch object keyed by ticker in the same format as before
+      var batch={};
+      results.forEach(function(r){
+        if(r.q&&r.q.c>0){
+          var hi52=r.m&&r.m.metric&&r.m.metric["52WeekHigh"]?r.m.metric["52WeekHigh"]:r.q.c*1.3;
+          var lo52=r.m&&r.m.metric&&r.m.metric["52WeekLow"]?r.m.metric["52WeekLow"]:r.q.c*0.7;
+          // Finnhub metric has avg volume in millions - use 10d avg as proxy for current vol
+          var avgVol10d=r.m&&r.m.metric&&r.m.metric["10DayAverageTradingVolume"]?r.m.metric["10DayAverageTradingVolume"]*1e6:8e6;
+          var avgVol3m=r.m&&r.m.metric&&r.m.metric["3MonthAverageTradingVolume"]?r.m.metric["3MonthAverageTradingVolume"]*1e6:8e6;
+          // Use 10d avg as "today's vol" and 3m avg as baseline - ratio shows if volume is elevated
+          var vol=avgVol10d; var avgVol=avgVol3m;
+          batch[r.ticker]={
+            close:""+r.q.c,
+            previous_close:""+r.q.pc,
+            percent_change:""+r.q.dp,
+            volume:""+vol,
+            average_volume:""+avgVol,
+            fifty_two_week:{high:""+hi52,low:""+lo52}
+          };
+        }
+      });
       if(Object.keys(batch).length===0){
         setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
         setLastR(new Date());setDataLoading(false);setDataSource("simulated");return;
@@ -1243,11 +1258,7 @@ export default function App(){
         });
         setStocks(ns);setLastR(new Date());setDataLoading(false);
       })(batch);
-    }).catch(function(){
-        // Fallback to simulated on error
-        setStocks(TICKERS.map(function(t,i){return detStock(t,i,c);}));
-        setLastR(new Date());setDataLoading(false);setDataSource("simulated");
-      });
+    });
   },[]);
 
   useEffect(function(){refresh();},[refresh]);
