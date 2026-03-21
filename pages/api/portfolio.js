@@ -34,8 +34,12 @@ export default async function handler(req, res) {
       const { ticker, side, quantity, price, pnl, reason, auto, newCash, position } = req.body;
 
       // Record the trade
+      // Store entry metrics snapshot in reason field as JSON string
+      const metricsStr = req.body.metrics ? ' | '+JSON.stringify(req.body.metrics) : '';
       await supabase.from('trades').insert({
-        ticker, side, quantity, price, pnl: pnl || 0, reason, auto: auto || false
+        ticker, side, quantity, price, pnl: pnl || 0,
+        reason: (reason||'Manual') + metricsStr,
+        auto: auto || false
       });
 
       // Update cash
@@ -77,6 +81,10 @@ export default async function handler(req, res) {
             drop_pct: r.dropNum,
             price_str: r.price,
             market_cap: r.marketCap,
+            recovery_probability: r.recoveryProbability || null,
+            recovery_timeline: r.recoveryTimeline || null,
+            multi_tf_analysis: r.multiTfAnalysis || null,
+            selected_tf_change: r.selectedTfChange || null,
           }))
         );
       }
