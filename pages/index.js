@@ -488,11 +488,14 @@ function LosersTab(props){
           setError("No stocks found for "+sector+". Try a different sector.");
           setLoading(false);return;
         }
-        // Get top 20 by market cap for history lookup
-        var tickers=screenerData.slice(0,20).map(function(s){return s.symbol;}).join(",");
-        return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+tickers+"&from="+fromStr+"&to="+toStr)
-          .then(function(r){return r.json();})
-          .then(function(histData){
+        // Get top 20 by market cap for history lookup - fetch individually (FMP stable no batch)
+        var top20=screenerData.slice(0,20).map(function(s){return s.symbol;});
+        return Promise.all(top20.map(function(sym){
+          return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+sym+"&from="+fromStr+"&to="+toStr)
+            .then(function(r){return r.json();}).catch(function(){return [];});
+        }))
+          .then(function(results){
+            var histData=[].concat.apply([],results.map(function(r){return Array.isArray(r)?r:[];}));
             // Calculate % change for each ticker over the timeframe
             var perfByTicker={};
             if(Array.isArray(histData)){
@@ -520,12 +523,14 @@ function LosersTab(props){
               setError("No losers found in "+sector+" over "+tf.label+". Market may be up across this sector.");
               setLoading(false);return;
             }
-            // Fetch all 5 timeframes for top losers
+            // Fetch all 5 timeframes for top losers - individually (FMP stable no batch)
             var tfDefs=[{id:"1W",days:7},{id:"1M",days:30},{id:"3M",days:90},{id:"6M",days:180},{id:"52W",days:365}];
             var allTfFetches=tfDefs.map(function(tfd){
               var tfFrom=new Date(new Date()-tfd.days*24*60*60*1000).toISOString().slice(0,10);
-              return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+topLosers.join(",")+"&from="+tfFrom+"&to="+toStr)
-                .then(function(r){return r.json();}).catch(function(){return [];});
+              return Promise.all(topLosers.map(function(sym){
+                return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+sym+"&from="+tfFrom+"&to="+toStr)
+                  .then(function(r){return r.json();}).catch(function(){return [];});
+              })).then(function(results){return [].concat.apply([],results.map(function(r){return Array.isArray(r)?r:[];}));});
             });
             // Finnhub fundamentals for each ticker
             var fhFetches=topLosers.map(function(t){
@@ -1167,14 +1172,17 @@ export default function App(){
       // Step 2: FMP 90-day real OHLCV history for each ticker (real RSI/MACD)
       var today=new Date(),from90=new Date(today-90*24*60*60*1000);
       var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
-      var fmpSymbols=Object.keys(batch).join(",");
-      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
-        .then(function(r){return r.json();}).catch(function(){return null;})
+      var fmpSymbols=Object.keys(batch);
+      Promise.all(fmpSymbols.map(function(sym){
+        return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+sym+"&from="+fromStr+"&to="+toStr)
+          .then(function(r){return r.json();}).catch(function(){return [];});
+      })).then(function(results){
+        return [].concat.apply([],results.map(function(r){return Array.isArray(r)?r:[];}));
+      })
         .then(function(histData){
-          // histData may be array of {symbol, date, close, ...} or object with symbol key
           var histByTicker={};
           if(Array.isArray(histData)){
-            histData.forEach(function(row){if(row.symbol&&row.close)histByTicker[row.symbol]=histByTicker[row.symbol]||[];histByTicker[row.symbol]&&histByTicker[row.symbol].push(parseFloat(row.close));});
+            histData.forEach(function(row){if(row.symbol&&row.close){histByTicker[row.symbol]=histByTicker[row.symbol]||[];histByTicker[row.symbol].push(parseFloat(row.close));}});
           }
           // Build final stock objects - real data only, no fallbacks
           var ns=TICKERS.map(function(t,i){
@@ -1225,9 +1233,13 @@ export default function App(){
     function buildStocks(batch,c){
       var today=new Date(),from90=new Date(today-90*24*60*60*1000);
       var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
-      var fmpSymbols=Object.keys(batch).join(",");
-      fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+fmpSymbols+"&from="+fromStr+"&to="+toStr)
-        .then(function(r){return r.json();}).catch(function(){return null;})
+      var fmpSymbols=Object.keys(batch);
+      Promise.all(fmpSymbols.map(function(sym){
+        return fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+sym+"&from="+fromStr+"&to="+toStr)
+          .then(function(r){return r.json();}).catch(function(){return [];});
+      })).then(function(results){
+        return [].concat.apply([],results.map(function(r){return Array.isArray(r)?r:[];}));
+      })
         .then(function(histData){
           var histByTicker={};
           if(Array.isArray(histData)){
