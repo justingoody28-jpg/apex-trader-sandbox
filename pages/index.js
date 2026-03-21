@@ -535,11 +535,14 @@ function LosersTab(props){
             // Finnhub fundamentals for each ticker
             var fhFetches=topLosers.map(function(t){
               return Promise.all([
-                fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-                fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
+                fetch("/api/market?source=fmp_fh&endpoint=quote&fh_endpoint=quote&symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
                 fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
                 fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-              ]).then(function(res){return {ticker:t,quote:res[0],metric:res[1],rec:res[2],pt:res[3]};});
+              ]).then(function(res){
+                var q=res[0];
+                var synthMetric=q&&q.hi52?{metric:{"52WeekHigh":q.hi52,"52WeekLow":q.lo52,"peExclExtraTTM":q.pe,"beta":q.beta}}:null;
+                return {ticker:t,quote:q,metric:synthMetric,rec:res[1],pt:res[2]};
+              });
             });
             return Promise.all([Promise.all(allTfFetches),Promise.all(fhFetches),Promise.resolve(screenerData),Promise.resolve(perfByTicker),Promise.resolve(topLosers)]);
           });
@@ -671,12 +674,12 @@ function LosersTab(props){
     var fromStr=from90.toISOString().slice(0,10),toStr=today.toISOString().slice(0,10);
     Promise.all([
       fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+t+"&from="+fromStr+"&to="+toStr).then(function(r){return r.json();}).catch(function(){return null;}),
-      fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-      fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;}),
+      fetch("/api/market?source=fmp_fh&endpoint=quote&fh_endpoint=quote&symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
       fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
       fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
     ]).then(function(res){
-      var hist=res[0],q=res[1],m=res[2],rec=res[3],pt=res[4];
+      var hist=res[0],q=res[1],rec=res[2],pt=res[3];
+      var m=q&&q.hi52?{metric:{"52WeekHigh":q.hi52,"52WeekLow":q.lo52,"peExclExtraTTM":q.pe,"beta":q.beta}}:null;
       var cur=q&&q.c?q.c:0;
       if(!cur){setSearchLoading(false);setSearchError("No data found for "+t+". Check the ticker symbol.");return;}
       // Calculate performance at all timeframes from history
@@ -1041,7 +1044,7 @@ export default function App(){
         // Finnhub: quote + recommendation only (metric is rate-limited)
         Promise.all(data.map(function(w){
           return Promise.all([
-            fetch("/api/market?source=fh&endpoint=quote?symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return {};}),
+            fetch("/api/market?source=fmp_fh&endpoint=quote&fh_endpoint=quote&symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return {};}),
             fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return [];}),
           ]).then(function(res){return{ticker:w.ticker,name:w.name||w.ticker,q:res[0],rec:res[1]};});
         })),
@@ -1056,7 +1059,7 @@ export default function App(){
           var aiByTicker={};
           aiHistory.forEach(function(a){if(!aiByTicker[a.ticker])aiByTicker[a.ticker]=a;});
           var ns=fhResults.map(function(r,idx){
-            var cur=r.q&&r.q.c?r.q.c:0;
+            var cur=r.q&&r.q.c?r.q.c:(r.ai&&r.ai.price_str?parseFloat(r.ai.price_str.replace('$',''))||0:0);
             var prev=r.q&&r.q.pc?r.q.pc:cur;
             var chg=prev>0?((cur-prev)/prev*100):0;
             var hist=Array.isArray(histResults[idx])?histResults[idx].sort(function(a,b){return new Date(a.date)-new Date(b.date);}):[];
@@ -1079,7 +1082,7 @@ export default function App(){
               recoveryProb:ai?ai.recovery_probability:null,
               recoveryTimeline:ai?ai.recovery_timeline:null,
             };
-          }).filter(function(s){return s.cur>0;});
+          });
           setWatchlistStocks(ns);
         }).catch(function(){});
     }).catch(function(){});
@@ -1186,10 +1189,12 @@ export default function App(){
     setDataLoading(true);setDataSource("live");
     // Step 1: Finnhub quotes + metrics (parallel, no batch limit)
     Promise.all(TICKERS.map(function(t){
-      return Promise.all([
-        fetch("/api/market?source=fh&endpoint=quote?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-        fetch("/api/market?source=fh&endpoint=stock/metric?symbol="+t+"&metric=all").then(function(r){return r.json();}).catch(function(){return null;})
-      ]).then(function(res){return {ticker:t,q:res[0],m:res[1]};});
+      return fetch("/api/market?source=fmp_fh&endpoint=quote&fh_endpoint=quote&symbol="+t)
+        .then(function(r){return r.json();}).catch(function(){return null;})
+        .then(function(q){
+          var m=q&&q.hi52?{metric:{"52WeekHigh":q.hi52,"52WeekLow":q.lo52,"10DayAverageTradingVolume":q.avgVol?q.avgVol/1e6:null,"3MonthAverageTradingVolume":q.avgVol?q.avgVol/1e6:null,"peExclExtraTTM":q.pe,"beta":q.beta}}:null;
+          return {ticker:t,q,m};
+        });
     })).then(function(results){
       var batch={};
       results.forEach(function(r){
