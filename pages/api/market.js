@@ -1,15 +1,21 @@
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
-  const { source, endpoint } = req.query;
+  const { source, endpoint, ...rest } = req.query;
+
+  // Build extra query string from all params besides source and endpoint
+  const extraParams = Object.entries(rest)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+  const sep = extraParams ? '?' : '';
 
   try {
     let url;
     if (source === 'td') {
-      url = `https://api.twelvedata.com/${endpoint}&apikey=${process.env.TWELVE_DATA_KEY}`;
+      url = `https://api.twelvedata.com/${endpoint}${sep}${extraParams}&apikey=${process.env.TWELVE_DATA_KEY}`;
     } else if (source === 'fh') {
-      url = `https://finnhub.io/api/v1/${endpoint}&token=${process.env.FINNHUB_KEY}`;
+      url = `https://finnhub.io/api/v1/${endpoint}${sep}${extraParams}&token=${process.env.FINNHUB_KEY}`;
     } else if (source === 'fmp') {
-      url = `https://financialmodelingprep.com/stable/${endpoint}&apikey=${process.env.FMP_KEY}`;
+      url = `https://financialmodelingprep.com/stable/${endpoint}${sep}${extraParams}&apikey=${process.env.FMP_KEY}`;
     } else {
       return res.status(400).json({ error: 'Unknown source' });
     }
