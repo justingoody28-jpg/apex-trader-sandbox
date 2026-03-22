@@ -1463,10 +1463,21 @@ export default function App(){
   },[]);
 
   useEffect(function(){
-    if(stocks.length===0)return;
-    var s=stocks.find(function(s){return s.ticker===btTicker;});
-    if(s)setBtResult(runBT(s.prices,cfgRef.current));
-  },[btTicker,stocks]);
+    if(!btTicker) return;
+    setBtResult(null);
+    var today=new Date();
+    var from365=new Date(today-365*24*60*60*1000).toISOString().slice(0,10);
+    var toStr=today.toISOString().slice(0,10);
+    fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+btTicker+"&from="+from365+"&to="+toStr)
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if(!Array.isArray(data)||data.length<30){return;}
+        var sorted=data.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+        var prices=sorted.map(function(d){return d.close;});
+        setBtResult(runBT(prices,cfgRef.current));
+      })
+      .catch(function(){});
+  },[btTicker]);
 
   // ── Manual trade ──
   function execTrade(stock,side,q){
