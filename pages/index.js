@@ -1175,6 +1175,7 @@ export default function App(){
   var [qty,setQty]=useState(1);
   var [toast,setToast]=useState(null);
   var [sf,setSf]=useState("all");
+  var [wlDetail,setWlDetail]=useState(null);
   var [srt,setSrt]=useState("score");
   var [lastR,setLastR]=useState(null);
   // Autopilot state
@@ -1744,7 +1745,55 @@ export default function App(){
           {/* Click outside to close */}
           {tickerDetail&&<div onClick={function(){setTickerDetail(null);setTickerAI(null);}} style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:999}}/>}
 
-          {appWatchlist.length>0&&(
+          {/* ── WATCHLIST DETAIL PANEL ── */}
+        {wlDetail&&(
+          <div style={{position:"fixed",top:0,right:0,width:380,height:"100vh",background:"#0a0f1a",borderLeft:"1px solid #1e293b",zIndex:1000,overflowY:"auto",boxShadow:"-4px 0 24px rgba(0,0,0,0.5)"}}>
+            <div style={{padding:"20px 22px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
+                <div><div style={{fontSize:26,fontWeight:800,color:"#f1f5f9"}}>{wlDetail.ticker}</div><div style={{fontSize:12,color:"#475569",marginTop:2}}>{wlDetail.name}</div></div>
+                <button onClick={function(){setWlDetail(null);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:13}}>×</button>
+              </div>
+              <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:16}}>
+                <div style={{fontSize:22,fontWeight:700,color:"#f1f5f9"}}>{"$"+wlDetail.cur}</div>
+                <div style={{fontSize:13,fontWeight:600,color:wlDetail.chg>=0?"#22c55e":"#ef4444"}}>{(wlDetail.chg>=0?"+":"")+wlDetail.chg+"%"}</div>
+              </div>
+              {wlDetail.verdict&&(function(){
+                var vmap={"Strong Overreaction":{c:"#4ade80",bg:"#052e16",b:"#16a34a"},"Overreaction":{c:"#86efac",bg:"#052e16",b:"#15803d"},"Partial Overreaction":{c:"#fcd34d",bg:"#1c1917",b:"#d97706"},"Mixed":{c:"#94a3b8",bg:"#0f172a",b:"#334155"},"Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c"}};
+                var v=vmap[wlDetail.verdict]||vmap["Mixed"];
+                return <div style={{marginBottom:14}}><span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:v.bg,color:v.c,border:"1px solid "+v.b}}>{wlDetail.verdict}</span></div>;
+              })()}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>DIP 52W</div><div style={{fontSize:16,fontWeight:700,color:"#f59e0b"}}>{wlDetail.dip+"%"}</div></div>
+                <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>ANALYST BUY</div><div style={{fontSize:16,fontWeight:700,color:"#4ade80"}}>{wlDetail.buyPct!=null?wlDetail.buyPct+"%":"N/A"}</div></div>
+                <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>P/E RATIO</div><div style={{fontSize:16,fontWeight:700,color:"#94a3b8"}}>{wlDetail.livePeratio||"N/A"}</div></div>
+                <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>SEC REV GROWTH</div><div style={{fontSize:14,fontWeight:700,color:wlDetail.revenueGrowth>0?"#4ade80":"#f87171"}}>{wlDetail.revenueGrowth!=null?(wlDetail.revenueGrowth>0?"+":"")+wlDetail.revenueGrowth+"%":"N/A"}</div></div>
+              </div>
+              {wlDetail.recoveryProb&&(
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+                  <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>RECOVERY PROB</div><div style={{fontSize:14,fontWeight:700,color:wlDetail.recoveryProb==="High"?"#4ade80":wlDetail.recoveryProb==="Medium"?"#f59e0b":"#f87171"}}>{wlDetail.recoveryProb}</div></div>
+                  <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>EST. TIMELINE</div><div style={{fontSize:12,fontWeight:700,color:"#94a3b8"}}>{wlDetail.recoveryTimeline||"N/A"}</div></div>
+                </div>
+              )}
+              {wlDetail.analystTarget&&(
+                <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"10px 12px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:3}}>ANALYST TARGET</div><div style={{fontSize:18,fontWeight:700,color:"#f1f5f9"}}>{wlDetail.analystTarget}</div></div>
+                  {wlDetail.upside&&<div style={{fontSize:16,fontWeight:700,color:"#4ade80"}}>{wlDetail.upside}</div>}
+                </div>
+              )}
+              {wlDetail.catalyst&&(
+                <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
+                  <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:6}}>CATALYST</div>
+                  <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7}}>{wlDetail.catalyst}</div>
+                </div>
+              )}
+              {wlDetail.bull&&<div style={{background:"#030e05",border:"1px solid #14532d",borderRadius:8,padding:"12px 14px",marginBottom:8}}><div style={{fontSize:9,color:"#16a34a",letterSpacing:2,fontWeight:700,marginBottom:6}}>BULL CASE</div><div style={{fontSize:12,color:"#86efac",lineHeight:1.6}}>{wlDetail.bull}</div></div>}
+              {wlDetail.bear&&<div style={{background:"#0e0303",border:"1px solid #7f1d1d",borderRadius:8,padding:"12px 14px",marginBottom:16}}><div style={{fontSize:9,color:"#b91c1c",letterSpacing:2,fontWeight:700,marginBottom:6}}>BEAR CASE</div><div style={{fontSize:12,color:"#fca5a5",lineHeight:1.6}}>{wlDetail.bear}</div></div>}
+              <button onClick={function(){setModal(Object.assign({},wlDetail,{side:"BUY",sl:+(wlDetail.cur*(1-0.07)).toFixed(2),tp:+(wlDetail.cur*(1+0.20)).toFixed(2)}));setTab("paper");setQty(1);setWlDetail(null);}} style={{width:"100%",background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Paper Buy {wlDetail.ticker}</button>
+            </div>
+          </div>
+        )}
+        {wlDetail&&<div onClick={function(){setWlDetail(null);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:999}}/>}
+        {appWatchlist.length>0&&(
               <div style={{marginBottom:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div>
@@ -1772,7 +1821,7 @@ export default function App(){
                     var rc2=rec==="Strong Buy"?"#22c55e":rec==="Buy"?"#4ade80":rec==="Watch"?"#f59e0b":"#f87171";
                     var up=(w.chg||0)>=0;
                     return(
-                      <div key={w.ticker} onClick={function(){openTickerDetail({ticker:w.ticker,cur:w.cur,chg:w.chg||0,dip:w.dip||0,h52:w.hi52||0,rsi:50,mh:0,vr:1,sig:rec==="Strong Buy"?"STRONG_BUY":rec==="Buy"?"BUY":rec==="Watch"?"WATCH":"HOLD",score:0,sector:w.name||w.ticker,sl:0,tp:0,entry:"",prices:w.sparkPrices||[]});}}
+                      <div key={w.ticker} onClick={function(){setWlDetail(w);}}
                         style={{background:"#0a0f1a",border:"1px solid "+(w.ticker===tickerDetail?.ticker?"#1d4ed8":"#0f172a"),borderRadius:12,padding:"14px 16px",marginBottom:8,cursor:"pointer"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                           <div style={{display:"flex",gap:12,alignItems:"center"}}>
