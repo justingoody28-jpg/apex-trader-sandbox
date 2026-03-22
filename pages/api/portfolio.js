@@ -1,9 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,7 +7,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { action } = req.query;
-
   try {
     if (req.method === 'GET' && action === 'load') {
       const [port, positions, trades] = await Promise.all([
@@ -38,38 +33,30 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'ai_analysis') {
       const { results, category } = req.body;
       if (!results || !results.length) return res.json({ ok: true });
-      
       const tickers = results.map(r => r.ticker).filter(Boolean);
-      
-      // Delete existing rows for these tickers
-      const { error: delErr } = await supabase.from('ai_analysis').delete().in('ticker', tickers);
-      if (delErr) return res.json({ ok: false, deleteError: delErr.message });
-      
-      // Insert fresh rows with all fields including recovery
-      const rows = results.map(r => ({
-        ticker: r.ticker,
-        category: category || 'watchlist_refresh',
-        verdict: r.verdict || null,
-        catalyst: r.catalyst || null,
-        bull_case: r.bull_case || r.bull || null,
-        bear_case: r.bear_case || r.bear || null,
-        analyst_target: r.analyst_target ? String(r.analyst_target) : null,
-        upside: r.upside ? String(r.upside) : null,
-        upside_num: r.upside_num != null ? parseFloat(r.upside_num) : null,
-        recommendation: r.recommendation || null,
-        drop_pct: r.drop_pct != null ? parseFloat(r.drop_pct) : null,
-        price_str: r.price_str || r.price || null,
-        market_cap: r.market_cap || null,
-        recovery_probability: r.recovery_probability || null,
-        recovery_timeline: r.recovery_timeline || null,
-        multi_tf_analysis: r.multi_tf_analysis || null,
-        selected_tf_change: r.selected_tf_change || null,
-      }));
-      
-      const { error: insErr, data: insData } = await supabase.from('ai_analysis').insert(rows).select('ticker, recovery_probability');
-      if (insErr) return res.json({ ok: false, insertError: insErr.message, rows_attempted: rows.length });
-      
-      return res.json({ ok: true, inserted: insData?.length, sample: insData?.[0] });
+      // Delete existing rows then insert fresh so recovery fields always update
+      await supabase.from('ai_analysis').delete().in('ticker', tickers);
+      const { error, data } = await supabase.from('ai_analysis').insert(
+        results.map(r => ({
+          ticker: r.ticker,
+          category: category || 'watchlist_refresh',
+          verdict: r.verdict || null,
+          catalyst: r.catalyst || null,
+          bull_case: r.bull_case || r.bull || null,
+          bear_case: r.bear_case || r.bear || null,
+          analyst_target: r.analyst_target ? String(r.analyst_target) : null,
+          upside: r.upside ? String(r.upside) : null,
+          upside_num: r.upside_num != null ? parseFloat(r.upside_num) : null,
+          recommendation: r.recommendation || null,
+          drop_pct: r.drop_pct != null ? parseFloat(r.drop_pct) : null,
+          price_str: r.price_str || r.price || null,
+          market_cap: r.market_cap || null,
+          recovery_probability: r.recovery_probability || null,
+          recovery_timeline: r.recovery_timeline || null,
+        }))
+      ).select('ticker, recovery_probability');
+      if (error) return res.json({ ok: false, error: error.message });
+      return res.json({ ok: true, saved: data?.length });
     }
 
     if (req.method === 'POST' && action === 'validation') {
