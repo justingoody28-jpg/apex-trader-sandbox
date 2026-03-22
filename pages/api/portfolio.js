@@ -14,7 +14,6 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
-    // GET portfolio (cash + positions + trades)
     if (req.method === 'GET' && action === 'load') {
       const [port, positions, trades] = await Promise.all([
         supabase.from('portfolio').select('*').eq('id', 'main').single(),
@@ -29,69 +28,54 @@ export default async function handler(req, res) {
       });
     }
 
-    // POST a trade (buy or sell)
     if (req.method === 'POST' && action === 'trade') {
       const { ticker, side, quantity, price, pnl, reason, auto, newCash, position } = req.body;
-
-      // Record the trade
-      // Store entry metrics snapshot in reason field as JSON string
       const metricsStr = req.body.metrics ? ' | '+JSON.stringify(req.body.metrics) : '';
       await supabase.from('trades').insert({
         ticker, side, quantity, price, pnl: pnl || 0,
         reason: (reason||'Manual') + metricsStr,
         auto: auto || false
       });
-
-      // Update cash
       await supabase.from('portfolio').update({ cash: newCash, updated_at: new Date() }).eq('id', 'main');
-
-      // Update positions
       if (side === 'BUY') {
         await supabase.from('positions').insert({
-          ticker,
-          shares: quantity,
-          avg_price: price,
-          entry_price: price,
-          sl: position.sl,
-          tp: position.tp,
+          ticker, shares: quantity, avg_price: price, entry_price: price,
+          sl: position.sl, tp: position.tp,
         });
       } else {
-        // Remove position on sell
         await supabase.from('positions').delete().eq('ticker', ticker);
       }
-
       return res.json({ ok: true });
     }
 
-    // POST AI analysis results
     if (req.method === 'POST' && action === 'ai_analysis') {
       const { results } = req.body;
       if (results && results.length) {
-        await supabase.from('ai_analysis').insert(
+        await supabase.from('ai_analysis').upsert(
           results.map(r => ({
             ticker: r.ticker,
             verdict: r.verdict,
             catalyst: r.catalyst,
             bull_case: r.bull_case || r.bull || null,
             bear_case: r.bear_case || r.bear || null,
-            analyst_target: r.analyst_target || r.analystTarget || null,
-            upside: r.upside || null,
-            upside_num: r.upside_num || r.upsideNum || null,
+            analyst_target: String(r.analyst_target || r.analystTarget || ''),
+            upside: String(r.upside || ''),
+            upside_num: parseFloat(r.upside_num || r.upsideNum) || null,
             recommendation: r.recommendation || null,
-            drop_pct: r.drop_pct || r.dropNum || null,
-            price_str: r.price_str || r.price || null,
-            market_cap: r.market_cap || r.marketCap || null,
+            drop_pct: parseFloat(r.drop_pct || r.dropNum) || null,
+            price_str: String(r.price_str || r.price || ''),
+            market_cap: String(r.market_cap || r.marketCap || ''),
             recovery_probability: r.recovery_probability || r.recoveryProbability || null,
             recovery_timeline: r.recovery_timeline || r.recoveryTimeline || null,
             multi_tf_analysis: r.multi_tf_analysis || r.multiTfAnalysis || null,
             selected_tf_change: r.selected_tf_change || r.selectedTfChange || null,
-          }))
+          })),
+          { onConflict: 'ticker' }
         );
       }
       return res.json({ ok: true });
     }
 
-    // POST validation scores
     if (req.method === 'POST' && action === 'validation') {
       const { ticker, ai_verdict, confidence, score, checks_passed, checks_total, checks_detail } = req.body;
       await supabase.from('validation_scores').insert({
@@ -100,16 +84,14 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
-    // GET trade history for a ticker (accuracy tracking)
     if (req.method === 'GET' && action === 'history') {
       const { ticker } = req.query;
-      const q = supabase.from('ai_analysis').select('*').order('analyzed_at', { ascending: false }).limit(100);
+      const q = supabase.from('ai_analysis').select('*').order('analyzed_at', { ascending: false }).limit(500);
       if (ticker) q.eq('ticker', ticker);
       const { data } = await q;
       return res.json(data ?? []);
     }
 
-    // POST reset portfolio
     if (req.method === 'POST' && action === 'reset') {
       await Promise.all([
         supabase.from('portfolio').update({ cash: 100000, updated_at: new Date() }).eq('id', 'main'),
@@ -118,13 +100,11 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
-    // GET watchlist
     if (req.method === 'GET' && action === 'watchlist') {
       const { data } = await supabase.from('watchlist').select('*').order('added_at', { ascending: false });
       return res.json(data ?? []);
     }
 
-    // POST add to watchlist
     if (req.method === 'POST' && action === 'watchlist_add') {
       const { ticker, name, added_from } = req.body;
       const { data, error } = await supabase.from('watchlist')
@@ -133,7 +113,6 @@ export default async function handler(req, res) {
       return res.json({ ok: !error, data });
     }
 
-    // DELETE remove from watchlist
     if (req.method === 'POST' && action === 'watchlist_remove') {
       const { ticker } = req.body;
       await supabase.from('watchlist').delete().eq('ticker', ticker);
