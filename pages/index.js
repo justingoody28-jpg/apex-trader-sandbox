@@ -576,7 +576,7 @@ function LosersTab(props){
           var lo52=fh.metric&&fh.metric.metric&&fh.metric.metric["52WeekLow"]?fh.metric.metric["52WeekLow"]:null;
           var pe=fh.metric&&fh.metric.metric?fh.metric.metric["peExclExtraTTM"]:null;
           var beta=fh.metric&&fh.metric.metric?fh.metric.metric["beta"]:null;
-              analystTarget:fh.pt&&fh.pt.targetConsensus?fh.pt.targetConsensus:null,
+          var analystTarget=fh.pt&&fh.pt.targetConsensus?fh.pt.targetConsensus:null;
           var rec=fh.rec&&Array.isArray(fh.rec)&&fh.rec.length>0?fh.rec[0]:null;
           var buyPct=rec?Math.round(((rec.buy||0)+(rec.strongBuy||0))/((rec.buy||0)+(rec.hold||0)+(rec.sell||0)+(rec.strongBuy||0)+(rec.strongSell||0)||1)*100):null;
           return {
@@ -647,35 +647,7 @@ function LosersTab(props){
           var s2=clean.indexOf("["),e2=clean.lastIndexOf("]");
           if(s2===-1||e2===-1)throw new Error("No JSON array found");
           var parsed=JSON.parse(clean.slice(s2,e2+1));
-                        // Override AI-hallucinated targets with real Finnhub data
-              var realDataMap={};
-              stocksForClaude.forEach(function(s){
-                realDataMap[s.symbol]=s;
-              });
-              parsed.forEach(function(s){
-                var real=realDataMap[s.ticker];
-                if(!real) return;
-                var realTarget=real.analystTarget?parseFloat(real.analystTarget):null;
-                var realPrice=real.price?parseFloat(real.price):null;
-                if(realTarget&&realTarget>0){
-                  s.analystTarget="$"+real.analystTarget;
-                  if(realPrice&&realPrice>0){
-                    var upNum=+((realTarget-realPrice)/realPrice*100).toFixed(0);
-                    s.upsideNum=upNum;
-                    s.upside=(upNum>=0?"+":"")+upNum+"%";
-                    // If target is below price: analysts see it as overvalued
-                    if(realTarget<realPrice*0.97){
-                      s.recommendation="Avoid";
-                      if(s.verdict==="Strong Overreaction"||s.verdict==="Overreaction") s.verdict="Justified";
-                    }
-                  }
-                } else {
-                  // No real target - keep AI target as-is
-                }
-                // Also pass real analyst buy %
-                if(real.analystBuyPct!=null) s.analystBuyPct=real.analystBuyPct;
-              });
-              setResults(parsed);
+          setResults(parsed);
           var over=parsed.filter(function(s){return s.verdict==="Strong Overreaction"||s.verdict==="Overreaction";}).length;
           var highProb=parsed.filter(function(s){return s.recoveryProbability==="High";}).length;
           var avgDrop=(parsed.reduce(function(sum,s){return sum+(s.dropNum||0);},0)/parsed.length).toFixed(1);
@@ -721,7 +693,7 @@ function LosersTab(props){
       var lo52=m&&m.metric&&m.metric["52WeekLow"]?m.metric["52WeekLow"]:null;
       var pe=m&&m.metric?m.metric["peExclExtraTTM"]:null;
       var beta=m&&m.metric?m.metric["beta"]:null;
-      var analystTarget=pt&&pt.targetConsensus?pt.targetConsensus:null;
+      var analystTarget=pt&&pt.targetMean?pt.targetMean:null;
       var recData=Array.isArray(rec)&&rec.length>0?rec[0]:null;
       var buyPct=recData?Math.round(((recData.buy||0)+(recData.strongBuy||0))/((recData.buy||0)+(recData.hold||0)+(recData.sell||0)+(recData.strongBuy||0)+(recData.strongSell||0)||1)*100):null;
       var perfStr=Object.entries(tfPerf).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
@@ -1160,7 +1132,7 @@ export default function App(){
             var ratioData=ratiosArr.length>0?ratiosArr[0]:null;
             var livePeratio=ratioData&&(ratioData.peRatioTTM||ratioData.priceToEarningsRatioTTM)?+parseFloat(ratioData.peRatioTTM||ratioData.priceToEarningsRatioTTM).toFixed(1):null;
             // SEC EDGAR revenue growth
-            var edgarRevs=(r.edgar&&Array.isArray(r.edgar.revenues)?r.edgar.revenues:[];
+            var edgarRevs=(r.edgar&&Array.isArray(r.edgar.revenues))?r.edgar.revenues:[];
             var revenueGrowth=null;
             if(edgarRevs.length>=2){
               var revLatest=edgarRevs[edgarRevs.length-1].val,revPrev=edgarRevs[edgarRevs.length-2].val;
@@ -1173,10 +1145,7 @@ export default function App(){
               livePeratio,revenueGrowth,
               verdict:ai?ai.verdict:null,catalyst:ai?ai.catalyst:null,
               bull:ai?ai.bull_case:null,bear:ai?ai.bear_case:null,
-              // Use live Finnhub target if available, fall back to stored AI target
-              analystTarget:(function(){var lpt=r.pt&&r.pt.targetConsensus?r.pt.targetConsensus:null;return lpt?"$"+lpt.toFixed(0):(ai?ai.analyst_target:null);})(),
-              upside:ai?ai.upside:null,
-              _livePtTarget:r.pt&&r.pt.targetConsensus?r.pt.targetConsensus:null,
+              analystTarget:ai?ai.analyst_target:null,upside:ai?ai.upside:null,
               recommendation:ai?ai.recommendation:null,dropPct:ai?ai.drop_pct:null,
               recoveryProb:ai?ai.recovery_probability:null,
               recoveryTimeline:ai?ai.recovery_timeline:null,
@@ -1187,34 +1156,7 @@ export default function App(){
               aiAnalyzedAt:ai?ai.analyzed_at:null,
             };
           });
-                        // Apply sanity check using LIVE Finnhub target (not stored AI target)
-              ns.forEach(function(w){
-                // Prefer live Finnhub target over stored AI target
-                var target=w._livePtTarget||
-                  parseFloat((w.analystTarget||"0").toString().replace(/[^0-9.]/g,""))||0;
-                var price=w.cur||0;
-                if(target>0&&price>0&&target<price*0.97){
-                  w.recommendation="Avoid";
-                  w.analystTarget="$"+target.toFixed(0);
-                  var upNum=+((target-price)/price*100).toFixed(0);
-                  w.upside=upNum+"%";
-                  if(w.verdict==="Strong Overreaction"||w.verdict==="Overreaction") w.verdict="Justified";
-                } else if(target>0&&price>0){
-                  // Also update upside to reflect current price
-                  var upNum2=+((target-price)/price*100).toFixed(0);
-                  w.upside=(upNum2>=0?"+":"")+upNum2+"%";
-                }
-              });
-              // (replaced below)
-              ns.forEach(function(w){
-                var target=parseFloat((w.analystTarget||"0").toString().replace(/[^0-9.$]/g,"").replace("$",""))||0;
-                var price=w.cur||0;
-                if(target>0&&price>0&&target<price*0.97){
-                  w.recommendation="Avoid";
-                  if(w.verdict==="Strong Overreaction"||w.verdict==="Overreaction") w.verdict="Justified";
-                }
-              });
-              setWatchlistStocks(ns);
+          setWatchlistStocks(ns);
         }).catch(function(){});
     }).catch(function(){});
   }
@@ -1462,21 +1404,10 @@ export default function App(){
   },[]);
 
   useEffect(function(){
-    if(!btTicker) return;
-    setBtResult(null);
-    var today=new Date();
-    var from365=new Date(today-365*24*60*60*1000).toISOString().slice(0,10);
-    var toStr=today.toISOString().slice(0,10);
-    fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+btTicker+"&from="+from365+"&to="+toStr)
-      .then(function(r){return r.json();})
-      .then(function(data){
-        if(!Array.isArray(data)||data.length<30){return;}
-        var sorted=data.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
-        var prices=sorted.map(function(d){return d.close;});
-        setBtResult(runBT(prices,cfgRef.current));
-      })
-      .catch(function(){});
-  },[btTicker]);
+    if(stocks.length===0)return;
+    var s=stocks.find(function(s){return s.ticker===btTicker;});
+    if(s)setBtResult(runBT(s.prices,cfgRef.current));
+  },[btTicker,stocks]);
 
   // ── Manual trade ──
   function execTrade(stock,side,q){
@@ -1849,13 +1780,7 @@ export default function App(){
                   {wlDetail.upside&&<div style={{fontSize:16,fontWeight:700,color:"#4ade80"}}>{wlDetail.upside}</div>}
                 </div>
               )}
-              {              {wlDetail.multiTfAnalysis&&(
-                <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
-                  <div style={{fontSize:9,color:"#60a5fa",letterSpacing:2,marginBottom:6,fontWeight:700}}>PATTERN</div>
-                  <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7}}>{wlDetail.multiTfAnalysis}</div>
-                </div>
-              )}
-              wlDetail.catalyst&&(
+              {wlDetail.catalyst&&(
                 <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
                   <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:6}}>CATALYST</div>
                   <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7}}>{wlDetail.catalyst}</div>
@@ -2107,7 +2032,8 @@ export default function App(){
               <div style={{display:"flex",gap:10,alignItems:"center"}}>
                 <span style={{fontSize:11,color:"#475569"}}>TICKER:</span>
                 <select value={btTicker} onChange={function(e){setBtTicker(e.target.value);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#f1f5f9",borderRadius:7,padding:"8px 12px",fontSize:12}}>
-                  {(watchlistStocks.length>0?watchlistStocks:TICKERS.map(function(t){return{ticker:t};})).map(function(w){return<option key={w.ticker} value={w.ticker}>{w.ticker}{w.name?" - "+w.name.substring(0,20):""}</option>;})}</select>
+                  {TICKERS.map(function(t){return<option key={t} value={t}>{t}</option>;})}
+                </select>
               </div>
             </div>
             {!btResult?<div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:40,textAlign:"center",color:"#334155",fontSize:13}}>Loading...</div>:<BTResults r={btResult} ticker={btTicker}/>}
