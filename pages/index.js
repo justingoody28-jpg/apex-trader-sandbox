@@ -1174,7 +1174,10 @@ export default function App(){
               livePeratio,revenueGrowth,
               verdict:ai?ai.verdict:null,catalyst:ai?ai.catalyst:null,
               bull:ai?ai.bull_case:null,bear:ai?ai.bear_case:null,
-              analystTarget:ai?ai.analyst_target:null,upside:ai?ai.upside:null,
+              // Use live Finnhub target if available, fall back to stored AI target
+              analystTarget:(function(){var lpt=r.pt&&r.pt.targetMean?r.pt.targetMean:null;return lpt?"$"+lpt.toFixed(0):(ai?ai.analyst_target:null);})(),
+              upside:ai?ai.upside:null,
+              _livePtTarget:r.pt&&r.pt.targetMean?r.pt.targetMean:null,
               recommendation:ai?ai.recommendation:null,dropPct:ai?ai.drop_pct:null,
               recoveryProb:ai?ai.recovery_probability:null,
               recoveryTimeline:ai?ai.recovery_timeline:null,
@@ -1185,7 +1188,25 @@ export default function App(){
               aiAnalyzedAt:ai?ai.analyzed_at:null,
             };
           });
-                        // Apply sanity check: if analyst target < current price, cap recommendation
+                        // Apply sanity check using LIVE Finnhub target (not stored AI target)
+              ns.forEach(function(w){
+                // Prefer live Finnhub target over stored AI target
+                var target=w._livePtTarget||
+                  parseFloat((w.analystTarget||"0").toString().replace(/[^0-9.]/g,""))||0;
+                var price=w.cur||0;
+                if(target>0&&price>0&&target<price*0.97){
+                  w.recommendation="Avoid";
+                  w.analystTarget="$"+target.toFixed(0);
+                  var upNum=+((target-price)/price*100).toFixed(0);
+                  w.upside=upNum+"%";
+                  if(w.verdict==="Strong Overreaction"||w.verdict==="Overreaction") w.verdict="Justified";
+                } else if(target>0&&price>0){
+                  // Also update upside to reflect current price
+                  var upNum2=+((target-price)/price*100).toFixed(0);
+                  w.upside=(upNum2>=0?"+":"")+upNum2+"%";
+                }
+              });
+              // (replaced below)
               ns.forEach(function(w){
                 var target=parseFloat((w.analystTarget||"0").toString().replace(/[^0-9.$]/g,"").replace("$",""))||0;
                 var price=w.cur||0;
