@@ -1879,49 +1879,7 @@ export default function App(){
                 return<div key={i} style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:9,padding:"12px 14px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:5}}>{r.l}</div><div style={{fontSize:12,color:r.c,fontWeight:600}}>{r.v}</div></div>;
               })}
             </div>
-            appWatchlist.length>0&&watchlistStocks.length>0&&(
-<div style={{gridColumn:"1 / -1",marginBottom:16,background:"#050b14",border:"1px solid #1e293b",borderRadius:10,overflow:"hidden"}}>
-<div style={{padding:"10px 16px",borderBottom:"1px solid #1e293b",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-<span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",letterSpacing:1}}>WATCHLIST</span>
-<span style={{fontSize:10,color:"#334155"}}>{watchlistStocks.length+" stocks"}</span>
-</div>
-<div style={{overflowX:"auto"}}>
-<table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-<thead><tr style={{borderBottom:"1px solid #0f172a"}}>
-{["TICKER","NAME","PRICE","1D %","DIP","P/E","SIGNAL","RECOVERY"].map(function(h,i){return(
-<th key={i} style={{padding:"6px 10px",textAlign:i<=1?"left":"center",fontSize:8,fontWeight:500,color:"#334155",letterSpacing:1,whiteSpace:"nowrap"}}>{h}</th>
-);})}
-</tr></thead>
-<tbody>{watchlistStocks.map(function(w,wi){
-var rec=(w.recommendation||"").toUpperCase();
-var sig=rec.includes("STRONG")?"STRONG BUY":rec.includes("BUY")?"BUY":rec.includes("WATCH")?"WATCH":rec.includes("AVOID")?"AVOID":"HOLD";
-var sC=sig==="STRONG BUY"?"#4ade80":sig==="BUY"?"#86efac":sig==="WATCH"?"#f59e0b":sig==="AVOID"?"#f87171":"#475569";
-var pC={"High":"#4ade80","Medium":"#f59e0b","Low":"#f87171"};
-var chgC=w.chg>=0?"#4ade80":"#f87171";
-return(<tr key={wi} style={{borderBottom:"1px solid #060d18"}}
-onMouseEnter={function(e){e.currentTarget.style.background="#0a1628";}}
-onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
-<td style={{padding:"8px 10px",fontWeight:700,color:"#f1f5f9",fontSize:12,whiteSpace:"nowrap"}}>{w.ticker}</td>
-<td style={{padding:"8px 10px",color:"#475569",fontSize:10,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.name}</td>
-<td style={{padding:"8px 10px",textAlign:"center",color:"#f1f5f9",fontWeight:600,whiteSpace:"nowrap"}}>{w.cur>0?"$"+w.cur.toFixed(2):"-"}</td>
-<td style={{padding:"8px 10px",textAlign:"center",fontWeight:600,color:chgC,whiteSpace:"nowrap"}}>{(w.chg>=0?"+":"")+w.chg.toFixed(2)+"%"}</td>
-<td style={{padding:"8px 10px",textAlign:"center",color:w.dip>15?"#f59e0b":"#64748b"}}>{w.dip>0?w.dip.toFixed(1)+"%":"-"}</td>
-<td style={{padding:"8px 10px",textAlign:"center",color:"#64748b"}}>{w.livePeratio?w.livePeratio.toFixed(1):"-"}</td>
-<td style={{padding:"8px 10px",textAlign:"center"}}>
-<span style={{fontSize:9,fontWeight:700,color:sC,background:sC+"22",borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"}}>{sig}</span>
-</td>
-<td style={{padding:"8px 10px",textAlign:"center"}}>
-{w.recoveryProb?(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
-<span style={{fontSize:9,fontWeight:700,color:pC[w.recoveryProb]||"#94a3b8"}}>{w.recoveryProb}</span>
-{w.recoveryTimeline&&<span style={{fontSize:8,color:"#334155",whiteSpace:"nowrap"}}>{w.recoveryTimeline}</span>}
-</div>):<span style={{color:"#1e293b",fontSize:9}}>-</span>}
-</td>
-</tr>);
-})}</tbody>
-</table>
-</div>
-</div>)}<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(248px,1fr))",gap:12}}>
-              {{stocks.filter(function(s){return s.sig!=="HOLD";}).map(function(s,i){
+            {stocks.filter(function(s){return s.sig!=="HOLD";}).map(function(s,i){
                 var sg=SIGS[s.sig]||SIGS.HOLD,buy=s.sig==="STRONG_BUY"||s.sig==="BUY"||s.sig==="WATCH";
                 return(
                   <div key={s.ticker} style={{background:sg.bg,border:"1px solid "+sg.b,borderRadius:12,padding:"16px 18px",animation:"fu 0.3s ease "+(i*0.04)+"s both"}}>
@@ -2186,4 +2144,46 @@ onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
   );
 }
 
-
+appWatchlist.length>0&&watchlistStocks.length>0&&(
+<div style={{gridColumn:"1 / -1",marginBottom:16,background:"#050b14",border:"1px solid #1e293b",borderRadius:10,overflow:"hidden"}}>
+<div style={{padding:"10px 16px",borderBottom:"1px solid #1e293b",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",letterSpacing:1}}>WATCHLIST</span>
+<span style={{fontSize:10,color:"#334155"}}>{watchlistStocks.length+" stocks"}</span>
+</div>
+<div style={{overflowX:"auto"}}>
+<table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+<thead><tr style={{borderBottom:"1px solid #0f172a"}}>
+{["TICKER","NAME","PRICE","1D %","DIP","P/E","SIGNAL","RECOVERY"].map(function(h,i){return(
+<th key={i} style={{padding:"6px 10px",textAlign:i<=1?"left":"center",fontSize:8,fontWeight:500,color:"#334155",letterSpacing:1,whiteSpace:"nowrap"}}>{h}</th>
+);})}
+</tr></thead>
+<tbody>{watchlistStocks.map(function(w,wi){
+var rec=(w.recommendation||"").toUpperCase();
+var sig=rec.includes("STRONG")?"STRONG BUY":rec.includes("BUY")?"BUY":rec.includes("WATCH")?"WATCH":rec.includes("AVOID")?"AVOID":"HOLD";
+var sC=sig==="STRONG BUY"?"#4ade80":sig==="BUY"?"#86efac":sig==="WATCH"?"#f59e0b":sig==="AVOID"?"#f87171":"#475569";
+var pC={"High":"#4ade80","Medium":"#f59e0b","Low":"#f87171"};
+var chgC=w.chg>=0?"#4ade80":"#f87171";
+return(<tr key={wi} style={{borderBottom:"1px solid #060d18"}}
+onMouseEnter={function(e){e.currentTarget.style.background="#0a1628";}}
+onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
+<td style={{padding:"8px 10px",fontWeight:700,color:"#f1f5f9",fontSize:12,whiteSpace:"nowrap"}}>{w.ticker}</td>
+<td style={{padding:"8px 10px",color:"#475569",fontSize:10,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.name}</td>
+<td style={{padding:"8px 10px",textAlign:"center",color:"#f1f5f9",fontWeight:600,whiteSpace:"nowrap"}}>{w.cur>0?"$"+w.cur.toFixed(2):"-"}</td>
+<td style={{padding:"8px 10px",textAlign:"center",fontWeight:600,color:chgC,whiteSpace:"nowrap"}}>{(w.chg>=0?"+":"")+w.chg.toFixed(2)+"%"}</td>
+<td style={{padding:"8px 10px",textAlign:"center",color:w.dip>15?"#f59e0b":"#64748b"}}>{w.dip>0?w.dip.toFixed(1)+"%":"-"}</td>
+<td style={{padding:"8px 10px",textAlign:"center",color:"#64748b"}}>{w.livePeratio?w.livePeratio.toFixed(1):"-"}</td>
+<td style={{padding:"8px 10px",textAlign:"center"}}>
+<span style={{fontSize:9,fontWeight:700,color:sC,background:sC+"22",borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"}}>{sig}</span>
+</td>
+<td style={{padding:"8px 10px",textAlign:"center"}}>
+{w.recoveryProb?(<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+<span style={{fontSize:9,fontWeight:700,color:pC[w.recoveryProb]||"#94a3b8"}}>{w.recoveryProb}</span>
+{w.recoveryTimeline&&<span style={{fontSize:8,color:"#334155",whiteSpace:"nowrap"}}>{w.recoveryTimeline}</span>}
+</div>):<span style={{color:"#1e293b",fontSize:9}}>-</span>}
+</td>
+</tr>);
+})}</tbody>
+</table>
+</div>
+</div>)}<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(248px,1fr))",gap:12}}>
+              {
