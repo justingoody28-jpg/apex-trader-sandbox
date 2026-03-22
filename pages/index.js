@@ -1033,6 +1033,49 @@ export default function App(){
     .catch(function(){setTickerAI("Unable to generate analysis.");setTickerAILoading(false);});
   }
   var [watchlistStocks,setWatchlistStocks]=useState([]);
+  var [wlReanalyzing,setWlReanalyzing]=useState(false);
+  function reanalyzeWatchlist(){
+    if(wlReanalyzing)return;
+    setWlReanalyzing(true);
+    fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(data){
+      if(!Array.isArray(data)||!data.length){setWlReanalyzing(false);return;}
+      var tickers=data.map(function(w){return w.ticker;});
+      var today=new Date().toDateString();
+      // Run one at a time to avoid rate limits
+      var idx=0;
+      function next(){
+        if(idx>=tickers.length){setWlReanalyzing(false);refreshWatchlist();return;}
+        var ticker=tickers[idx++];
+        var prompt="Today is "+today+". Analyze "+ticker+" as an investment. This stock is on our watchlist as a potential overreaction play. "+
+          "Return a JSON object with fields: ticker (string), verdict (Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified), "+
+          "catalyst (string, 2 sentences), bull_case (string, 3 sentences), bear_case (string, 3 sentences), "+
+          "analyst_target (string like $XXX), upside (string like +X%), upside_num (number), "+
+          "recommendation (Strong Buy|Buy|Watch|Avoid), drop_pct (number, estimated drop from high), "+
+          "price_str (string like $XXX), market_cap (string like $XXXb), "+
+          "recovery_probability (High|Medium|Low), recovery_timeline (string like '3-6 months'), "+
+          "summary (string, 3 sentences). Return ONLY the JSON object.";
+        fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,
+            system:"You are a financial analyst. Return ONLY a valid JSON object, no markdown, no explanation.",
+            messages:[{role:"user",content:prompt}]})
+        }).then(function(r){return r.json();}).then(function(d){
+          var txt=(d.content||[]).map(function(b){return b.text||"";}).join("").trim();
+          try{
+            var clean=txt.replace(/```json|```/g,"").trim();
+            var parsed=JSON.parse(clean);
+            if(parsed.ticker){
+              fetch("/api/portfolio?action=save_analysis",{method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({results:[parsed],category:"watchlist_refresh"})
+              }).catch(function(){});
+            }
+          }catch(e){}
+          setTimeout(next,1200); // 1.2s between calls to respect rate limits
+        }).catch(function(){setTimeout(next,1200);});
+      }
+      next();
+    }).catch(function(){setWlReanalyzing(false);});
+  }
   function refreshWatchlist(){
     fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(data){
       setAppWatchlist(Array.isArray(data)?data:[]);
@@ -1046,7 +1089,11 @@ export default function App(){
           return Promise.all([
             fetch("/api/market?source=fmp_fh&endpoint=quote&fh_endpoint=quote&symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return {};}),
             fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return [];}),
-          ]).then(function(res){return{ticker:w.ticker,name:w.name||w.ticker,q:res[0],rec:res[1]};});
+            // FMP TTM ratios for P/E (available on Starter plan)
+            fetch("/api/market?source=fmp&endpoint=ratios-ttm&symbol="+w.ticker).then(function(r){return r.json();}).catch(function(){return [];}),
+            // SEC EDGAR revenue data (free, no API key)
+            fetch("/api/edgar?ticker="+w.ticker).then(function(r){return r.json();}).catch(function(){return null;}),
+          ]).then(function(res){return{ticker:w.ticker,name:w.name||w.ticker,q:res[0],rec:res[1],ratios:res[2],edgar:res[3]};});
         })),
         // FMP: 1-year history for 52W hi/lo + spark chart
         Promise.all(data.map(function(w){
@@ -1071,10 +1118,22 @@ export default function App(){
             var change3M=sparkPrices.length>=2?+((sparkPrices[sparkPrices.length-1]-sparkPrices[0])/sparkPrices[0]*100).toFixed(1):null;
             var recData=Array.isArray(r.rec)&&r.rec.length>0?r.rec[0]:null;
             var buyPct=recData?Math.round(((recData.buy||0)+(recData.strongBuy||0))/((recData.buy||0)+(recData.hold||0)+(recData.sell||0)+(recData.strongBuy||0)+(recData.strongSell||0)||1)*100):null;
+            // P/E from FMP ratios-ttm
+            var ratiosArr=Array.isArray(r.ratios)?r.ratios:[];
+            var ratioData=ratiosArr.length>0?ratiosArr[0]:null;
+            var livePeratio=ratioData&&ratioData.peRatioTTM?+parseFloat(ratioData.peRatioTTM).toFixed(1):null;
+            // SEC EDGAR revenue growth
+            var edgarRevs=(r.edgar&&Array.isArray(r.edgar.revenues))?r.edgar.revenues:[];
+            var revenueGrowth=null;
+            if(edgarRevs.length>=2){
+              var revLatest=edgarRevs[edgarRevs.length-1].val,revPrev=edgarRevs[edgarRevs.length-2].val;
+              if(revPrev>0)revenueGrowth=+((revLatest-revPrev)/revPrev*100).toFixed(1);
+            }
             var ai=aiByTicker[r.ticker]||null;
             var dip=hi52>0?+((hi52-cur)/hi52*100).toFixed(1):0;
             return{ticker:r.ticker,name:r.name,cur:+cur.toFixed(2),chg:+chg.toFixed(2),
               hi52,lo52,buyPct,dip,sparkPrices,change3M,
+              livePeratio,revenueGrowth,
               verdict:ai?ai.verdict:null,catalyst:ai?ai.catalyst:null,
               bull:ai?ai.bull_case:null,bear:ai?ai.bear_case:null,
               analystTarget:ai?ai.analyst_target:null,upside:ai?ai.upside:null,
@@ -1683,7 +1742,11 @@ export default function App(){
                     <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>⭐ Watchlist</div>
                     <div style={{fontSize:11,color:"#334155",marginTop:2}}>{appWatchlist.length} stocks from AI Analysis</div>
                   </div>
-                  <button onClick={refreshWatchlist} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"5px 11px",fontSize:11}}>Refresh</button>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    {wlReanalyzing&&<span style={{fontSize:9,color:"#f59e0b"}}>{"Refreshing AI..."}</span>}
+                    <button onClick={reanalyzeWatchlist} disabled={wlReanalyzing} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:6,padding:"5px 11px",fontSize:11,cursor:"pointer",opacity:wlReanalyzing?0.5:1}}>{"Re-run AI"}</button>
+                    <button onClick={refreshWatchlist} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"5px 11px",fontSize:11}}>Refresh</button>
+                  </div>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   {watchlistStocks.map(function(w){
@@ -1719,7 +1782,7 @@ export default function App(){
                             {l:"DIP 52W",v:w.dip>0?w.dip.toFixed(1)+"%":"-",c:w.dip>15?"#f59e0b":"#94a3b8"},
                             {l:"52W HI",v:w.hi52>0?"$"+w.hi52.toFixed(0):"-",c:"#64748b"},
                             {l:"52W LO",v:w.lo52>0?"$"+w.lo52.toFixed(0):"-",c:"#64748b"},
-                            {l:"P/E",v:w.pe?w.pe.toFixed(1):"-",c:"#94a3b8"},
+                            {l:"P/E",v:w.livePeratio?w.livePeratio.toFixed(1):"-",c:w.livePeratio&&w.livePeratio<25?"#4ade80":w.livePeratio&&w.livePeratio<40?"#f59e0b":"#94a3b8"},
                             {l:"ANALYST BUY",v:w.buyPct!==null?w.buyPct+"%":"-",c:w.buyPct>=60?"#4ade80":w.buyPct>=40?"#f59e0b":"#94a3b8"},
                             {l:"MKT CAP",v:w.aiMarketCap||"-",c:"#64748b"},
                           ].map(function(m,i){return(
@@ -1729,7 +1792,7 @@ export default function App(){
                             </div>
                           );})}
                         </div>
-                        {(w.analystTarget||w.recoveryProb||w.dropPct)&&(
+                        {(w.analystTarget||w.recoveryProb||w.dropPct||w.revenueGrowth!==null)&&(
                           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginBottom:8}}>
                             {w.analystTarget&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
                               <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>ANALYST TARGET</div>
@@ -1747,6 +1810,10 @@ export default function App(){
                             {w.dropPct&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
                               <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>DROP AT ANALYSIS</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#f87171"}}>{Math.abs(w.dropPct).toFixed(1)}%</div>
+                            </div>}
+                            {w.revenueGrowth!==null&&w.revenueGrowth!==undefined&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
+                              <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>SEC REV GROWTH</div>
+                              <div style={{fontSize:12,fontWeight:700,color:w.revenueGrowth>0?"#4ade80":"#f87171"}}>{w.revenueGrowth>0?"+":""}{w.revenueGrowth.toFixed(1)}%</div>
                             </div>}
                           </div>
                         )}
