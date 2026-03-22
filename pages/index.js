@@ -408,7 +408,7 @@ function AnalystChart(props){
 
 function LosersTab(props){
   var SECTORS_LIST=[
-    {id:"Technology",label:"Technology",icon:"ð»"},
+    {id:"Technology",label:"Technology",icon:""},
     {id:"Healthcare",label:"Healthcare",icon:"ð¥"},
     {id:"Financial Services",label:"Financials",icon:"ð¦"},
     {id:"Energy",label:"Energy",icon:"â¡"},
@@ -843,7 +843,7 @@ function LosersTab(props){
                 <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}> In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(sr.ticker,sr.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
-              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ðChart</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Chart</button>
               <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}> Analysts</button>
             </div>
             {expanded[sr.ticker]&&expanded[sr.ticker].chart&&<div style={{marginBottom:12}}><PriceChart data={chartData[sr.ticker]} ticker={sr.ticker}/></div>}
@@ -1688,7 +1688,7 @@ export default function App(){
                     <div style={{fontSize:11,color:"#475569"}}>{s.sector}  |  ${s.cur}  |  Score {s.score}/100</div>
                   </div>
                   <button onClick={function(){setTickerDetail(null);setTickerAI(null);}}
-                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>â</button>
+                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>x</button>
                 </div>
                 {/* Signal Breakdown */}
                 <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
@@ -1791,7 +1791,7 @@ export default function App(){
                             <div style={{fontSize:11,fontWeight:600,color:chgCol}}>{w.chg>0?"+":""}{w.chg.toFixed(2)}% today</div>
                             {w.selectedTfChange&&<div style={{fontSize:10,color:"#f87171",marginTop:1}}>{w.selectedTfChange} at analysis</div>}
                           </div>
-                          <button onClick={function(){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})}).then(function(){refreshWatchlist();});}} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:5,padding:"3px 7px",fontSize:11,cursor:"pointer",marginTop:2}}>{"â"}</button>
+                          <button onClick={function(){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})}).then(function(){refreshWatchlist();});}} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:5,padding:"3px 7px",fontSize:11,cursor:"pointer",marginTop:2}}>{"x"}</button>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:5,marginBottom:8}}>
                           {[
@@ -1835,26 +1835,26 @@ export default function App(){
                         )}
                         {w.multiTfAnalysis&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"âº PATTERN ANALYSIS"}</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"PATTERN ANALYSIS"}</summary>
                             <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.multiTfAnalysis}</div>
                           </details>
                         )}
                         {w.catalyst&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"âº CATALYST"}</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"CATALYST"}</summary>
                             <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.catalyst}</div>
                           </details>
                         )}
                         {(w.bull||w.bear)&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"âº BULL / BEAR CASES"}</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"BULL / BEAR CASES"}</summary>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:6}}>
                               {w.bull&&<div style={{background:"#052e1615",border:"1px solid #16a34a30",borderRadius:7,padding:"7px 10px"}}>
-                                <div style={{fontSize:8,color:"#16a34a",letterSpacing:1,marginBottom:3}}>"â² BULL"</div>
+                                <div style={{fontSize:8,color:"#16a34a",letterSpacing:1,marginBottom:3}}>"^ BULL"</div>
                                 <div style={{fontSize:10,color:"#86efac",lineHeight:1.5}}>{w.bull}</div>
                               </div>}
                               {w.bear&&<div style={{background:"#1c050515",border:"1px solid #b91c1c30",borderRadius:7,padding:"7px 10px"}}>
-                                <div style={{fontSize:8,color:"#b91c1c",letterSpacing:1,marginBottom:3}}>"â¼ BEAR"</div>
+                                <div style={{fontSize:8,color:"#b91c1c",letterSpacing:1,marginBottom:3}}>"v BEAR"</div>
                                 <div style={{fontSize:10,color:"#fca5a5",lineHeight:1.5}}>{w.bear}</div>
                               </div>}
                             </div>
