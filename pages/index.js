@@ -1752,19 +1752,19 @@ export default function App(){
                         )}
                         {w.multiTfAnalysis&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>"► PATTERN ANALYSIS"</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"► PATTERN ANALYSIS"}</summary>
                             <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.multiTfAnalysis}</div>
                           </details>
                         )}
                         {w.catalyst&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>"► CATALYST"</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"► CATALYST"}</summary>
                             <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.catalyst}</div>
                           </details>
                         )}
                         {(w.bull||w.bear)&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>"► BULL / BEAR CASES"</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"► BULL / BEAR CASES"}</summary>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:6}}>
                               {w.bull&&<div style={{background:"#052e1615",border:"1px solid #16a34a30",borderRadius:7,padding:"7px 10px"}}>
                                 <div style={{fontSize:8,color:"#16a34a",letterSpacing:1,marginBottom:3}}>"▲ BULL"</div>
