@@ -1867,6 +1867,62 @@ export default function App(){
                 </div>
               </div>
             )}
+          {/* ── SIGNAL CARDS ── */}
+          {stocks.length>0&&(
+            <div style={{marginTop:20}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+                <div style={{fontSize:11,color:"#475569"}}>{lastR&&("Updated: "+lastR.toLocaleTimeString())}</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {["all","buy","watch","sell"].map(function(f){return(
+                    <button key={f} onClick={function(){setSf(f);}}
+                      style={{background:sf===f?"#1e293b":"transparent",border:"1px solid "+(sf===f?"#334155":"#0f172a"),borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:600,color:sf===f?"#f1f5f9":"#334155",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
+                  );})}}
+                  {[["score","Score"],["dip","DIP"],["rsi","RSI"]].map(function(s){return(
+                    <button key={s[0]} onClick={function(){setSrt(s[0]);}}
+                      style={{background:srt===s[0]?"#1e293b":"transparent",border:"1px solid "+(srt===s[0]?"#334155":"#0f172a"),borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:600,color:srt===s[0]?"#f1f5f9":"#334155",cursor:"pointer"}}>{s[1]}</button>
+                  );})}}
+                </div>
+              </div>
+              {stocks
+                .filter(function(s){if(sf==="all")return true;if(sf==="buy")return s.sig==="STRONG_BUY"||s.sig==="BUY";if(sf==="watch")return s.sig==="WATCH";if(sf==="sell")return s.sig==="SELL"||s.sig==="STRONG_SELL";return true;})
+                .sort(function(a,b){if(srt==="dip")return b.dip-a.dip;if(srt==="rsi")return a.rsi-b.rsi;return b.score-a.score;})
+                .map(function(s,idx){
+                  var sg=SIGS[s.sig]||SIGS.HOLD;
+                  var up=s.chg>=0;
+                  return(
+                    <div key={s.ticker} onClick={function(){openTickerDetail(s);}}
+                      style={{background:"#0a0f1a",border:"1px solid "+(tickerDetail&&tickerDetail.ticker===s.ticker?"#1d4ed8":"#0f172a"),borderRadius:12,padding:"14px 16px",marginBottom:8,cursor:"pointer"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                          <div>
+                            <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9"}}>{s.ticker}</div>
+                            <div style={{fontSize:10,color:"#334155",marginTop:1}}>{s.sector}</div>
+                          </div>
+                          <div>
+                            <div style={{fontSize:15,fontWeight:700,color:"#94a3b8"}}>{"$"+s.cur}</div>
+                            <div style={{fontSize:10,color:up?"#22c55e":"#ef4444",marginTop:1}}>{(up?"+":"")+s.chg+"%"}</div>
+                          </div>
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                          <span style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:800,background:sg.bg,color:sg.c,border:"1px solid "+sg.b}}>{sg.label}</span>
+                          <div style={{fontSize:10,color:"#334155"}}>{"Score: "+s.score+"/100"}</div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                        <Spark prices={s.prices} up={s.chg>=0}/>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,flex:1}}>
+                          <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>DIP</div><div style={{fontSize:12,fontWeight:700,color:"#f59e0b"}}>{s.dip+"%"}</div></div>
+                          <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>RSI</div><div style={{fontSize:12,fontWeight:700,color:s.rsi<35?"#4ade80":s.rsi>70?"#f87171":"#94a3b8"}}>{s.rsi}</div></div>
+                          <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>VOL</div><div style={{fontSize:12,fontWeight:700,color:s.vr>=1.3?"#4ade80":"#94a3b8"}}>{s.vr+"x"}</div></div>
+                          <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>ENTRY</div><div style={{fontSize:11,color:"#475569"}}>{s.entry}</div></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              }
+            </div>
+          )}
           </div>
         )}
 
