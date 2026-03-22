@@ -576,7 +576,7 @@ function LosersTab(props){
           var lo52=fh.metric&&fh.metric.metric&&fh.metric.metric["52WeekLow"]?fh.metric.metric["52WeekLow"]:null;
           var pe=fh.metric&&fh.metric.metric?fh.metric.metric["peExclExtraTTM"]:null;
           var beta=fh.metric&&fh.metric.metric?fh.metric.metric["beta"]:null;
-          var analystTarget=fh.pt&&(fh.pt.targetConsensus||fh.pt.targetConsensus)?fh.pt.targetConsensus:null;
+          var analystTarget=fh.pt&&(fh.pt.targetConsensus)?fh.pt.targetConsensus:null;
           var rec=fh.rec&&Array.isArray(fh.rec)&&fh.rec.length>0?fh.rec[0]:null;
           var buyPct=rec?Math.round(((rec.buy||0)+(rec.strongBuy||0))/((rec.buy||0)+(rec.hold||0)+(rec.sell||0)+(rec.strongBuy||0)+(rec.strongSell||0)||1)*100):null;
           return {
