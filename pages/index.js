@@ -647,7 +647,20 @@ function LosersTab(props){
           var s2=clean.indexOf("["),e2=clean.lastIndexOf("]");
           if(s2===-1||e2===-1)throw new Error("No JSON array found");
           var parsed=JSON.parse(clean.slice(s2,e2+1));
-          setResults(parsed);
+          // Sanity check: if analyst target < current price, cap recommendation
+              parsed.forEach(function(s){
+                var target = parseFloat(s.analystTarget);
+                var price = parseFloat((s.price||"0").replace(/[^0-9.]/g,""));
+                if(target > 0 && price > 0 && target < price * 0.97){
+                  // Target is below current price — analysts don't see upside
+                  if(s.recommendation==="Strong Buy") s.recommendation="Avoid";
+                  else if(s.recommendation==="Buy") s.recommendation="Avoid";
+                  s.verdict = s.verdict==="Strong Overreaction"?"Justified":
+                              s.verdict==="Overreaction"?"Justified":s.verdict;
+                  s._analystWarning = true;
+                }
+              });
+              setResults(parsed);
           var over=parsed.filter(function(s){return s.verdict==="Strong Overreaction"||s.verdict==="Overreaction";}).length;
           var highProb=parsed.filter(function(s){return s.recoveryProbability==="High";}).length;
           var avgDrop=(parsed.reduce(function(sum,s){return sum+(s.dropNum||0);},0)/parsed.length).toFixed(1);
