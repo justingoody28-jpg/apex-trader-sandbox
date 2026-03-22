@@ -1766,103 +1766,50 @@ export default function App(){
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   {watchlistStocks.map(function(w){
-                    var chgCol=w.chg>=0?"#4ade80":"#f87171";
-                    var VS_C={"Strong Overreaction":"#22c55e","Overreaction":"#4ade80","Partial Overreaction":"#fcd34d","Mixed":"#94a3b8","Justified":"#f87171"};
-                    var vCol=w.verdict?VS_C[w.verdict]||"#94a3b8":"#334155";
-                    var rC={"Strong Buy":"#22c55e","Buy":"#4ade80","Watch":"#f59e0b","Avoid":"#f87171"};
-                    var recCol=w.recommendation?rC[w.recommendation]||"#94a3b8":"#334155";
-                    var pC={"High":"#22c55e","Medium":"#f59e0b","Low":"#f87171"};
-                    var probCol=w.recoveryProb?pC[w.recoveryProb]||"#94a3b8":"#94a3b8";
-                    var aDate=(typeof window!=="undefined"&&w.aiAnalyzedAt)?new Date(w.aiAnalyzedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):null;
+                    var rec=w.recommendation||"HOLD";
+                    var verd=w.verdict||"";
+                    var vs=VS[verd]||{c:"#94a3b8",bg:"#0f172a",b:"#334155"};
+                    var rc2=rec==="Strong Buy"?"#22c55e":rec==="Buy"?"#4ade80":rec==="Watch"?"#f59e0b":"#f87171";
+                    var up=(w.chg||0)>=0;
                     return(
-                      <div key={w.ticker} style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"14px 16px"}}>
-                        <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
-                          <div style={{flex:1}}>
-                            <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
-                              <span style={{fontWeight:800,color:"#f1f5f9",fontSize:15}}>{w.ticker}</span>
-                              {w.verdict&&<span style={{background:vCol+"22",border:"1px solid "+vCol,color:vCol,borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:700}}>{w.verdict.toUpperCase()}</span>}
-                              {w.recommendation&&<span style={{background:recCol+"22",border:"1px solid "+recCol,color:recCol,borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:700}}>{w.recommendation.toUpperCase()}</span>}
+                      <div key={w.ticker} onClick={function(){openTickerDetail({ticker:w.ticker,cur:w.cur,chg:w.chg||0,dip:w.dip||0,h52:w.hi52||0,rsi:50,mh:0,vr:1,sig:rec==="Strong Buy"?"STRONG_BUY":rec==="Buy"?"BUY":rec==="Watch"?"WATCH":"HOLD",score:0,sector:w.name||w.ticker,sl:0,tp:0,entry:"",prices:w.sparkPrices||[]});}}
+                        style={{background:"#0a0f1a",border:"1px solid "+(w.ticker===tickerDetail?.ticker?"#1d4ed8":"#0f172a"),borderRadius:12,padding:"14px 16px",marginBottom:8,cursor:"pointer"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                            <div>
+                              <div style={{fontSize:16,fontWeight:800,color:"#f1f5f9"}}>{w.ticker}</div>
+                              <div style={{fontSize:10,color:"#334155",marginTop:1}}>{w.name}</div>
                             </div>
-                            <div style={{fontSize:10,color:"#475569",marginTop:2}}>{w.name}</div>
-                            {aDate&&<div style={{fontSize:9,color:"#334155",marginTop:1}}>Analyzed {aDate}</div>}
+                            <div>
+                              <div style={{fontSize:15,fontWeight:700,color:"#94a3b8"}}>{"$"+(w.cur||0).toFixed(2)}</div>
+                              <div style={{fontSize:10,color:up?"#22c55e":"#ef4444",marginTop:1}}>{(up?"+":"")+(w.chg||0).toFixed(2)+"%"}</div>
+                            </div>
                           </div>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:17,fontWeight:700,color:"#f1f5f9"}}>{w.cur>0?"$"+w.cur.toFixed(2):w.aiPrice||"-"}</div>
-                            <div style={{fontSize:11,fontWeight:600,color:chgCol}}>{w.chg>0?"+":""}{w.chg.toFixed(2)}% today</div>
-                            {w.selectedTfChange&&<div style={{fontSize:10,color:"#f87171",marginTop:1}}>{w.selectedTfChange} at analysis</div>}
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                            {verd&&<span style={{padding:"4px 10px",borderRadius:5,fontSize:9,fontWeight:800,background:vs.bg,color:vs.c,border:"1px solid "+vs.b}}>{verd}</span>}
+                            <span style={{padding:"4px 10px",borderRadius:5,fontSize:10,fontWeight:800,background:"#0f172a",color:rc2,border:"1px solid "+rc2}}>{rec}</span>
                           </div>
-                          <button onClick={function(){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})}).then(function(){refreshWatchlist();});}} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:5,padding:"3px 7px",fontSize:11,cursor:"pointer",marginTop:2}}>{"✕"}</button>
                         </div>
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:5,marginBottom:8}}>
-                          {[
-                            {l:"DIP 52W",v:w.dip>0?w.dip.toFixed(1)+"%":"-",c:w.dip>15?"#f59e0b":"#94a3b8"},
-                            {l:"52W HI",v:w.hi52>0?"$"+w.hi52.toFixed(0):"-",c:"#64748b"},
-                            {l:"52W LO",v:w.lo52>0?"$"+w.lo52.toFixed(0):"-",c:"#64748b"},
-                            {l:"P/E",v:w.livePeratio?w.livePeratio.toFixed(1):"-",c:w.livePeratio&&w.livePeratio<25?"#4ade80":w.livePeratio&&w.livePeratio<40?"#f59e0b":"#94a3b8"},
-                            {l:"ANALYST BUY",v:w.buyPct!==null?w.buyPct+"%":"-",c:w.buyPct>=60?"#4ade80":w.buyPct>=40?"#f59e0b":"#94a3b8"},
-                            {l:"MKT CAP",v:w.aiMarketCap||"-",c:"#64748b"},
-                          ].map(function(m,i){return(
-                            <div key={i} style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
-                              <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>{m.l}</div>
-                              <div style={{fontSize:11,fontWeight:700,color:m.c}}>{m.v}</div>
-                            </div>
-                          );})}
+                        <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                          <Spark prices={w.sparkPrices||[]} up={up}/>
+                          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,flex:1}}>
+                            <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>DIP</div><div style={{fontSize:12,fontWeight:700,color:"#f59e0b"}}>{(w.dip||0).toFixed(1)+"%"}</div></div>
+                            <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>3M CHG</div><div style={{fontSize:12,fontWeight:700,color:(w.change3M||0)>=0?"#4ade80":"#ef4444"}}>{w.change3M!==null?(((w.change3M||0)>=0?"+":"")+(w.change3M||0).toFixed(1)+"%"):"—"}</div></div>
+                            <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>P/E</div><div style={{fontSize:12,fontWeight:700,color:"#94a3b8"}}>{w.livePeratio||"—"}</div></div>
+                            <div><div style={{fontSize:9,color:"#334155",letterSpacing:1}}>TARGET</div><div style={{fontSize:11,color:"#475569"}}>{w.analystTarget||"—"}</div></div>
+                          </div>
                         </div>
-                        {(w.analystTarget||w.recoveryProb||w.dropPct||w.revenueGrowth!==null)&&(
-                          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginBottom:8}}>
-                            {w.analystTarget&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
-                              <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>ANALYST TARGET</div>
-                              <div style={{fontSize:12,fontWeight:700,color:"#f1f5f9"}}>{w.analystTarget}</div>
-                              {w.upside&&<div style={{fontSize:9,color:"#4ade80"}}>{w.upside} upside</div>}
-                            </div>}
-                            {w.recoveryProb&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
-                              <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>RECOVERY PROB</div>
-                              <div style={{fontSize:12,fontWeight:700,color:probCol}}>{w.recoveryProb}</div>
-                            </div>}
-                            {w.recoveryTimeline&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
-                              <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>EST. TIMELINE</div>
-                              <div style={{fontSize:11,fontWeight:700,color:"#94a3b8"}}>{w.recoveryTimeline}</div>
-                            </div>}
-                            {w.dropPct&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
-                              <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>DROP AT ANALYSIS</div>
-                              <div style={{fontSize:12,fontWeight:700,color:"#f87171"}}>{Math.abs(w.dropPct).toFixed(1)}%</div>
-                            </div>}
-                            {w.revenueGrowth!==null&&w.revenueGrowth!==undefined&&<div style={{background:"#060d18",borderRadius:6,padding:"5px 7px"}}>
-                              <div style={{fontSize:7,color:"#334155",letterSpacing:1,marginBottom:2}}>SEC REV GROWTH</div>
-                              <div style={{fontSize:12,fontWeight:700,color:w.revenueGrowth>0?"#4ade80":"#f87171"}}>{w.revenueGrowth>0?"+":""}{w.revenueGrowth.toFixed(1)}%</div>
-                            </div>}
+                        {(w.recoveryProb||w.recoveryTimeline)&&(
+                          <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+                            {w.recoveryProb&&<span style={{fontSize:9,padding:"3px 8px",borderRadius:4,background:"#0f172a",color:w.recoveryProb==="High"?"#4ade80":w.recoveryProb==="Medium"?"#f59e0b":"#f87171",border:"1px solid #1e293b"}}>{"PROB: "+w.recoveryProb}</span>}
+                            {w.recoveryTimeline&&<span style={{fontSize:9,padding:"3px 8px",borderRadius:4,background:"#0f172a",color:"#64748b",border:"1px solid #1e293b"}}>{w.recoveryTimeline}</span>}
+                            {w.revenueGrowth!==null&&w.revenueGrowth!==undefined&&<span style={{fontSize:9,padding:"3px 8px",borderRadius:4,background:"#0f172a",color:(w.revenueGrowth||0)>=0?"#4ade80":"#ef4444",border:"1px solid #1e293b"}}>{"REV: "+((w.revenueGrowth||0)>=0?"+":"")+(w.revenueGrowth||0).toFixed(1)+"%"}</span>}
+                            <button onClick={function(e){e.stopPropagation();removeFromWatchlist(w.ticker);}} style={{marginLeft:"auto",background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:4,padding:"2px 8px",fontSize:9,cursor:"pointer"}}>✕</button>
                           </div>
                         )}
-                        {w.multiTfAnalysis&&(
-                          <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"► PATTERN ANALYSIS"}</summary>
-                            <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.multiTfAnalysis}</div>
-                          </details>
-                        )}
-                        {w.catalyst&&(
-                          <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"► CATALYST"}</summary>
-                            <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.catalyst}</div>
-                          </details>
-                        )}
-                        {(w.bull||w.bear)&&(
-                          <details style={{borderTop:"1px solid #0f172a",paddingTop:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"► BULL / BEAR CASES"}</summary>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:6}}>
-                              {w.bull&&<div style={{background:"#052e1615",border:"1px solid #16a34a30",borderRadius:7,padding:"7px 10px"}}>
-                                <div style={{fontSize:8,color:"#16a34a",letterSpacing:1,marginBottom:3}}>"▲ BULL"</div>
-                                <div style={{fontSize:10,color:"#86efac",lineHeight:1.5}}>{w.bull}</div>
-                              </div>}
-                              {w.bear&&<div style={{background:"#1c050515",border:"1px solid #b91c1c30",borderRadius:7,padding:"7px 10px"}}>
-                                <div style={{fontSize:8,color:"#b91c1c",letterSpacing:1,marginBottom:3}}>"▼ BEAR"</div>
-                                <div style={{fontSize:10,color:"#fca5a5",lineHeight:1.5}}>{w.bear}</div>
-                              </div>}
-                            </div>
-                          </details>
-                        )}
-                        {!w.verdict&&<div style={{fontSize:10,color:"#334155",textAlign:"center",padding:"6px 0"}}>{"Run AI Analysis on this sector to add outlook data"}</div>}
                       </div>
                     );
+                  })}
                   })}
                 </div>
               </div>
