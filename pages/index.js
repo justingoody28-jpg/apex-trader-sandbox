@@ -647,18 +647,34 @@ function LosersTab(props){
           var s2=clean.indexOf("["),e2=clean.lastIndexOf("]");
           if(s2===-1||e2===-1)throw new Error("No JSON array found");
           var parsed=JSON.parse(clean.slice(s2,e2+1));
-          // Sanity check: if analyst target < current price, cap recommendation
+                        // Override AI-hallucinated targets with real Finnhub data
+              var realDataMap={};
+              stocksForClaude.forEach(function(s){
+                realDataMap[s.symbol]=s;
+              });
               parsed.forEach(function(s){
-                var target = parseFloat(s.analystTarget);
-                var price = parseFloat((s.price||"0").replace(/[^0-9.]/g,""));
-                if(target > 0 && price > 0 && target < price * 0.97){
-                  // Target is below current price — analysts don't see upside
-                  if(s.recommendation==="Strong Buy") s.recommendation="Avoid";
-                  else if(s.recommendation==="Buy") s.recommendation="Avoid";
-                  s.verdict = s.verdict==="Strong Overreaction"?"Justified":
-                              s.verdict==="Overreaction"?"Justified":s.verdict;
-                  s._analystWarning = true;
+                var real=realDataMap[s.ticker];
+                if(!real) return;
+                var realTarget=real.analystTarget?parseFloat(real.analystTarget):null;
+                var realPrice=real.price?parseFloat(real.price):null;
+                if(realTarget&&realTarget>0){
+                  s.analystTarget="$"+real.analystTarget;
+                  if(realPrice&&realPrice>0){
+                    var upNum=+((realTarget-realPrice)/realPrice*100).toFixed(0);
+                    s.upsideNum=upNum;
+                    s.upside=(upNum>=0?"+":"")+upNum+"%";
+                    // If target is below price: analysts see it as overvalued
+                    if(realTarget<realPrice*0.97){
+                      s.recommendation="Avoid";
+                      if(s.verdict==="Strong Overreaction"||s.verdict==="Overreaction") s.verdict="Justified";
+                    }
+                  }
+                } else {
+                  s.analystTarget="N/A";
+                  s.upside="N/A";
                 }
+                // Also pass real analyst buy %
+                if(real.analystBuyPct!=null) s.analystBuyPct=real.analystBuyPct;
               });
               setResults(parsed);
           var over=parsed.filter(function(s){return s.verdict==="Strong Overreaction"||s.verdict==="Overreaction";}).length;
