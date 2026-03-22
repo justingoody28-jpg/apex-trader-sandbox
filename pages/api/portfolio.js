@@ -10,7 +10,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   const { action } = req.query;
 
   try {
@@ -20,18 +19,13 @@ export default async function handler(req, res) {
         supabase.from('positions').select('*').order('opened_at', { ascending: false }),
         supabase.from('trades').select('*').order('executed_at', { ascending: false }).limit(500),
       ]);
-      return res.json({
-        cash: port.data?.cash ?? 100000,
-        startCash: port.data?.start_cash ?? 100000,
-        positions: positions.data ?? [],
-        trades: trades.data ?? [],
-      });
+      return res.json({ cash: port.data?.cash ?? 100000, startCash: port.data?.start_cash ?? 100000, positions: positions.data ?? [], trades: trades.data ?? [] });
     }
 
     if (req.method === 'POST' && action === 'trade') {
       const { ticker, side, quantity, price, pnl, reason, auto, newCash, position } = req.body;
       const metricsStr = req.body.metrics ? ' | '+JSON.stringify(req.body.metrics) : '';
-      await supabase.from('trades').insert({ ticker, side, quantity, price, pnl: pnl || 0, reason: (reason||'Manual') + metricsStr, auto: auto || false });
+      await supabase.from('trades').insert({ ticker, side, quantity, price, pnl: pnl||0, reason: (reason||'Manual')+metricsStr, auto: auto||false });
       await supabase.from('portfolio').update({ cash: newCash, updated_at: new Date() }).eq('id', 'main');
       if (side === 'BUY') {
         await supabase.from('positions').insert({ ticker, shares: quantity, avg_price: price, entry_price: price, sl: position.sl, tp: position.tp });
@@ -42,36 +36,40 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST' && action === 'ai_analysis') {
-      const { results } = req.body;
-      if (results && results.length) {
-        // Delete existing rows for these tickers then insert fresh
-        // This ensures recovery_probability and all fields always get updated
-        const tickers = results.map(r => r.ticker).filter(Boolean);
-        if (tickers.length) {
-          await supabase.from('ai_analysis').delete().in('ticker', tickers);
-        }
-        await supabase.from('ai_analysis').insert(
-          results.map(r => ({
-            ticker: r.ticker,
-            verdict: r.verdict,
-            catalyst: r.catalyst,
-            bull_case: r.bull_case || r.bull || null,
-            bear_case: r.bear_case || r.bear || null,
-            analyst_target: String(r.analyst_target || r.analystTarget || ''),
-            upside: String(r.upside || ''),
-            upside_num: parseFloat(r.upside_num || r.upsideNum) || null,
-            recommendation: r.recommendation || null,
-            drop_pct: parseFloat(r.drop_pct || r.dropNum) || null,
-            price_str: String(r.price_str || r.price || ''),
-            market_cap: String(r.market_cap || r.marketCap || ''),
-            recovery_probability: r.recovery_probability || r.recoveryProbability || null,
-            recovery_timeline: r.recovery_timeline || r.recoveryTimeline || null,
-            multi_tf_analysis: r.multi_tf_analysis || r.multiTfAnalysis || null,
-            selected_tf_change: r.selected_tf_change || r.selectedTfChange || null,
-          }))
-        );
-      }
-      return res.json({ ok: true });
+      const { results, category } = req.body;
+      if (!results || !results.length) return res.json({ ok: true });
+      
+      const tickers = results.map(r => r.ticker).filter(Boolean);
+      
+      // Delete existing rows for these tickers
+      const { error: delErr } = await supabase.from('ai_analysis').delete().in('ticker', tickers);
+      if (delErr) return res.json({ ok: false, deleteError: delErr.message });
+      
+      // Insert fresh rows with all fields including recovery
+      const rows = results.map(r => ({
+        ticker: r.ticker,
+        category: category || 'watchlist_refresh',
+        verdict: r.verdict || null,
+        catalyst: r.catalyst || null,
+        bull_case: r.bull_case || r.bull || null,
+        bear_case: r.bear_case || r.bear || null,
+        analyst_target: r.analyst_target ? String(r.analyst_target) : null,
+        upside: r.upside ? String(r.upside) : null,
+        upside_num: r.upside_num != null ? parseFloat(r.upside_num) : null,
+        recommendation: r.recommendation || null,
+        drop_pct: r.drop_pct != null ? parseFloat(r.drop_pct) : null,
+        price_str: r.price_str || r.price || null,
+        market_cap: r.market_cap || null,
+        recovery_probability: r.recovery_probability || null,
+        recovery_timeline: r.recovery_timeline || null,
+        multi_tf_analysis: r.multi_tf_analysis || null,
+        selected_tf_change: r.selected_tf_change || null,
+      }));
+      
+      const { error: insErr, data: insData } = await supabase.from('ai_analysis').insert(rows).select('ticker, recovery_probability');
+      if (insErr) return res.json({ ok: false, insertError: insErr.message, rows_attempted: rows.length });
+      
+      return res.json({ ok: true, inserted: insData?.length, sample: insData?.[0] });
     }
 
     if (req.method === 'POST' && action === 'validation') {
