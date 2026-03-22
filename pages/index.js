@@ -1879,8 +1879,7 @@ export default function App(){
                 return<div key={i} style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:9,padding:"12px 14px"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:5}}>{r.l}</div><div style={{fontSize:12,color:r.c,fontWeight:600}}>{r.v}</div></div>;
               })}
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(248px,1fr))",gap:12}}>
-              {appWatchlist.length>0&&watchlistStocks.length>0&&(
+            appWatchlist.length>0&&watchlistStocks.length>0&&(
 <div style={{marginBottom:16,background:"#050b14",border:"1px solid #1e293b",borderRadius:10,overflow:"hidden"}}>
 <div style={{padding:"10px 16px",borderBottom:"1px solid #1e293b",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",letterSpacing:1}}>WATCHLIST</span>
@@ -1921,7 +1920,8 @@ onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
 })}</tbody>
 </table>
 </div>
-</div>)}{stocks.filter(function(s){return s.sig!=="HOLD";}).map(function(s,i){
+</div>)}<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(248px,1fr))",gap:12}}>
+              {{stocks.filter(function(s){return s.sig!=="HOLD";}).map(function(s,i){
                 var sg=SIGS[s.sig]||SIGS.HOLD,buy=s.sig==="STRONG_BUY"||s.sig==="BUY"||s.sig==="WATCH";
                 return(
                   <div key={s.ticker} style={{background:sg.bg,border:"1px solid "+sg.b,borderRadius:12,padding:"16px 18px",animation:"fu 0.3s ease "+(i*0.04)+"s both"}}>
