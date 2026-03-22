@@ -1880,7 +1880,7 @@ export default function App(){
               })}
             </div>
             appWatchlist.length>0&&watchlistStocks.length>0&&(
-<div style={{marginBottom:16,background:"#050b14",border:"1px solid #1e293b",borderRadius:10,overflow:"hidden"}}>
+<div style={{gridColumn:"1 / -1",marginBottom:16,background:"#050b14",border:"1px solid #1e293b",borderRadius:10,overflow:"hidden"}}>
 <div style={{padding:"10px 16px",borderBottom:"1px solid #1e293b",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 <span style={{fontSize:13,fontWeight:700,color:"#f1f5f9",letterSpacing:1}}>WATCHLIST</span>
 <span style={{fontSize:10,color:"#334155"}}>{watchlistStocks.length+" stocks"}</span>
