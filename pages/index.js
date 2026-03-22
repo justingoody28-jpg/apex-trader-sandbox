@@ -576,7 +576,7 @@ function LosersTab(props){
           var lo52=fh.metric&&fh.metric.metric&&fh.metric.metric["52WeekLow"]?fh.metric.metric["52WeekLow"]:null;
           var pe=fh.metric&&fh.metric.metric?fh.metric.metric["peExclExtraTTM"]:null;
           var beta=fh.metric&&fh.metric.metric?fh.metric.metric["beta"]:null;
-          var analystTarget=fh.pt&&(fh.pt.targetConsensus||fh.pt.targetConsensus||fh.pt.targetMean))?fh.pt.targetConsensus||fh.pt.targetMean):null;
+          var analystTarget=fh.pt&&(fh.pt.targetConsensus||fh.pt.targetConsensus)?fh.pt.targetConsensus:null;
           var rec=fh.rec&&Array.isArray(fh.rec)&&fh.rec.length>0?fh.rec[0]:null;
           var buyPct=rec?Math.round(((rec.buy||0)+(rec.strongBuy||0))/((rec.buy||0)+(rec.hold||0)+(rec.sell||0)+(rec.strongBuy||0)+(rec.strongSell||0)||1)*100):null;
           return {
@@ -721,7 +721,7 @@ function LosersTab(props){
       var lo52=m&&m.metric&&m.metric["52WeekLow"]?m.metric["52WeekLow"]:null;
       var pe=m&&m.metric?m.metric["peExclExtraTTM"]:null;
       var beta=m&&m.metric?m.metric["beta"]:null;
-      var analystTarget=pt&&pt.targetMean?pt.targetMean:null;
+      var analystTarget=pt&&pt.targetConsensus?pt.targetConsensus:null;
       var recData=Array.isArray(rec)&&rec.length>0?rec[0]:null;
       var buyPct=recData?Math.round(((recData.buy||0)+(recData.strongBuy||0))/((recData.buy||0)+(recData.hold||0)+(recData.sell||0)+(recData.strongBuy||0)+(recData.strongSell||0)||1)*100):null;
       var perfStr=Object.entries(tfPerf).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
@@ -1174,9 +1174,9 @@ export default function App(){
               verdict:ai?ai.verdict:null,catalyst:ai?ai.catalyst:null,
               bull:ai?ai.bull_case:null,bear:ai?ai.bear_case:null,
               // Use live Finnhub target if available, fall back to stored AI target
-              analystTarget:(function(){var lpt=r.pt&&r.pt.targetConsensus||fh.pt.targetMean)?r.pt.targetConsensus||fh.pt.targetMean):null;return lpt?"$"+lpt.toFixed(0):(ai?ai.analyst_target:null);})(),
+              analystTarget:(function(){var lpt=r.pt&&r.pt.targetConsensus?r.pt.targetConsensus:null;return lpt?"$"+lpt.toFixed(0):(ai?ai.analyst_target:null);})(),
               upside:ai?ai.upside:null,
-              _livePtTarget:r.pt&&r.pt.targetConsensus||fh.pt.targetMean)?r.pt.targetConsensus||fh.pt.targetMean):null,
+              _livePtTarget:r.pt&&r.pt.targetConsensus?r.pt.targetConsensus:null,
               recommendation:ai?ai.recommendation:null,dropPct:ai?ai.drop_pct:null,
               recoveryProb:ai?ai.recovery_probability:null,
               recoveryTimeline:ai?ai.recovery_timeline:null,
