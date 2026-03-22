@@ -771,7 +771,7 @@ function LosersTab(props){
           />
           <button onClick={runSearch} disabled={searchLoading||!searchTicker.trim()}
             style={{background:searchLoading||!searchTicker.trim()?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",border:"none",color:searchLoading||!searchTicker.trim()?"#475569":"#fff",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:searchLoading||!searchTicker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap"}}>
-            {searchLoading?"Analyzing...":"ð Analyze"}
+            {searchLoading?"Analyzing...":" Analyze"}
           </button>
           {searchResult&&<button onClick={function(){setSearchResult(null);setSearchTicker("");}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>Clear</button>}
         </div>
@@ -840,11 +840,11 @@ function LosersTab(props){
             </div>
             <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
               {watchlist.find(function(w){return w.ticker===sr.ticker;})?
-                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>â In Watchlist</button>:
+                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}> In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(sr.ticker,sr.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
-              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ð Chart</button>
-              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ð¥ Analysts</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ðChart</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}> Analysts</button>
             </div>
             {expanded[sr.ticker]&&expanded[sr.ticker].chart&&<div style={{marginBottom:12}}><PriceChart data={chartData[sr.ticker]} ticker={sr.ticker}/></div>}
             {expanded[sr.ticker]&&expanded[sr.ticker].ratings&&<div style={{marginBottom:12}}><AnalystChart data={ratingsData[sr.ticker]}/></div>}
@@ -882,7 +882,7 @@ function LosersTab(props){
         </div>
         <button onClick={runAnalysis} disabled={loading}
           style={{width:"100%",background:loading?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",border:"none",color:loading?"#475569":"#fff",borderRadius:9,padding:"13px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
-          {loading?"Fetching real data + analyzing...":"ð Find Biggest Losers in "+sectorCurrent.label+" ("+tfCurrent.label+")"}
+          {loading?"Fetching real data + analyzing...":" Find Biggest Losers in "+sectorCurrent.label+" ("+tfCurrent.label+")"}
         </button>
       </div>
 
@@ -978,11 +978,11 @@ function LosersTab(props){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
               <div style={{display:"flex",gap:8}}>
                 {watchlist.find(function(w){return w.ticker===l.ticker;})?
-                  <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>â In Watchlist</button>:
+                  <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}> In Watchlist</button>:
                   <button onClick={function(){addToWatchlist(l.ticker,l.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
                 }
-                <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ð Chart</button>
-                <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ð¥ Analysts</button>
+                <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Chart</button>
+                <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}> Analysts</button>
               </div>
               {(l.recommendation==="Strong Buy"||l.recommendation==="Buy")&&<button onClick={function(){var m=props.stocks.find(function(s){return s.ticker===l.ticker;});props.setModal(m?Object.assign({},m,{side:"BUY"}):{ticker:l.ticker,cur:parseFloat((l.price||"0").replace(/[^0-9.]/g,"")),sl:0,tp:0,side:"BUY"});props.setTab("paper");props.setQty(1);}} style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Paper Buy {l.ticker}</button>}
             </div>
@@ -1633,7 +1633,7 @@ export default function App(){
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>PORTFOLIO</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{"$"+portVal.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>RETURN</div><div style={{fontSize:14,fontWeight:700,color:portPct>=0?"#22c55e":"#ef4444"}}>{(portPct>=0?"+":"")+portPct.toFixed(2)+"%"}</div></div>
             <button onClick={function(){refresh(false);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>
-                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">â» New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
+                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
           </div>
         </div>
       </div>
@@ -1748,7 +1748,7 @@ export default function App(){
               <div style={{marginBottom:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>â­ Watchlist</div>
+                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>* Watchlist</div>
                     <div style={{fontSize:11,color:"#334155",marginTop:2}}>{appWatchlist.length} stocks from AI Analysis</div>
                   </div>
                   <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -2164,7 +2164,7 @@ onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
                   return(<div key={i} style={{background:"#052e16",border:"1px solid #15803d",borderRadius:7,padding:"10px 12px"}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#4ade80"}}>{s.label}</div>
                     <div style={{fontSize:10,color:"#334155"}}>{s.sub}</div>
-                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>â ACTIVE</div>
+                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>ACTIVE</div>
                   </div>);
                 })}
               </div>
