@@ -1160,7 +1160,7 @@ export default function App(){
             var ratioData=ratiosArr.length>0?ratiosArr[0]:null;
             var livePeratio=ratioData&&(ratioData.peRatioTTM||ratioData.priceToEarningsRatioTTM)?+parseFloat(ratioData.peRatioTTM||ratioData.priceToEarningsRatioTTM).toFixed(1):null;
             // SEC EDGAR revenue growth
-            var edgarRevs=(r.edgar&&Array.isArray(r.edgar.revenues))?r.edgar.revenues:[];
+            var edgarRevs=(r.edgar&&Array.isArray(r.edgar.revenues)?r.edgar.revenues:[];
             var revenueGrowth=null;
             if(edgarRevs.length>=2){
               var revLatest=edgarRevs[edgarRevs.length-1].val,revPrev=edgarRevs[edgarRevs.length-2].val;
