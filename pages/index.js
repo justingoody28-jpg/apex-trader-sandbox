@@ -26,7 +26,7 @@ const VS = {
   "Justified":{c:"#f87171",bg:"#1c0505",b:"#b91c1c",dot:"#ef4444"},
 };
 
-// Ã¢ÂÂÃ¢ÂÂ Math helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Math helpers ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function genPrices(base,days,vol){
   var p=[base];
   for(var i=1;i<days;i++) p.push(Math.max(p[i-1]+(Math.random()-0.48)*vol*p[i-1],1));
@@ -53,7 +53,7 @@ function macdH(prices){
   return +(m-m*0.85).toFixed(3);
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Stock generator Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Stock generator ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function genStock(ticker,idx,cfg){
   cfg=cfg||INIT_CFG;
   var base=BASE[ticker]||50,vol=0.018+Math.random()*0.012;
@@ -78,7 +78,7 @@ function genStock(ticker,idx,cfg){
     entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Backtester Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Backtester ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function runBT(prices,cfg){
   cfg=cfg||INIT_CFG;
   var S=10000,cash=S,sh=0,ep=0,ed=0,trades=[],equity=[];
@@ -134,7 +134,7 @@ function runBT(prices,cfg){
   return{fv,ret,bhR,bhF,trades,equity,dds,bheq,wr,totalTrades:closed.length,aw,al,pf,avgDur,lw,ll,mcw,mcl,sharpe,sortino,mdd,calmar,exp,monthly,alpha};
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Self-tuning engine Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Self-tuning engine ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function tuneCFG(res,cfg){
   var n=Object.assign({},cfg),changes=[];
   if(res.sharpe<0.5){n.sl=Math.max(3,cfg.sl-1);changes.push("Sharpe "+res.sharpe+" low to SL tightened to "+n.sl+"%");}
@@ -149,7 +149,7 @@ function tuneCFG(res,cfg){
   return{cfg:n,changes};
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Small UI components Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Small UI components ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function Spark(props){
   var p=props.prices.slice(-20),mn=Math.min.apply(null,p),mx=Math.max.apply(null,p),rng=mx-mn||1;
   var pts=p.map(function(v,i){return (i/(p.length-1)*80)+","+(28-(v-mn)/rng*28);}).join(" ");
@@ -174,7 +174,7 @@ function rc(m,v){
   return v>=0?"#4ade80":"#f87171";
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Charts Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Charts ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function EqChart(props){
   var eq=props.equity,bh=props.bheq,tr=props.trades;
   if(!eq||eq.length<2)return null;
@@ -225,7 +225,7 @@ function DDChart(props){
   );
 }
 
-// Ã¢ÂÂÃ¢ÂÂ BacktestResults component Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ BacktestResults component ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function BTResults(props){
   var r=props.r,ticker=props.ticker;
   if(!r)return null;
@@ -315,9 +315,9 @@ function BTResults(props){
   );
 }
 
-// Ã¢ÂÂÃ¢ÂÂ AI Losers Tab Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ AI Losers Tab ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 
-// Ã¢ÂÂÃ¢ÂÂ Price Chart Component Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Price Chart Component ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function PriceChart(props){
   var data=props.data,ticker=props.ticker;
   if(!data||data.length<2)return <div style={{color:"#334155",fontSize:11,padding:"20px 0",textAlign:"center"}}>Loading chart...</div>;
@@ -366,7 +366,7 @@ function PriceChart(props){
   );
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Analyst Ratings Chart Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Analyst Ratings Chart ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function AnalystChart(props){
   var data=props.data;
   if(!data||!Array.isArray(data)||data.length===0)return <div style={{color:"#334155",fontSize:11,padding:"8px 0"}}>No analyst data</div>;
@@ -408,17 +408,17 @@ function AnalystChart(props){
 
 function LosersTab(props){
   var SECTORS_LIST=[
-    {id:"Technology",label:"Technology",icon:"Ã°ÂÂÂ»"},
-    {id:"Healthcare",label:"Healthcare",icon:"Ã°ÂÂÂ¥"},
-    {id:"Financial Services",label:"Financials",icon:"Ã°ÂÂÂ¦"},
-    {id:"Energy",label:"Energy",icon:"Ã¢ÂÂ¡"},
-    {id:"Consumer Cyclical",label:"Consumer Cyclical",icon:"Ã°ÂÂÂÃ¯Â¸Â"},
-    {id:"Industrials",label:"Industrials",icon:"Ã°ÂÂÂ­"},
-    {id:"Communication Services",label:"Communication",icon:"Ã°ÂÂÂ¡"},
-    {id:"Basic Materials",label:"Materials",icon:"Ã¢ÂÂÃ¯Â¸Â"},
-    {id:"Consumer Defensive",label:"Consumer Staples",icon:"Ã°ÂÂÂ"},
-    {id:"Real Estate",label:"Real Estate",icon:"Ã°ÂÂÂ¢"},
-    {id:"Utilities",label:"Utilities",icon:"Ã°ÂÂÂ¡"},
+    {id:"Technology",label:"Technology",icon:"ÃÂ°ÃÂÃÂÃÂ»"},
+    {id:"Healthcare",label:"Healthcare",icon:"ÃÂ°ÃÂÃÂÃÂ¥"},
+    {id:"Financial Services",label:"Financials",icon:"ÃÂ°ÃÂÃÂÃÂ¦"},
+    {id:"Energy",label:"Energy",icon:"ÃÂ¢ÃÂÃÂ¡"},
+    {id:"Consumer Cyclical",label:"Consumer Cyclical",icon:"ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ"},
+    {id:"Industrials",label:"Industrials",icon:"ÃÂ°ÃÂÃÂÃÂ­"},
+    {id:"Communication Services",label:"Communication",icon:"ÃÂ°ÃÂÃÂÃÂ¡"},
+    {id:"Basic Materials",label:"Materials",icon:"ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ"},
+    {id:"Consumer Defensive",label:"Consumer Staples",icon:"ÃÂ°ÃÂÃÂÃÂ"},
+    {id:"Real Estate",label:"Real Estate",icon:"ÃÂ°ÃÂÃÂÃÂ¢"},
+    {id:"Utilities",label:"Utilities",icon:"ÃÂ°ÃÂÃÂÃÂ¡"},
   ];
   var TIMEFRAMES=[
     {id:"1W",label:"1 Week",days:7},
@@ -771,7 +771,7 @@ function LosersTab(props){
           />
           <button onClick={runSearch} disabled={searchLoading||!searchTicker.trim()}
             style={{background:searchLoading||!searchTicker.trim()?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",border:"none",color:searchLoading||!searchTicker.trim()?"#475569":"#fff",borderRadius:8,padding:"10px 20px",fontSize:13,fontWeight:700,cursor:searchLoading||!searchTicker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap"}}>
-            {searchLoading?"Analyzing...":"Ã°ÂÂÂ Analyze"}
+            {searchLoading?"Analyzing...":"ÃÂ°ÃÂÃÂÃÂ Analyze"}
           </button>
           {searchResult&&<button onClick={function(){setSearchResult(null);setSearchTicker("");}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"10px 14px",fontSize:12,cursor:"pointer"}}>Clear</button>}
         </div>
@@ -840,11 +840,11 @@ function LosersTab(props){
             </div>
             <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
               {watchlist.find(function(w){return w.ticker===sr.ticker;})?
-                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Ã¢ÂÂ In Watchlist</button>:
+                <button onClick={function(){removeFromWatchlist(sr.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ÃÂ¢ÃÂÃÂ In Watchlist</button>:
                 <button onClick={function(){addToWatchlist(sr.ticker,sr.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
               }
-              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Ã°ÂÂÂ Chart</button>
-              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Ã°ÂÂÂ¥ Analysts</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"chart");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ÃÂ°ÃÂÃÂÃÂ Chart</button>
+              <button onClick={function(){toggleExpand(sr.ticker,"ratings");}} style={{background:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[sr.ticker]&&expanded[sr.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ÃÂ°ÃÂÃÂÃÂ¥ Analysts</button>
             </div>
             {expanded[sr.ticker]&&expanded[sr.ticker].chart&&<div style={{marginBottom:12}}><PriceChart data={chartData[sr.ticker]} ticker={sr.ticker}/></div>}
             {expanded[sr.ticker]&&expanded[sr.ticker].ratings&&<div style={{marginBottom:12}}><AnalystChart data={ratingsData[sr.ticker]}/></div>}
@@ -882,7 +882,7 @@ function LosersTab(props){
         </div>
         <button onClick={runAnalysis} disabled={loading}
           style={{width:"100%",background:loading?"#1e293b":"linear-gradient(135deg,#1d4ed8,#7c3aed)",border:"none",color:loading?"#475569":"#fff",borderRadius:9,padding:"13px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
-          {loading?"Fetching real data + analyzing...":"Ã°ÂÂÂ Find Biggest Losers in "+sectorCurrent.label+" ("+tfCurrent.label+")"}
+          {loading?"Fetching real data + analyzing...":"ÃÂ°ÃÂÃÂÃÂ Find Biggest Losers in "+sectorCurrent.label+" ("+tfCurrent.label+")"}
         </button>
       </div>
 
@@ -940,7 +940,7 @@ function LosersTab(props){
               {Object.entries(l.performance).filter(function(e){return e[1]!==null;}).map(function(e,i){
                 var active=e[0]===timeframe,neg=e[1]<0;
                 return(<div key={i} style={{background:active?(neg?"#2d0a0a":"#0a2d12"):(neg?"#1c0505":"#052e16"),border:"1px solid "+(active?(neg?"#ef4444":"#22c55e"):(neg?"#7f1d1d":"#14532d")),borderRadius:6,padding:"5px 9px",textAlign:"center",opacity:active?1:0.65}}>
-                  <div style={{fontSize:8,color:"#64748b",marginBottom:2}}>{e[0]}{active?" Ã¢ÂÂ":""}</div>
+                  <div style={{fontSize:8,color:"#64748b",marginBottom:2}}>{e[0]}{active?" ÃÂ¢ÃÂÃÂ":""}</div>
                   <div style={{fontSize:12,fontWeight:700,color:neg?"#f87171":"#4ade80"}}>{e[1]>0?"+":""}{e[1]}%</div>
                 </div>);
               })}
@@ -978,11 +978,11 @@ function LosersTab(props){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
               <div style={{display:"flex",gap:8}}>
                 {watchlist.find(function(w){return w.ticker===l.ticker;})?
-                  <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Ã¢ÂÂ In Watchlist</button>:
+                  <button onClick={function(){removeFromWatchlist(l.ticker);}} style={{background:"transparent",border:"1px solid #334155",color:"#64748b",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ÃÂ¢ÃÂÃÂ In Watchlist</button>:
                   <button onClick={function(){addToWatchlist(l.ticker,l.name);}} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>+ Add to Screener</button>
                 }
-                <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Ã°ÂÂÂ Chart</button>
-                <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>Ã°ÂÂÂ¥ Analysts</button>
+                <button onClick={function(){toggleExpand(l.ticker,"chart");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].chart?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].chart?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ÃÂ°ÃÂÃÂÃÂ Chart</button>
+                <button onClick={function(){toggleExpand(l.ticker,"ratings");}} style={{background:expanded[l.ticker]&&expanded[l.ticker].ratings?"#0c1a2e":"transparent",border:"1px solid #1e293b",color:expanded[l.ticker]&&expanded[l.ticker].ratings?"#60a5fa":"#475569",borderRadius:8,padding:"8px 14px",fontSize:12,cursor:"pointer"}}>ÃÂ°ÃÂÃÂÃÂ¥ Analysts</button>
               </div>
               {(l.recommendation==="Strong Buy"||l.recommendation==="Buy")&&<button onClick={function(){var m=props.stocks.find(function(s){return s.ticker===l.ticker;});props.setModal(m?Object.assign({},m,{side:"BUY"}):{ticker:l.ticker,cur:parseFloat((l.price||"0").replace(/[^0-9.]/g,"")),sl:0,tp:0,side:"BUY"});props.setTab("paper");props.setQty(1);}} style={{background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Paper Buy {l.ticker}</button>}
             </div>
@@ -1381,7 +1381,7 @@ export default function App(){
 
   useEffect(function(){refresh();},[refresh]);
 
-  // Ã¢ÂÂÃ¢ÂÂ Load portfolio from database on mount Ã¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Load portfolio from database on mount ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
   useEffect(function(){
     fetch("/api/portfolio?action=load")
       .then(function(r){return r.json();})
@@ -1408,7 +1408,7 @@ export default function App(){
     if(s)setBtResult(runBT(s.prices,cfgRef.current));
   },[btTicker,stocks]);
 
-  // Ã¢ÂÂÃ¢ÂÂ Manual trade Ã¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Manual trade ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
   function execTrade(stock,side,q){
     var cost=stock.cur*q;
     if(side==="BUY"){
@@ -1476,7 +1476,7 @@ export default function App(){
 
   function addLog(entry){setApLog(function(prev){return[entry].concat(prev).slice(0,100);});}
 
-  // Ã¢ÂÂÃ¢ÂÂ Self-tune Ã¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Self-tune ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
   function runTune(){
     var s=stocksRef.current.find(function(s){return s.ticker===btTicker;})||stocksRef.current[0];
     if(!s)return;
@@ -1489,7 +1489,7 @@ export default function App(){
     notify(tuned.changes.length>0?"Self-tune: "+tuned.changes.length+" param(s) adjusted":"Self-tune: strategy performing well");
   }
 
-  // Ã¢ÂÂÃ¢ÂÂ Autopilot scan cycle Ã¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Autopilot scan cycle ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
   function runScan(){
     var cur=stocksRef.current,p=portRef.current,c=cfgRef.current;
     var posCount=Object.keys(p.pos).length;
@@ -1525,7 +1525,7 @@ export default function App(){
     if(scanCountRef.current%4===0){runTune();}
   }
 
-  // Ã¢ÂÂÃ¢ÂÂ Autopilot interval Ã¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Autopilot interval ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
   useEffect(function(){
     if(apOn){
       countRef.current=AP_SEC;
@@ -1545,7 +1545,7 @@ export default function App(){
     return function(){if(intervalRef.current){clearInterval(intervalRef.current);intervalRef.current=null;}};
   },[apOn]);
 
-  // Ã¢ÂÂÃ¢ÂÂ Portfolio calculations Ã¢ÂÂÃ¢ÂÂ
+  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Portfolio calculations ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
   var portVal=port.cash+Object.values(port.pos).reduce(function(s,p){
     var st=stocks.find(function(x){return x.ticker===p.ticker;});
     return s+(st?st.cur*p.shares:p.avg*p.shares);
@@ -1633,14 +1633,14 @@ export default function App(){
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>PORTFOLIO</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{"$"+portVal.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>RETURN</div><div style={{fontSize:14,fontWeight:700,color:portPct>=0?"#22c55e":"#ef4444"}}>{(portPct>=0?"+":"")+portPct.toFixed(2)+"%"}</div></div>
             <button onClick={function(){refresh(false);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>
-                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">Ã¢ÂÂ» New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
+                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">ÃÂ¢ÃÂÃÂ» New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
           </div>
         </div>
       </div>
 
       <div style={{maxWidth:1200,margin:"0 auto",padding:"20px 20px 0"}}>
 
-        {/* Ã¢ÂÂÃ¢ÂÂ SCREENER Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ SCREENER ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             {/* Ticker Detail Panel */}
@@ -1688,7 +1688,7 @@ export default function App(){
                     <div style={{fontSize:11,color:"#475569"}}>{s.sector}  |  ${s.cur}  |  Score {s.score}/100</div>
                   </div>
                   <button onClick={function(){setTickerDetail(null);setTickerAI(null);}}
-                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>Ã¢ÂÂ</button>
+                    style={{background:"transparent",border:"none",color:"#475569",fontSize:18,cursor:"pointer",padding:"4px 8px"}}>ÃÂ¢ÃÂÃÂ</button>
                 </div>
                 {/* Signal Breakdown */}
                 <div style={{padding:"16px 20px",borderBottom:"1px solid #0f172a"}}>
@@ -1748,7 +1748,7 @@ export default function App(){
               <div style={{marginBottom:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>Ã¢Â­Â Watchlist</div>
+                    <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>ÃÂ¢ÃÂ­ÃÂ Watchlist</div>
                     <div style={{fontSize:11,color:"#334155",marginTop:2}}>{appWatchlist.length} stocks from AI Analysis</div>
                   </div>
                   <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -1791,7 +1791,7 @@ export default function App(){
                             <div style={{fontSize:11,fontWeight:600,color:chgCol}}>{w.chg>0?"+":""}{w.chg.toFixed(2)}% today</div>
                             {w.selectedTfChange&&<div style={{fontSize:10,color:"#f87171",marginTop:1}}>{w.selectedTfChange} at analysis</div>}
                           </div>
-                          <button onClick={function(){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})}).then(function(){refreshWatchlist();});}} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:5,padding:"3px 7px",fontSize:11,cursor:"pointer",marginTop:2}}>{"Ã¢ÂÂ"}</button>
+                          <button onClick={function(){fetch("/api/portfolio?action=watchlist_remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ticker:w.ticker})}).then(function(){refreshWatchlist();});}} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:5,padding:"3px 7px",fontSize:11,cursor:"pointer",marginTop:2}}>{"ÃÂ¢ÃÂÃÂ"}</button>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:5,marginBottom:8}}>
                           {[
@@ -1835,26 +1835,26 @@ export default function App(){
                         )}
                         {w.multiTfAnalysis&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"Ã¢ÂÂº PATTERN ANALYSIS"}</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"ÃÂ¢ÃÂÃÂº PATTERN ANALYSIS"}</summary>
                             <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.multiTfAnalysis}</div>
                           </details>
                         )}
                         {w.catalyst&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4,marginBottom:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"Ã¢ÂÂº CATALYST"}</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"ÃÂ¢ÃÂÃÂº CATALYST"}</summary>
                             <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.6,padding:"6px 0 2px 10px"}}>{w.catalyst}</div>
                           </details>
                         )}
                         {(w.bull||w.bear)&&(
                           <details style={{borderTop:"1px solid #0f172a",paddingTop:4}}>
-                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"Ã¢ÂÂº BULL / BEAR CASES"}</summary>
+                            <summary style={{cursor:"pointer",fontSize:9,color:"#475569",letterSpacing:1,padding:"4px 0",userSelect:"none",listStyle:"none"}}>{"ÃÂ¢ÃÂÃÂº BULL / BEAR CASES"}</summary>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:6}}>
                               {w.bull&&<div style={{background:"#052e1615",border:"1px solid #16a34a30",borderRadius:7,padding:"7px 10px"}}>
-                                <div style={{fontSize:8,color:"#16a34a",letterSpacing:1,marginBottom:3}}>"Ã¢ÂÂ² BULL"</div>
+                                <div style={{fontSize:8,color:"#16a34a",letterSpacing:1,marginBottom:3}}>"ÃÂ¢ÃÂÃÂ² BULL"</div>
                                 <div style={{fontSize:10,color:"#86efac",lineHeight:1.5}}>{w.bull}</div>
                               </div>}
                               {w.bear&&<div style={{background:"#1c050515",border:"1px solid #b91c1c30",borderRadius:7,padding:"7px 10px"}}>
-                                <div style={{fontSize:8,color:"#b91c1c",letterSpacing:1,marginBottom:3}}>"Ã¢ÂÂ¼ BEAR"</div>
+                                <div style={{fontSize:8,color:"#b91c1c",letterSpacing:1,marginBottom:3}}>"ÃÂ¢ÃÂÃÂ¼ BEAR"</div>
                                 <div style={{fontSize:10,color:"#fca5a5",lineHeight:1.5}}>{w.bear}</div>
                               </div>}
                             </div>
@@ -1870,13 +1870,13 @@ export default function App(){
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ AI ANALYSIS Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ AI ANALYSIS ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab==="signals"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14}}>
 {appWatchlist.length>0&&(
   <div style={{marginBottom:20}}>
-    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9",marginBottom:10,letterSpacing:1}}>{"⭐ WATCHLIST SIGNALS"}</div>
+    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9",marginBottom:10,letterSpacing:1}}>{"â­ WATCHLIST SIGNALS"}</div>
     <div style={{display:"flex",flexDirection:"column",gap:6}}>
       {watchlistStocks.map(function(w){
         var pct=w.chg||0;
@@ -1890,7 +1890,7 @@ export default function App(){
               <div style={{fontSize:9,color:"#334155",marginTop:1}}>{(w.name||"").slice(0,18)}</div>
             </div>
             <div style={{fontSize:12,fontWeight:700,color:pctCol,minWidth:55}}>{pct>0?"+":""}{pct.toFixed(2)}%</div>
-            <div style={{fontSize:11,color:"#64748b",minWidth:65}}>{"DIP: "}{w.dip>0?w.dip.toFixed(1)+"%":"—"}</div>
+            <div style={{fontSize:11,color:"#64748b",minWidth:65}}>{"DIP: "}{w.dip>0?w.dip.toFixed(1)+"%":"â"}</div>
             {w.recommendation&&<div style={{fontSize:10,fontWeight:700,color:recCol,background:recCol+"18",padding:"2px 8px",borderRadius:4}}>{w.recommendation.toUpperCase()}</div>}
             {w.recoveryProb&&<div style={{fontSize:10,color:probCol}}>{"Recovery: "}{w.recoveryProb}</div>}
             {w.recoveryTimeline&&<div style={{fontSize:10,color:"#64748b"}}>{w.recoveryTimeline}</div>}
@@ -1907,7 +1907,7 @@ export default function App(){
               })}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(248px,1fr))",gap:12}}>
-              {stocks.filter(function(s){return s.sig!=="HOLD";}).map(function(s,i){
+              {appWatchlist.length>0&&watchlistStocks.length>0&&(<div style={{marginBottom:18,background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,overflow:"hidden"}}><div style={{padding:"10px 14px 8px",borderBottom:"1px solid #0f172a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:12,fontWeight:700,color:"#f1f5f9"}}>{"\u2b50 Watchlist Signals"}</div><div style={{fontSize:10,color:"#334155"}}>{watchlistStocks.length}{" tracked"}</div></div><div style={{display:"grid",gridTemplateColumns:"75px 1fr 72px 60px 60px 58px 95px",gap:4,padding:"5px 14px",fontSize:8,color:"#334155",letterSpacing:1,borderBottom:"1px solid #0f172a"}}><span>TICKER</span><span>NAME</span><span>PRICE</span><span>1D</span><span>DIP</span><span>P/E</span><span>OUTLOOK</span></div>{watchlistStocks.map(function(w,wi){var rec=w.recommendation?w.recommendation.toUpperCase():"";var sig=rec.includes("STRONG BUY")?"STRONG BUY":rec.includes("BUY")?"BUY":rec.includes("WATCH")?"WATCH":rec.includes("AVOID")?"AVOID":"HOLD";var sigCol=sig==="STRONG BUY"?"#4ade80":sig==="BUY"?"#86efac":sig==="WATCH"?"#f59e0b":sig==="AVOID"?"#f87171":"#64748b";var pC={"High":"#4ade80","Medium":"#f59e0b","Low":"#f87171"};return(<div key={wi} style={{display:"grid",gridTemplateColumns:"75px 1fr 72px 60px 60px 58px 95px",gap:4,padding:"6px 14px",borderBottom:"1px solid #060c14",alignItems:"center"}} onMouseEnter={function(e){e.currentTarget.style.background="#0f172a";}} onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}><div style={{fontWeight:700,color:"#f1f5f9",fontSize:12}}>{w.ticker}</div><div style={{fontSize:10,color:"#475569",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.name}</div><div style={{fontSize:11,fontWeight:600,color:"#f1f5f9"}}>{w.cur>0?"$"+w.cur.toFixed(2):"-"}</div><div style={{fontSize:11,fontWeight:600,color:w.chg>=0?"#4ade80":"#f87171"}}>{w.chg>=0?"+":""}{w.chg.toFixed(2)}%</div><div style={{fontSize:11,color:w.dip>15?"#f59e0b":"#64748b"}}>{w.dip>0?w.dip.toFixed(1)+"%":"-"}</div><div style={{fontSize:11,color:"#64748b"}}>{w.livePeratio?w.livePeratio.toFixed(1):"-"}</div><div style={{display:"flex",flexDirection:"column",gap:1}}><div style={{fontSize:9,fontWeight:700,color:sigCol,background:sigCol+"18",borderRadius:3,padding:"2px 4px",textAlign:"center"}}>{sig}</div>{w.recoveryProb&&<div style={{fontSize:8,color:pC[w.recoveryProb]||"#94a3b8",textAlign:"center"}}>{w.recoveryProb}{w.recoveryTimeline?" - "+w.recoveryTimeline:""}</div>}</div></div>);})}</div>)}{stocks.filter(function(s){return s.sig!=="HOLD";}).map(function(s,i){
                 var sg=SIGS[s.sig]||SIGS.HOLD,buy=s.sig==="STRONG_BUY"||s.sig==="BUY"||s.sig==="WATCH";
                 return(
                   <div key={s.ticker} style={{background:sg.bg,border:"1px solid "+sg.b,borderRadius:12,padding:"16px 18px",animation:"fu 0.3s ease "+(i*0.04)+"s both"}}>
@@ -1933,7 +1933,7 @@ export default function App(){
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ PAPER TRADE Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ PAPER TRADE ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab==="paper"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
@@ -2000,7 +2000,7 @@ export default function App(){
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ BACKTEST Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ BACKTEST ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab==="backtest"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12,alignItems:"flex-end"}}>
@@ -2016,7 +2016,7 @@ export default function App(){
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ AUTOPILOT Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ AUTOPILOT ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab==="autopilot"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:14,alignItems:"flex-start"}}>
@@ -2116,10 +2116,10 @@ export default function App(){
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ AI ANALYSIS Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ AI ANALYSIS ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab==="ai"&&<LosersTab stocks={stocks} setModal={setModal} setTab={setTab} setQty={setQty} anthropicKey={anthropicKey} fhKey={fhKey} fmpKey={fmpKey}/>}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ SETTINGS Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ SETTINGS ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab==="settings"&&(
           <div style={{animation:"fu 0.3s ease",maxWidth:560}}>
             <div style={{marginBottom:18}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Settings</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Alpaca integration and strategy parameters</div></div>
@@ -2150,7 +2150,7 @@ export default function App(){
                   return(<div key={i} style={{background:"#052e16",border:"1px solid #15803d",borderRadius:7,padding:"10px 12px"}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#4ade80"}}>{s.label}</div>
                     <div style={{fontSize:10,color:"#334155"}}>{s.sub}</div>
-                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>Ã¢ÂÂ ACTIVE</div>
+                    <div style={{fontSize:9,color:"#22c55e",marginTop:4}}>ÃÂ¢ÃÂÃÂ ACTIVE</div>
                   </div>);
                 })}
               </div>
