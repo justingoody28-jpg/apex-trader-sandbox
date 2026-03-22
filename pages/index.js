@@ -1876,11 +1876,11 @@ export default function App(){
                   {["all","buy","watch","sell"].map(function(f){return(
                     <button key={f} onClick={function(){setSf(f);}}
                       style={{background:sf===f?"#1e293b":"transparent",border:"1px solid "+(sf===f?"#334155":"#0f172a"),borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:600,color:sf===f?"#f1f5f9":"#334155",cursor:"pointer",textTransform:"capitalize"}}>{f}</button>
-                  );})}}
+                  );})}
                   {[["score","Score"],["dip","DIP"],["rsi","RSI"]].map(function(s){return(
                     <button key={s[0]} onClick={function(){setSrt(s[0]);}}
                       style={{background:srt===s[0]?"#1e293b":"transparent",border:"1px solid "+(srt===s[0]?"#334155":"#0f172a"),borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:600,color:srt===s[0]?"#f1f5f9":"#334155",cursor:"pointer"}}>{s[1]}</button>
-                  );})}}
+                  );})}
                 </div>
               </div>
               {stocks
