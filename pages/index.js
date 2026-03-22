@@ -1810,7 +1810,7 @@ export default function App(){
                   {wlDetail.upside&&<div style={{fontSize:16,fontWeight:700,color:"#4ade80"}}>{wlDetail.upside}</div>}
                 </div>
               )}
-              {{wlDetail.multiTfAnalysis&&(<div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"12px 14px",marginBottom:10}}><div style={{fontSize:9,color:"#60a5fa",letterSpacing:2,marginBottom:6,fontWeight:700}}>PATTERN</div><div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7}}>{wlDetail.multiTfAnalysis}</div></div>)}
+              {wlDetail.multiTfAnalysis&&(<div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"12px 14px",marginBottom:10}}><div style={{fontSize:9,color:"#60a5fa",letterSpacing:2,marginBottom:6,fontWeight:700}}>PATTERN</div><div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7}}>{wlDetail.multiTfAnalysis}</div></div>)}
               wlDetail.catalyst&&(
                 <div style={{background:"#030712",border:"1px solid #0f172a",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
                   <div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:6}}>CATALYST</div>
