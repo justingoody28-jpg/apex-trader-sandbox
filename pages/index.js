@@ -406,50 +406,6 @@ function AnalystChart(props){
   );
 }
 
-// ── 7-Factor Data Score ────────────────────────────────────────────────────
-function calcDataScore(d){
-  // d = {price, analystTarget, analystBuyPct, pe, dip, change1W, change1M, change3M, beta}
-  var checks=[];
-  var score=0;
-  var price=parseFloat((d.price||"0").toString().replace(/[^0-9.]/g,""))||0;
-  var target=parseFloat((d.analystTarget||"0").toString().replace(/[^0-9.]/g,""))||0;
-  var buyPct=parseFloat(d.analystBuyPct)||0;
-  var pe=parseFloat(d.pe)||0;
-  var dip=parseFloat(d.dip)||0;
-  var c1W=parseFloat(d.change1W)||0;
-  var c1M=parseFloat(d.change1M)||0;
-  var beta=parseFloat(d.beta)||0;
-  // 1. DIP 5-20% (sweet spot) — 20pts
-  var dipOk=dip>=5&&dip<=20;
-  checks.push({label:"DIP 5-20%",pass:dipOk,pts:dipOk?20:0,max:20,value:dip.toFixed(1)+"%"});
-  if(dipOk) score+=20;
-  // 2. Analyst target > price by 10%+ — 20pts
-  var targetOk=target>0&&price>0&&target>=price*1.10;
-  checks.push({label:"Target 10%+ upside",pass:targetOk,pts:targetOk?20:0,max:20,value:target>0?"$"+target.toFixed(0):"N/A"});
-  if(targetOk) score+=20;
-  // 3. Analyst buy % > 60% — 15pts
-  var buyOk=buyPct>=60;
-  checks.push({label:"Analyst buy >60%",pass:buyOk,pts:buyOk?15:0,max:15,value:buyPct>0?buyPct+"%":"N/A"});
-  if(buyOk) score+=15;
-  // 4. P/E reasonable: 0 < P/E < 50 — 15pts
-  var peOk=pe>0&&pe<50;
-  checks.push({label:"P/E 0-50",pass:peOk,pts:peOk?15:0,max:15,value:pe>0?pe.toFixed(1):"N/A"});
-  if(peOk) score+=15;
-  // 5. Selling decelerating: 1W drop < 1M drop (momentum slowing) — 15pts
-  var decelOk=c1W!==0&&c1M!==0&&Math.abs(c1W)<Math.abs(c1M)&&c1M<0;
-  checks.push({label:"Selling decelerating",pass:decelOk,pts:decelOk?15:0,max:15,value:c1M.toFixed(1)+"% / "+c1W.toFixed(1)+"%"});
-  if(decelOk) score+=15;
-  // 6. Not in freefall: 1M drop < 30% — 10pts
-  var noFreefallOk=c1M>-30;
-  checks.push({label:"No freefall (<30%/mo)",pass:noFreefallOk,pts:noFreefallOk?10:0,max:10,value:c1M.toFixed(1)+"%"});
-  if(noFreefallOk) score+=10;
-  // 7. Beta < 2 (not hyper-volatile) — 5pts
-  var betaOk=beta>0&&beta<2;
-  checks.push({label:"Beta < 2",pass:betaOk,pts:betaOk?5:0,max:5,value:beta>0?beta.toFixed(2):"N/A"});
-  if(betaOk) score+=5;
-  return{score:Math.min(100,score),checks:checks};
-}
-
 function LosersTab(props){
   var SECTORS_LIST=[
     {id:"Technology",label:"Technology",icon:"💻"},
@@ -720,22 +676,6 @@ function LosersTab(props){
                 // Also pass real analyst buy %
                 if(real.analystBuyPct!=null) s.analystBuyPct=real.analystBuyPct;
               });
-                            // Compute 7-factor data score
-              parsed.forEach(function(s){
-                var real=realDataMap[s.ticker]||{};
-                var ds=calcDataScore({
-                  price:s.price,
-                  analystTarget:s.analystTarget,
-                  analystBuyPct:real.analystBuyPct!=null?real.analystBuyPct:s.analystBuyPct,
-                  pe:real.pe,
-                  dip:real.selectedTfChange?Math.abs(real.selectedTfChange):s.dropNum?Math.abs(s.dropNum):0,
-                  change1W:real.performance&&real.performance["1W"]!=null?real.performance["1W"]:0,
-                  change1M:real.performance&&real.performance["1M"]!=null?real.performance["1M"]:0,
-                  beta:real.beta,
-                });
-                s.dataScore=ds.score;
-                s.dataChecks=ds.checks;
-              });
               setResults(parsed);
           var over=parsed.filter(function(s){return s.verdict==="Strong Overreaction"||s.verdict==="Overreaction";}).length;
           var highProb=parsed.filter(function(s){return s.recoveryProbability==="High";}).length;
@@ -885,11 +825,6 @@ function LosersTab(props){
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:v.bg,color:v.c,border:"1px solid "+v.b,display:"flex",alignItems:"center",gap:6}}><span style={{width:7,height:7,borderRadius:"50%",background:v.dot,display:"inline-block"}}/>{sr.verdict}</span>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:700,background:"#0f172a",border:"1px solid #1e293b",color:rc2}}>{sr.recommendation}</span>
-                {sr.dataScore!=null&&(
-                  <span style={{padding:"5px 10px",borderRadius:6,fontSize:10,fontWeight:800,background:"#0c1a2e",color:sr.dataScore>=70?"#4ade80":sr.dataScore>=45?"#f59e0b":"#f87171",border:"1px solid "+(sr.dataScore>=70?"#1d4ed8":sr.dataScore>=45?"#d97706":"#7f1d1d")}}>
-                    {sr.dataScore}/100
-                  </span>
-                )}
                 {(function(){var ss=screenerSig(sr.ticker);if(!ss||ss==="HOLD")return null;var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":"#f87171";return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;}())()}
               </div>
             </div>
@@ -1026,11 +961,6 @@ function LosersTab(props){
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:800,background:vs.bg,color:vs.c,border:"1px solid "+vs.b,display:"flex",alignItems:"center",gap:6}}><span style={{width:7,height:7,borderRadius:"50%",background:vs.dot,display:"inline-block"}}/>{l.verdict}</span>
                 <span style={{padding:"5px 12px",borderRadius:6,fontSize:11,fontWeight:700,background:"#0f172a",border:"1px solid #1e293b",color:rc2}}>{l.recommendation}</span>
-                {l.dataScore!=null&&(
-                  <span style={{padding:"5px 10px",borderRadius:6,fontSize:10,fontWeight:800,background:"#0c1a2e",color:l.dataScore>=70?"#4ade80":l.dataScore>=45?"#f59e0b":"#f87171",border:"1px solid "+(l.dataScore>=70?"#1d4ed8":l.dataScore>=45?"#d97706":"#7f1d1d")}}>
-                    {l.dataScore}/100
-                  </span>
-                )}
                 {(function(){var ss=screenerSig(l.ticker);if(!ss||ss==="HOLD")return null;var sc=ss==="STRONG_BUY"?"#22c55e":ss==="BUY"?"#4ade80":ss==="WATCH"?"#f59e0b":"#f87171";return <span style={{padding:"3px 8px",borderRadius:4,fontSize:9,fontWeight:700,background:"#0f172a",border:"1px solid "+sc,color:sc,letterSpacing:1}}>{"SCREENER: "+ss.replace("_"," ")}</span>;}())}
               </div>
             </div>
@@ -1255,7 +1185,16 @@ export default function App(){
               aiAnalyzedAt:ai?ai.analyzed_at:null,
             };
           });
-          setWatchlistStocks(ns);
+                        // Apply sanity check: if analyst target < current price, cap recommendation
+              ns.forEach(function(w){
+                var target=parseFloat((w.analystTarget||"0").toString().replace(/[^0-9.$]/g,"").replace("$",""))||0;
+                var price=w.cur||0;
+                if(target>0&&price>0&&target<price*0.97){
+                  w.recommendation="Avoid";
+                  if(w.verdict==="Strong Overreaction"||w.verdict==="Overreaction") w.verdict="Justified";
+                }
+              });
+              setWatchlistStocks(ns);
         }).catch(function(){});
     }).catch(function(){});
   }
@@ -1887,40 +1826,6 @@ export default function App(){
               )}
               {wlDetail.bull&&<div style={{background:"#030e05",border:"1px solid #14532d",borderRadius:8,padding:"12px 14px",marginBottom:8}}><div style={{fontSize:9,color:"#16a34a",letterSpacing:2,fontWeight:700,marginBottom:6}}>BULL CASE</div><div style={{fontSize:12,color:"#86efac",lineHeight:1.6}}>{wlDetail.bull}</div></div>}
               {wlDetail.bear&&<div style={{background:"#0e0303",border:"1px solid #7f1d1d",borderRadius:8,padding:"12px 14px",marginBottom:16}}><div style={{fontSize:9,color:"#b91c1c",letterSpacing:2,fontWeight:700,marginBottom:6}}>BEAR CASE</div><div style={{fontSize:12,color:"#fca5a5",lineHeight:1.6}}>{wlDetail.bear}</div></div>}
-                            {(function(){
-                var ds=calcDataScore({
-                  price:wlDetail.cur,
-                  analystTarget:wlDetail.analystTarget,
-                  analystBuyPct:wlDetail.buyPct,
-                  pe:wlDetail.livePeratio,
-                  dip:wlDetail.dip,
-                  change1W:null,
-                  change1M:wlDetail.change3M,
-                  beta:null,
-                });
-                return(
-                  <div style={{background:"#030712",border:"1px solid #1e293b",borderRadius:8,padding:"12px 14px",marginBottom:14}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                      <div style={{fontSize:9,color:"#334155",letterSpacing:2}}>DATA SCORE</div>
-                      <div style={{fontSize:18,fontWeight:800,color:ds.score>=70?"#4ade80":ds.score>=45?"#f59e0b":"#f87171"}}>{ds.score}/100</div>
-                    </div>
-                    {ds.checks.map(function(c,i){
-                      return(
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid #0f172a"}}>
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <span style={{fontSize:11,color:c.pass?"#22c55e":"#ef4444"}}>{c.pass?"✓":"✗"}</span>
-                            <span style={{fontSize:11,color:"#64748b"}}>{c.label}</span>
-                          </div>
-                          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                            <span style={{fontSize:10,color:"#475569"}}>{c.value}</span>
-                            <span style={{fontSize:10,fontWeight:700,color:c.pass?"#4ade80":"#334155"}}>{c.pts}/{c.max}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
               <button onClick={function(){setModal(Object.assign({},wlDetail,{side:"BUY",sl:+(wlDetail.cur*(1-0.07)).toFixed(2),tp:+(wlDetail.cur*(1+0.20)).toFixed(2)}));setTab("paper");setQty(1);setWlDetail(null);}} style={{width:"100%",background:"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Paper Buy {wlDetail.ticker}</button>
             </div>
           </div>
