@@ -1034,18 +1034,27 @@ export default function App(){
   }
   var [watchlistStocks,setWatchlistStocks]=useState([]);
   var [wlReanalyzing,setWlReanalyzing]=useState(false);
+  var [wlProgress,setWlProgress]=useState({done:0,total:0,ticker:""});
   function reanalyzeWatchlist(){
     if(wlReanalyzing)return;
     setWlReanalyzing(true);
+    setWlProgress({done:0,total:0,ticker:"Loading..."});
     fetch("/api/portfolio?action=watchlist").then(function(r){return r.json();}).then(function(data){
       if(!Array.isArray(data)||!data.length){setWlReanalyzing(false);return;}
       var tickers=data.map(function(w){return w.ticker;});
+      var total=tickers.length;
+      setWlProgress({done:0,total:total,ticker:tickers[0]||""});
       var today=new Date().toDateString();
-      // Run one at a time to avoid rate limits
       var idx=0;
       function next(){
-        if(idx>=tickers.length){setWlReanalyzing(false);refreshWatchlist();return;}
+        if(idx>=tickers.length){
+          setWlReanalyzing(false);
+          setWlProgress({done:total,total:total,ticker:"Done!"});
+          setTimeout(function(){setWlProgress({done:0,total:0,ticker:""}); refreshWatchlist();},1500);
+          return;
+        }
         var ticker=tickers[idx++];
+        setWlProgress({done:idx-1,total:total,ticker:ticker});
         var prompt="Today is "+today+". Analyze "+ticker+" as an investment. This stock is on our watchlist as a potential overreaction play. "+
           "Return a JSON object with fields: ticker (string), verdict (Strong Overreaction|Overreaction|Partial Overreaction|Mixed|Justified), "+
           "catalyst (string, 2 sentences), bull_case (string, 3 sentences), bear_case (string, 3 sentences), "+
@@ -1070,7 +1079,7 @@ export default function App(){
               }).catch(function(){});
             }
           }catch(e){}
-          setTimeout(next,1200); // 1.2s between calls to respect rate limits
+          setTimeout(next,1200);
         }).catch(function(){setTimeout(next,1200);});
       }
       next();
@@ -1121,7 +1130,7 @@ export default function App(){
             // P/E from FMP ratios-ttm
             var ratiosArr=Array.isArray(r.ratios)?r.ratios:[];
             var ratioData=ratiosArr.length>0?ratiosArr[0]:null;
-            var livePeratio=ratioData&&ratioData.peRatioTTM?+parseFloat(ratioData.peRatioTTM).toFixed(1):null;
+            var livePeratio=ratioData&&(ratioData.peRatioTTM||ratioData.priceToEarningsRatioTTM)?+parseFloat(ratioData.peRatioTTM||ratioData.priceToEarningsRatioTTM).toFixed(1):null;
             // SEC EDGAR revenue growth
             var edgarRevs=(r.edgar&&Array.isArray(r.edgar.revenues))?r.edgar.revenues:[];
             var revenueGrowth=null;
@@ -1743,7 +1752,14 @@ export default function App(){
                     <div style={{fontSize:11,color:"#334155",marginTop:2}}>{appWatchlist.length} stocks from AI Analysis</div>
                   </div>
                   <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    {wlReanalyzing&&<span style={{fontSize:9,color:"#f59e0b"}}>{"Refreshing AI..."}</span>}
+                    {wlReanalyzing&&<div style={{display:"flex",flexDirection:"column",gap:2,minWidth:140}}>
+                      <div style={{fontSize:9,color:"#f59e0b",letterSpacing:1}}>{"ANALYZING "+wlProgress.ticker+"..."}</div>
+                      <div style={{height:3,background:"#0f172a",borderRadius:2,overflow:"hidden",width:"100%"}}>
+                        <div style={{height:"100%",background:"#f59e0b",borderRadius:2,transition:"width 0.4s ease",
+                          width:wlProgress.total>0?(wlProgress.done/wlProgress.total*100)+"%":"0%"}}/>
+                      </div>
+                      <div style={{fontSize:9,color:"#475569"}}>{wlProgress.done}/{wlProgress.total}</div>
+                    </div>}
                     <button onClick={reanalyzeWatchlist} disabled={wlReanalyzing} style={{background:"transparent",border:"1px solid #1d4ed8",color:"#60a5fa",borderRadius:6,padding:"5px 11px",fontSize:11,cursor:"pointer",opacity:wlReanalyzing?0.5:1}}>{"Re-run AI"}</button>
                     <button onClick={refreshWatchlist} style={{background:"transparent",border:"1px solid #1e293b",color:"#475569",borderRadius:6,padding:"5px 11px",fontSize:11}}>Refresh</button>
                   </div>
