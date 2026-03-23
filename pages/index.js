@@ -1258,7 +1258,7 @@ export default function App(){
   }
   useEffect(function(){refreshWatchlist();},[]);
   var [cfg,setCfg]=useState(Object.assign({},INIT_CFG));
-  var [port,setPort]=useState({cash:INIT_CFG.startCash,pos:{},trades:[]}}));useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
+  var [port,setPort]=useState({cash:INIT_CFG.startCash,pos:{},trades:[]});useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
   var [storageReady,setStorageReady]=useState(false);
   var [btTicker,setBtTicker]=useState("AAPL");
   var [btResult,setBtResult]=useState(null);
@@ -1282,7 +1282,7 @@ export default function App(){
   var [apCountdown,setApCountdown]=useState(AP_SEC);
   // Refs for interval access to latest state
   var stocksRef=useRef([]);
-  var portRef=useRef({cash:INIT_CFG.startCash,pos:{},trades:[]}}));useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
+  var portRef=useRef({cash:INIT_CFG.startCash,pos:{},trades:[]});useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
   var cfgRef=useRef(Object.assign({},INIT_CFG));
   var apOnRef=useRef(false);
   var intervalRef=useRef(null);
