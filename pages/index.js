@@ -1670,7 +1670,7 @@ export default function App(){
   });
 
   var TABS=topTab==="apex"?["screener","signals","paper","backtest","autopilot","ai","settings"]:["ai","settings"];
-  var LABELS={screener:"Screener",signals:"Signals",paper:"Paper Trade",backtest:"Backtest",autopilot:"Autopilot",ai:"AI Analysis",settings:"Settings"};
+  var LABELS={screener:"Screener",signals:"Signals",paper:"Paper Trade",backtest:"Backtest",autopilot:"Autopilot",ai:"AI Analysis",arb:"Arb",settings:"Settings"};
 
   if(!mounted)return null;
   return(
@@ -2318,7 +2318,7 @@ export default function App(){
         {/* ── AI ANALYSIS ── */}
         {tab==="ai"&&<LosersTab stocks={stocks} setModal={setModal} setTab={setTab} setQty={setQty} anthropicKey={anthropicKey} fhKey={fhKey} fmpKey={fmpKey}/>}
 
-        {/* ── SETTINGS ── */}
+        {activeTab==="arb"&&<ArbTab supabase={supabase}/>}{/* ── SETTINGS ── */}
         {tab==="settings"&&(
           <div style={{animation:"fu 0.3s ease",maxWidth:560}}>
             <div style={{marginBottom:18}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Settings</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Alpaca integration and strategy parameters</div></div>
