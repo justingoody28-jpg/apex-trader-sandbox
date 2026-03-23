@@ -1669,7 +1669,7 @@ export default function App(){
     if(srt==="dip")return b.dip-a.dip;if(srt==="rsi")return a.rsi-b.rsi;if(srt==="change")return b.chg-a.chg;return b.score-a.score;
   });
 
-  var TABS=topTab==="apex"?["screener","signals","paper","backtest","autopilot","ai","arb","settings"]:["ai","settings"];
+  var TABS=topTab==="apex"?["screener","signals","paper","backtest","autopilot","ai","settings"]:["ai","settings"];
   var LABELS={screener:"Screener",signals:"Signals",paper:"Paper Trade",backtest:"Backtest",autopilot:"autopilot",ai:"AI Analysis",arb:"Arb",settings:"Settings"};
 
   if(!mounted)return null;
