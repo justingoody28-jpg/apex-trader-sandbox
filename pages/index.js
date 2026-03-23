@@ -2318,7 +2318,7 @@ export default function App(){
         {/* ── AI ANALYSIS ── */}
         {tab==="ai"&&<LosersTab stocks={stocks} setModal={setModal} setTab={setTab} setQty={setQty} anthropicKey={anthropicKey} fhKey={fhKey} fmpKey={fmpKey}/>}
 
-        {activeTab==="arb"&&<ArbTab supabase={supabase}/>}{/* ── SETTINGS ── */}
+        {t==="arb"&&<ArbTab supabase={supabase}/>}{/* ── SETTINGS ── */}
         {tab==="settings"&&(
           <div style={{animation:"fu 0.3s ease",maxWidth:560}}>
             <div style={{marginBottom:18}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Settings</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Alpaca integration and strategy parameters</div></div>
