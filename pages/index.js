@@ -1735,7 +1735,7 @@ export default function App(){
               return(
                 <button key={t} onClick={function(){setTab(t);}} style={{background:tab===t?"#1e293b":"transparent",border:"1px solid "+(tab===t?"#334155":"transparent"),color:tab===t?"#f1f5f9":"#475569",borderRadius:7,padding:"5px 11px",fontSize:11,fontWeight:tab===t?700:400,position:"relative"}}>
                   {LABELS[t]}
-                  {t==="autopilot"&&apOn&&<span style={{position:"absolute",top:3,right:3,width:5,height:5,borderRadius:"50%",background:"#22c55e",animation:"bk 1s infinite"}}/>}
+                  {tab==="autopilot"&&apOn&&<span style={{position:"absolute",top:3,right:3,width:5,height:5,borderRadius:"50%",background:"#22c55e",animation:"bk 1s infinite"}}/>}
                 </button>
               );
             })}
