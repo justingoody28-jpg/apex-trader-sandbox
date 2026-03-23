@@ -1258,7 +1258,7 @@ export default function App(){
   }
   useEffect(function(){refreshWatchlist();},[]);
   var [cfg,setCfg]=useState(Object.assign({},INIT_CFG));
-  var [port,setPort]=useState({cash:INIT_CFG.startCash,pos:{},trades:[]});
+  var [port,setPort]=useState({cash:INIT_CFG.startCash,pos:{},trades:[]}}));useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
   var [storageReady,setStorageReady]=useState(false);
   var [btTicker,setBtTicker]=useState("AAPL");
   var [btResult,setBtResult]=useState(null);
@@ -1282,7 +1282,7 @@ export default function App(){
   var [apCountdown,setApCountdown]=useState(AP_SEC);
   // Refs for interval access to latest state
   var stocksRef=useRef([]);
-  var portRef=useRef({cash:INIT_CFG.startCash,pos:{},trades:[]});
+  var portRef=useRef({cash:INIT_CFG.startCash,pos:{},trades:[]}}));useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
   var cfgRef=useRef(Object.assign({},INIT_CFG));
   var apOnRef=useRef(false);
   var intervalRef=useRef(null);
@@ -1786,7 +1786,7 @@ export default function App(){
       <div style={{maxWidth:1200,margin:"0 auto",padding:"20px 20px 0"}}>
 
         {/* ── SCREENER ── */}
-        {tab==="screener"&&(
+        {topTab==="apex"&&tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             {/* Ticker Detail Panel */}
           {tickerDetail&&(function(){
@@ -2097,7 +2097,7 @@ export default function App(){
         )}
 
         {/* ── AI ANALYSIS ── */}
-        {tab==="signals"&&(
+        {topTab==="apex"&&tab==="signals"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Entry / Exit Signals</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Buy-dip and momentum confirmation strategy</div></div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10,marginBottom:18}}>
@@ -2133,7 +2133,7 @@ export default function App(){
         )}
 
         {/* ── PAPER TRADE ── */}
-        {tab==="paper"&&(
+        {topTab==="apex"&&tab==="paper"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
               <div><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Paper Portfolio</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Simulated trading - no real money</div></div>
@@ -2200,7 +2200,7 @@ export default function App(){
         )}
 
         {/* ── BACKTEST ── */}
-        {tab==="backtest"&&(
+        {topTab==="apex"&&tab==="backtest"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12,alignItems:"flex-end"}}>
               <div><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Strategy Backtester</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>90-day simulation with self-tuned parameters</div></div>
@@ -2216,7 +2216,7 @@ export default function App(){
         )}
 
         {/* ── autopilot ── */}
-        {tab==="autopilot"&&(
+        {topTab==="apex"&&tab==="autopilot"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:14,alignItems:"flex-start"}}>
               <div>
