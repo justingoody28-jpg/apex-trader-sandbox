@@ -1274,7 +1274,7 @@ export default function App(){
   var [wlDetail,setWlDetail]=useState(null);
   var [srt,setSrt]=useState("score");
   var [lastR,setLastR]=useState(null);
-  // Autopilot state
+  // autopilot state
   var [apOn,setApOn]=useState(false);
   var [apLog,setApLog]=useState([]);
   var [tuneLog,setTuneLog]=useState([]);
@@ -1597,7 +1597,7 @@ export default function App(){
     notify(tuned.changes.length>0?"Self-tune: "+tuned.changes.length+" param(s) adjusted":"Self-tune: strategy performing well");
   }
 
-  // ── Autopilot scan cycle ──
+  // ── autopilot scan cycle ──
   function runScan(){
     var cur=stocksRef.current,p=portRef.current,c=cfgRef.current;
     var posCount=Object.keys(p.pos).length;
@@ -1618,7 +1618,7 @@ export default function App(){
         var s=cands[i];
         var spend=p.cash*(c.maxPosPct/100);
         var q=Math.floor(spend/s.cur);
-        if(q>0&&p.cash>=s.cur*q){apTrade(s,"BUY",q,"Autopilot "+s.sig);executed.push({type:"BUY",ticker:s.ticker,reason:s.sig+" score:"+s.score+" @ $"+s.cur,color:"#4ade80"});posCount++;}
+        if(q>0&&p.cash>=s.cur*q){apTrade(s,"BUY",q,"autopilot "+s.sig);executed.push({type:"BUY",ticker:s.ticker,reason:s.sig+" score:"+s.score+" @ $"+s.cur,color:"#4ade80"});posCount++;}
       }
     }
 
@@ -1633,7 +1633,7 @@ export default function App(){
     if(scanCountRef.current%4===0){runTune();}
   }
 
-  // ── Autopilot interval ──
+  // ── autopilot interval ──
   useEffect(function(){
     if(apOn){
       countRef.current=AP_SEC;
@@ -1669,8 +1669,8 @@ export default function App(){
     if(srt==="dip")return b.dip-a.dip;if(srt==="rsi")return a.rsi-b.rsi;if(srt==="change")return b.chg-a.chg;return b.score-a.score;
   });
 
-  var TABS=topTab==="apex"?["screener","signals","paper","backtest","autopilot","ai","settings"]:["ai","settings"];
-  var LABELS={screener:"Screener",signals:"Signals",paper:"Paper Trade",backtest:"Backtest",autopilot:"Autopilot",ai:"AI Analysis",arb:"Arb",settings:"Settings"};
+  var TABS=topTab==="apex"?["screener","signals","paper","backtest","autopilot","ai","arb","settings"]:["ai","settings"];
+  var LABELS={screener:"Screener",signals:"Signals",paper:"Paper Trade",backtest:"Backtest",autopilot:"autopilot",ai:"AI Analysis",arb:"Arb",settings:"Settings"};
 
   if(!mounted)return null;
   return(
@@ -2215,13 +2215,13 @@ export default function App(){
           </div>
         )}
 
-        {/* ── AUTOPILOT ── */}
+        {/* ── autopilot ── */}
         {tab==="autopilot"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:14,alignItems:"flex-start"}}>
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
-                  <div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Autopilot</div>
+                  <div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>autopilot</div>
                   <span style={{padding:"3px 10px",borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:1,background:apOn?"#052e16":"#0f172a",color:apOn?"#4ade80":"#475569",border:"1px solid "+(apOn?"#16a34a":"#334155")}}>{apOn?"ACTIVE":"PAUSED"}</span>
                   {apOn&&<span style={{fontSize:11,color:"#334155"}}>{"Next scan in "+apCountdown+"s"}</span>}
                 </div>
@@ -2229,7 +2229,7 @@ export default function App(){
               </div>
               <div style={{display:"flex",gap:10}}>
                 <button onClick={function(){runScan();}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:8,padding:"9px 16px",fontSize:12}}>Scan Now</button>
-                <button onClick={function(){setApOn(!apOn);}} style={{background:apOn?"#7f1d1d":"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"9px 20px",fontSize:12,fontWeight:700}}>{apOn?"Pause Autopilot":"Start Autopilot"}</button>
+                <button onClick={function(){setApOn(!apOn);}} style={{background:apOn?"#7f1d1d":"#15803d",border:"none",color:"#fff",borderRadius:8,padding:"9px 20px",fontSize:12,fontWeight:700}}>{apOn?"Pause autopilot":"Start autopilot"}</button>
               </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:18}}>
@@ -2288,7 +2288,7 @@ export default function App(){
             </div>
             {Object.values(port.pos).length>0&&(
               <div>
-                <div style={{fontSize:11,color:"#475569",letterSpacing:1,marginBottom:10}}>AUTOPILOT POSITIONS</div>
+                <div style={{fontSize:11,color:"#475569",letterSpacing:1,marginBottom:10}}>autopilot POSITIONS</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
                   {Object.values(port.pos).map(function(p){
                     var st=stocks.find(function(x){return x.ticker===p.ticker;}),cur=st?st.cur:p.avg;
