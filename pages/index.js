@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { ArbTab } from '../lib/ArbTab';
 import { useAuth } from './_app';
 import LoginPage from './login';
-import { signOut } from '../lib/supabase';
+import { signOut, supabase } from '../lib/supabase';
 
 
 
@@ -1669,7 +1669,7 @@ export default function App(){
             <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">New Prices</button>
             {dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}
             {dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
-            <button onClick={function(){signOut().catch(function(){}).finally(function(){window.location.href='/';});}} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#f87171",borderRadius:6,padding:"6px 11px",fontSize:10}}>Sign Out</button>
+            <button onClick={function(){supabase.auth.signOut().finally(function(){Object.keys(localStorage).forEach(function(k){if(k.startsWith('sb-'))localStorage.removeItem(k);});window.location.href='/';});}} style={{background:"transparent",border:"1px solid #7f1d1d",color:"#f87171",borderRadius:6,padding:"6px 11px",fontSize:10}}>Sign Out</button>
             {auth.profile&&<span style={{fontSize:9,color:"#334155",borderLeft:"1px solid #0f172a",paddingLeft:10}}>{auth.profile.display_name||auth.profile.email}</span>}
           </div>
         {deepDiveStock&&(
@@ -2108,7 +2108,7 @@ export default function App(){
             <div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"22px",marginBottom:14}}>
               <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9",marginBottom:4}}>Account</div>
               <div style={{fontSize:12,color:"#475569",marginBottom:14}}>Signed in as: <span style={{color:"#f1f5f9"}}>{auth.profile&&(auth.profile.email||auth.profile.display_name)}</span></div>
-              <button onClick={function(){signOut().catch(function(){}).finally(function(){window.location.href='/';});}} style={{background:"#7f1d1d",border:"none",color:"#fca5a5",borderRadius:7,padding:"9px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Sign Out</button>
+              <button onClick={function(){supabase.auth.signOut().finally(function(){Object.keys(localStorage).forEach(function(k){if(k.startsWith('sb-'))localStorage.removeItem(k);});window.location.href='/';});}} style={{background:"#7f1d1d",border:"none",color:"#fca5a5",borderRadius:7,padding:"9px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Sign Out</button>
             </div>
             <div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"22px",marginBottom:14}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
