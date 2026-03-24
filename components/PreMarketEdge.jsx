@@ -22,7 +22,7 @@ function getTradingDays(start, end) {
 }
 
 function fmt(n, dec = 2) {
-  return n !== undefined ? (n >= 0 ? "+" : "") + n.toFixed(dec) : "—";
+  return n !== undefined ? (n >= 0 ? "+" : "") + n.toFixed(dec) : "â";
 }
 
 function daysAgo(n) {
@@ -45,7 +45,7 @@ const getIntraday = (bars) =>
 const getRegular = (bars) =>
   bars.filter((b) => { const m = minsFromMidnight(b.t); return m >= 570 && m <= 960; });
 
-// ── Polygon API ─────────────────────────────────────────────────
+// ââ Polygon API âââââââââââââââââââââââââââââââââââââââââââââââââ
 
 async function polyBars(ticker, date, key) {
   const res = await fetch(
@@ -75,8 +75,8 @@ async function polyAvgVolume(ticker, key) {
   return results.reduce((s, b) => s + b.v, 0) / results.length;
 }
 
-// ── Alpaca API — Primary live scanner source (free) ─────────────
-// Free paper account at alpaca.markets — covers 4am–8pm extended hours
+// ââ Alpaca API â Primary live scanner source (free) âââââââââââââ
+// Free paper account at alpaca.markets â covers 4amâ8pm extended hours
 
 function alpacaHeaders(id, secret) {
   return { "APCA-API-KEY-ID": id, "APCA-API-SECRET-KEY": secret };
@@ -128,7 +128,7 @@ async function alpacaSpyContext(id, secret) {
   }
 }
 
-// ── FMP Catalyst (Primary — real earnings beats + analyst ratings) ──
+// ââ FMP Catalyst (Primary â real earnings beats + analyst ratings) ââ
 async function fmpEarnings(ticker, date, fmpKey) {
   const from = new Date(date);
   from.setDate(from.getDate() - 3);
@@ -286,7 +286,7 @@ function calcStats(trades) {
   const to     = trades.filter((t) => t.result === "TIMEOUT");
   const avgW   = wins.length   ? wins.reduce((s, t) => s + t.pct, 0)   / wins.length   : 0;
   const avgL   = losses.length ? losses.reduce((s, t) => s + t.pct, 0) / losses.length : 0;
-  const pf     = losses.length && avgL !== 0 ? Math.abs((wins.length * avgW) / (losses.length * avgL)).toFixed(2) : "∞";
+  const pf     = losses.length && avgL !== 0 ? Math.abs((wins.length * avgW) / (losses.length * avgL)).toFixed(2) : "â";
   return {
     winRate:  ((wins.length / trades.length) * 100).toFixed(1),
     wins: wins.length, losses: losses.length, timeouts: to.length, total: trades.length,
@@ -383,13 +383,13 @@ function ScoreBar({ score, max = 100, color }) {
 
 function ScoreBreakdown({ breakdown, headlines, rvol, spyGap, catalystSource }) {
   const signals = [
-    { key: "catalyst",    label: "Catalyst",        max: 25, icon: "⚡" },
-    { key: "relVol",      label: "Relative Volume",  max: 20, icon: "📊" },
-    { key: "gap",         label: "Gap %",            max: 20, icon: "📈" },
-    { key: "momentum",    label: "PM Momentum",      max: 10, icon: "🚀" },
-    { key: "marketCtx",   label: "Market Context",   max: 10, icon: "🌐" },
-    { key: "consistency", label: "PM Consistency",   max: 5,  icon: "✅" },
-    { key: "shortInt",    label: "Short Interest",   max: 5,  icon: "🔥" },
+    { key: "catalyst",    label: "Catalyst",        max: 25, icon: "â¡" },
+    { key: "relVol",      label: "Relative Volume",  max: 20, icon: "ð" },
+    { key: "gap",         label: "Gap %",            max: 20, icon: "ð" },
+    { key: "momentum",    label: "PM Momentum",      max: 10, icon: "ð" },
+    { key: "marketCtx",   label: "Market Context",   max: 10, icon: "ð" },
+    { key: "consistency", label: "PM Consistency",   max: 5,  icon: "â" },
+    { key: "shortInt",    label: "Short Interest",   max: 5,  icon: "ð¥" },
   ];
   return (
     <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: "8px", padding: "14px", marginTop: 8 }}>
@@ -411,14 +411,14 @@ function ScoreBreakdown({ breakdown, headlines, rvol, spyGap, catalystSource }) 
       {headlines?.length > 0 && (
         <div style={{ marginTop: 10 }}>
           {headlines.slice(0, 3).map((h, i) => (
-            <div key={i} style={{ fontSize: "11px", color: T.amber, background: "#1a1200", border: `1px solid ${T.amber}22`, borderRadius: 4, padding: "4px 8px", marginBottom: 4 }}>⚡ {h}</div>
+            <div key={i} style={{ fontSize: "11px", color: T.amber, background: "#1a1200", border: `1px solid ${T.amber}22`, borderRadius: 4, padding: "4px 8px", marginBottom: 4 }}>â¡ {h}</div>
           ))}
         </div>
       )}
       {catalystSource && (
         <div style={{ marginTop: 8, fontSize: "10px", color: T.muted }}>
           Catalyst data: <span style={{ color: catalystSource === "FMP" ? T.green : catalystSource === "Polygon" ? T.blue : T.dim }}>
-            {catalystSource === "FMP" ? "⚡ FMP — real earnings & analyst data" : catalystSource === "Polygon" ? "📰 Polygon — news keyword match" : "— none"}
+            {catalystSource === "FMP" ? "â¡ FMP â real earnings & analyst data" : catalystSource === "Polygon" ? "ð° Polygon â news keyword match" : "â none"}
           </span>
         </div>
       )}
@@ -441,8 +441,8 @@ export default function PreMarketEdge() {
   const [tab, setTab] = useState("backtest");
   const [settings, setSettings] = useState({ polygonKey: "", fmpKey: "", alpacaId: "", alpacaSecret: "", winPct: 2.0, lossPct: 0.5, minScore: 55 });
   const [btTicker, setBtTicker] = useState("NVDA");
-  const [btStart, setBtStart] = useState("2024-03-01");
-  const [btEnd, setBtEnd] = useState("2024-09-01");
+  const [btStart, setBtStart] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() - 6); return d.toISOString().split("T")[0]; });
+  const [btEnd, setBtEnd] = useState(() => new Date().toISOString().split("T")[0]);
   const [btRunning, setBtRunning] = useState(false);
   const [btResults, setBtResults] = useState(null);
   const [btProgress, setBtProgress] = useState(0);
@@ -468,16 +468,16 @@ export default function PreMarketEdge() {
   const runBacktest = useCallback(async () => {
     setBtRunning(true); setBtResults(null); setBtProgress(0); setBtLog([]); setExpandRow(null);
     if (!isBtLive) {
-      addLog("⚡ Demo mode — add FREE Polygon key for real backtest");
+      addLog("â¡ Demo mode â add FREE Polygon key for real backtest");
       for (let i = 0; i <= 100; i += 5) { setBtProgress(i); await sleep(20); }
       const r = genDemo(btTicker, btStart, btEnd, settings.winPct, settings.lossPct);
-      addLog(`✅ ${r.trades.length} signals | Win ${r.stats.winRate}% | PF ${r.stats.pf} | Total ${fmt(parseFloat(r.stats.totalPct))}%`);
+      addLog(`â ${r.trades.length} signals | Win ${r.stats.winRate}% | PF ${r.stats.pf} | Total ${fmt(parseFloat(r.stats.totalPct))}%`);
       setBtResults(r); setBtRunning(false); return;
     }
     const days = getTradingDays(btStart, btEnd);
-    addLog(`🔍 ${btTicker} | ${days.length} days | min score ${settings.minScore}`);
+    addLog(`ð ${btTicker} | ${days.length} days | min score ${settings.minScore}`);
     const avgDailyVol = await polyAvgVolume(btTicker, settings.polygonKey).catch(() => null);
-    if (avgDailyVol) addLog(`📊 30-day avg vol: ${(avgDailyVol / 1000).toFixed(0)}K`);
+    if (avgDailyVol) addLog(`ð 30-day avg vol: ${(avgDailyVol / 1000).toFixed(0)}K`);
     const trades = []; let equity = 10000;
     const curve  = [{ date: "Start", equity, cumPct: 0 }];
     let prevClose = null;
@@ -491,29 +491,29 @@ export default function PreMarketEdge() {
           spyContext(date, settings.polygonKey),
         ]);
         await sleep(350);
-        if (!bars.length) { addLog(`⚪ ${date} — no data`); continue; }
+        if (!bars.length) { addLog(`âª ${date} â no data`); continue; }
         if (prevClose === null) { prevClose = await polyPrevClose(btTicker, settings.polygonKey); await sleep(200); }
         const pmBars  = filterPremarket(bars);
         const entry   = get931Bar(bars);
         const intra   = getIntraday(bars);
         const regular = getRegular(bars);
         if (regular.length) prevClose = regular.at(-1).c;
-        if (!pmBars.length || !entry || !prevClose) { addLog(`⚪ ${date} — no PM data`); continue; }
+        if (!pmBars.length || !entry || !prevClose) { addLog(`âª ${date} â no PM data`); continue; }
         const sig = scoreSignals({ pmBars, prevClose, avgDailyVol, catalystData: catData, spyData: spy, shortInterestPct: null });
-        if (sig.score < settings.minScore) { addLog(`⬜ ${date} — score ${sig.score}`); continue; }
+        if (sig.score < settings.minScore) { addLog(`â¬ ${date} â score ${sig.score}`); continue; }
         const trade = evaluateTrade(intra, entry.o, settings.winPct, settings.lossPct);
         equity *= 1 + trade.pct / 100;
         const cumPct = parseFloat((((equity - 10000) / 10000) * 100).toFixed(2));
         trades.push({ date, ticker: btTicker, entryPrice: entry.o, pmVol: sig.pmVol, catalystSource: catData.source, ...sig, ...trade });
         curve.push({ date, equity: Math.round(equity), cumPct });
-        const icon = trade.result === "WIN" ? "✅" : trade.result === "LOSS" ? "❌" : "⏱";
+        const icon = trade.result === "WIN" ? "â" : trade.result === "LOSS" ? "â" : "â±";
         addLog(`${icon} ${date} | ${sig.score}pts | gap +${sig.gap}% rvol ${sig.rvol}x | ${trade.result} (${fmt(trade.pct)}%)`);
-      } catch (err) { addLog(`🔴 ${date} — ${err.message}`); }
+      } catch (err) { addLog(`ð´ ${date} â ${err.message}`); }
     }
     setBtProgress(100);
     const stats = calcStats(trades);
     setBtResults({ trades, curve, stats });
-    addLog(`🏁 ${trades.length} signals | Win ${stats.winRate}% | PF ${stats.pf} | Return ${fmt(parseFloat(stats.totalPct))}%`);
+    addLog(`ð ${trades.length} signals | Win ${stats.winRate}% | PF ${stats.pf} | Return ${fmt(parseFloat(stats.totalPct))}%`);
     setBtRunning(false);
   }, [btTicker, btStart, btEnd, settings, isBtLive, addLog]);
 
@@ -559,22 +559,22 @@ export default function PreMarketEdge() {
     setScanning(false);
   }, [scanTickers, settings, isScanLive, isBtLive]);
 
-  const TABS = [{ id: "backtest", label: "⏱ BACKTEST" }, { id: "scanner", label: "📡 SCANNER" }, { id: "settings", label: "⚙ SETTINGS" }];
+  const TABS = [{ id: "backtest", label: "â± BACKTEST" }, { id: "scanner", label: "ð¡ SCANNER" }, { id: "settings", label: "â SETTINGS" }];
 
   return (
     <div style={{ background: T.bg, color: T.text, minHeight: "100vh", fontFamily: "'JetBrains Mono','Courier New',monospace", fontSize: "13px" }}>
       <div style={{ borderBottom: `1px solid ${T.border}`, padding: "14px 24px", display: "flex", alignItems: "center", gap: 16 }}>
         <div>
-          <div style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "0.12em", color: T.blue }}>◈ PRE-MARKET EDGE</div>
-          <div style={{ fontSize: "10px", color: T.muted, letterSpacing: "0.08em" }}>7-SIGNAL SCORER · BACKTEST · 9:31 MARKET ENTRY</div>
+          <div style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "0.12em", color: T.blue }}>â PRE-MARKET EDGE</div>
+          <div style={{ fontSize: "10px", color: T.muted, letterSpacing: "0.08em" }}>7-SIGNAL SCORER Â· BACKTEST Â· 9:31 MARKET ENTRY</div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ fontSize: "11px", color: T.muted }}>WIN +{settings.winPct}% · STOP -{settings.lossPct}%</div>
+          <div style={{ fontSize: "11px", color: T.muted }}>WIN +{settings.winPct}% Â· STOP -{settings.lossPct}%</div>
           <span style={{ background: isBtLive ? "#00330f" : "#2a1e00", border: `1px solid ${isBtLive ? T.green : T.amber}44`, color: isBtLive ? T.green : T.amber, padding: "3px 8px", borderRadius: "4px", fontSize: "10px" }}>
-            {isBtLive ? "● BT LIVE" : "⚡ BT DEMO"}
+            {isBtLive ? "â BT LIVE" : "â¡ BT DEMO"}
           </span>
           <span style={{ background: isScanLive ? "#00330f" : "#2a1e00", border: `1px solid ${isScanLive ? T.green : T.amber}44`, color: isScanLive ? T.green : T.amber, padding: "3px 8px", borderRadius: "4px", fontSize: "10px" }}>
-            {isScanLive ? "● SCAN LIVE" : "⚡ SCAN DEMO"}
+            {isScanLive ? "â SCAN LIVE" : "â¡ SCAN DEMO"}
           </span>
         </div>
       </div>
@@ -594,7 +594,7 @@ export default function PreMarketEdge() {
             <div><label style={S.label}>Start</label><input type="date" value={btStart} onChange={(e) => setBtStart(e.target.value)} style={{ ...S.input, width: 150 }} /></div>
             <div><label style={S.label}>End</label><input type="date" value={btEnd} onChange={(e) => setBtEnd(e.target.value)} style={{ ...S.input, width: 150 }} /></div>
             <button onClick={runBacktest} disabled={btRunning} style={{ ...S.btn, background: btRunning ? T.dim : T.blue, cursor: btRunning ? "not-allowed" : "pointer", minWidth: 140 }}>
-              {btRunning ? `RUNNING ${btProgress}%` : "▶ RUN BACKTEST"}
+              {btRunning ? `RUNNING ${btProgress}%` : "â¶ RUN BACKTEST"}
             </button>
             {btResults && <button onClick={() => setShowLog((v) => !v)} style={{ ...S.btn, background: "transparent", border: `1px solid ${T.border}`, color: T.muted }}>{showLog ? "HIDE LOG" : "SHOW LOG"}</button>}
           </div>
@@ -615,7 +615,7 @@ export default function PreMarketEdge() {
                 <StatCard label="Total Return" value={`${parseFloat(btResults.stats.totalPct) >= 0 ? "+" : ""}${btResults.stats.totalPct}%`} color={parseFloat(btResults.stats.totalPct) >= 0 ? T.green : T.red} />
               </div>
               <div style={{ ...S.card, marginBottom: 20 }}>
-                <div style={{ fontSize: "11px", color: T.muted, marginBottom: 12 }}>EQUITY CURVE — CUMULATIVE RETURN</div>
+                <div style={{ fontSize: "11px", color: T.muted, marginBottom: 12 }}>EQUITY CURVE â CUMULATIVE RETURN</div>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={btResults.curve} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
@@ -627,7 +627,7 @@ export default function PreMarketEdge() {
                 </ResponsiveContainer>
               </div>
               <div style={S.card}>
-                <div style={{ fontSize: "11px", color: T.muted, marginBottom: 12 }}>TRADE LOG — click any row for signal breakdown</div>
+                <div style={{ fontSize: "11px", color: T.muted, marginBottom: 12 }}>TRADE LOG â click any row for signal breakdown</div>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                     <thead>
@@ -641,8 +641,8 @@ export default function PreMarketEdge() {
                             <td style={{ padding: "7px 10px" }}>${t.entryPrice?.toFixed(2)}</td>
                             <td style={{ padding: "7px 10px", color: t.gap >= 0 ? T.green : T.red }}>{t.gap >= 0 ? "+" : ""}{t.gap}%</td>
                             <td style={{ padding: "7px 10px", minWidth: 110 }}><ScoreBar score={t.score} /></td>
-                            <td style={{ padding: "7px 10px", color: t.rvol >= 2 ? T.green : T.muted }}>{t.rvol != null ? `${t.rvol}x` : "—"}</td>
-                            <td style={{ padding: "7px 10px" }}>{t.breakdown?.catalyst >= 25 ? <Badge result="STRONG" /> : t.breakdown?.catalyst >= 12 ? <Badge result="MODERATE" /> : <span style={{ color: T.dim }}>—</span>}</td>
+                            <td style={{ padding: "7px 10px", color: t.rvol >= 2 ? T.green : T.muted }}>{t.rvol != null ? `${t.rvol}x` : "â"}</td>
+                            <td style={{ padding: "7px 10px" }}>{t.breakdown?.catalyst >= 25 ? <Badge result="STRONG" /> : t.breakdown?.catalyst >= 12 ? <Badge result="MODERATE" /> : <span style={{ color: T.dim }}>â</span>}</td>
                             <td style={{ padding: "7px 10px" }}><Badge result={t.result} /></td>
                             <td style={{ padding: "7px 10px", color: t.pct >= 0 ? T.green : T.red, fontWeight: 700 }}>{t.pct >= 0 ? "+" : ""}{t.pct?.toFixed(2)}%</td>
                           </tr>
@@ -658,9 +658,9 @@ export default function PreMarketEdge() {
           )}
           {!btResults && !btRunning && (
             <div style={{ textAlign: "center", padding: "60px 0", color: T.muted }}>
-              <div style={{ fontSize: "32px", marginBottom: 12 }}>⏱</div>
-              <div>Set ticker + date range → RUN BACKTEST</div>
-              <div style={{ fontSize: "11px", marginTop: 8, color: T.dim }}>{isDemo ? "Demo uses all 7 signals with simulated data" : "Live mode active — Polygon.io"}</div>
+              <div style={{ fontSize: "32px", marginBottom: 12 }}>â±</div>
+              <div>Set ticker + date range â RUN BACKTEST</div>
+              <div style={{ fontSize: "11px", marginTop: 8, color: T.dim }}>{isDemo ? "Demo uses all 7 signals with simulated data" : "Live mode active â Polygon.io"}</div>
             </div>
           )}
         </div>
@@ -676,20 +676,20 @@ export default function PreMarketEdge() {
                 placeholder="Ticker + Enter" style={S.input} />
             </div>
             <button onClick={runScan} disabled={scanning} style={{ ...S.btn, background: scanning ? T.dim : T.blue, cursor: scanning ? "not-allowed" : "pointer" }}>
-              {scanning ? "SCANNING..." : "📡 SCAN NOW"}
+              {scanning ? "SCANNING..." : "ð¡ SCAN NOW"}
             </button>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
             {scanTickers.map((tk) => (
               <div key={tk} style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, padding: "4px 10px", display: "flex", gap: 8, alignItems: "center" }}>
                 <span>{tk}</span>
-                <button onClick={() => setScanTickers((p) => p.filter((t) => t !== tk))} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: "12px", padding: 0 }}>✕</button>
+                <button onClick={() => setScanTickers((p) => p.filter((t) => t !== tk))} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: "12px", padding: 0 }}>â</button>
               </div>
             ))}
           </div>
           {scanResults && (
             <div style={S.card}>
-              <div style={{ fontSize: "11px", color: T.muted, marginBottom: 12 }}>{isDemo ? "⚡ DEMO — ADD POLYGON/ALPACA KEY FOR LIVE" : `LIVE — ${new Date().toLocaleTimeString()}`}</div>
+              <div style={{ fontSize: "11px", color: T.muted, marginBottom: 12 }}>{isDemo ? "â¡ DEMO â ADD POLYGON/ALPACA KEY FOR LIVE" : `LIVE â ${new Date().toLocaleTimeString()}`}</div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                 <thead>
                   <tr>{["TICKER","SCORE","GAP","RVOL","CATALYST","SPY PM","SIGNAL"].map((h) => <th key={h} style={{ padding: "6px 12px", fontWeight: 400, fontSize: "10px", color: T.muted, textAlign: "left", borderBottom: `1px solid ${T.border}` }}>{h}</th>)}</tr>
@@ -701,9 +701,9 @@ export default function PreMarketEdge() {
                         <td style={{ padding: "10px 12px", fontWeight: 700 }}>{r.ticker}</td>
                         <td style={{ padding: "10px 12px", minWidth: 120 }}><ScoreBar score={r.score} /></td>
                         <td style={{ padding: "10px 12px", color: r.gap >= 0 ? T.green : T.red }}>{r.gap >= 0 ? "+" : ""}{r.gap}%</td>
-                        <td style={{ padding: "10px 12px", color: r.rvol >= 2 ? T.green : T.muted }}>{r.rvol != null ? `${r.rvol}x` : "—"}</td>
-                        <td style={{ padding: "10px 12px" }}>{r.breakdown?.catalyst >= 25 ? <Badge result="STRONG" /> : r.breakdown?.catalyst >= 12 ? <Badge result="MODERATE" /> : <span style={{ color: T.dim }}>—</span>}</td>
-                        <td style={{ padding: "10px 12px", color: r.spyGap >= 0 ? T.green : T.red }}>{r.spyGap != null ? `${r.spyGap >= 0 ? "+" : ""}${r.spyGap}%` : "—"}</td>
+                        <td style={{ padding: "10px 12px", color: r.rvol >= 2 ? T.green : T.muted }}>{r.rvol != null ? `${r.rvol}x` : "â"}</td>
+                        <td style={{ padding: "10px 12px" }}>{r.breakdown?.catalyst >= 25 ? <Badge result="STRONG" /> : r.breakdown?.catalyst >= 12 ? <Badge result="MODERATE" /> : <span style={{ color: T.dim }}>â</span>}</td>
+                        <td style={{ padding: "10px 12px", color: r.spyGap >= 0 ? T.green : T.red }}>{r.spyGap != null ? `${r.spyGap >= 0 ? "+" : ""}${r.spyGap}%` : "â"}</td>
                         <td style={{ padding: "10px 12px" }}><Badge result={r.signal} /></td>
                       </tr>
                     ];
@@ -716,9 +716,9 @@ export default function PreMarketEdge() {
           )}
           {!scanResults && !scanning && (
             <div style={{ textAlign: "center", padding: "60px 0", color: T.muted }}>
-              <div style={{ fontSize: "32px", marginBottom: 12 }}>📡</div>
+              <div style={{ fontSize: "32px", marginBottom: 12 }}>ð¡</div>
               <div>Add tickers and hit SCAN NOW</div>
-              <div style={{ fontSize: "11px", marginTop: 8 }}>Best run 4:00–9:30 AM ET · click any row to expand breakdown</div>
+              <div style={{ fontSize: "11px", marginTop: 8 }}>Best run 4:00â9:30 AM ET Â· click any row to expand breakdown</div>
             </div>
           )}
         </div>
@@ -727,21 +727,21 @@ export default function PreMarketEdge() {
       {tab === "settings" && (
         <div style={{ padding: 24, maxWidth: 560 }}>
           <div style={{ ...S.card, marginBottom: 16 }}>
-            <div style={{ fontSize: "11px", color: T.amber, marginBottom: 16 }}>⚡ API KEYS — leave blank for demo mode</div>
+            <div style={{ fontSize: "11px", color: T.amber, marginBottom: 16 }}>â¡ API KEYS â leave blank for demo mode</div>
             <div style={{ marginBottom: 14 }}>
-              <label style={S.label}>Polygon.io Key — pre-market bars · SPY context · avg volume (Backtest)</label>
+              <label style={S.label}>Polygon.io Key â pre-market bars Â· SPY context Â· avg volume (Backtest)</label>
               <input type="password" value={settings.polygonKey} onChange={(e) => setSettings((s) => ({ ...s, polygonKey: e.target.value }))} placeholder="Polygon key..." style={S.input} />
               <div style={{ fontSize: "10px", color: T.muted, marginTop: 4 }}>Free plan works for backtesting. Rate-limited to 5 calls/min.</div>
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={S.label}>FMP Key — real earnings beats · analyst upgrades (Optional)</label>
+              <label style={S.label}>FMP Key â real earnings beats Â· analyst upgrades (Optional)</label>
               <input type="password" value={settings.fmpKey} onChange={(e) => setSettings((s) => ({ ...s, fmpKey: e.target.value }))} placeholder="FMP key..." style={S.input} />
               <div style={{ fontSize: "10px", color: T.muted, marginTop: 4 }}>Optional. Free plan works. Upgrades catalyst from keyword matching to real EPS beat % and analyst data.</div>
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={S.label}>Alpaca Key ID — PRIMARY live scanner source (FREE)</label>
+              <label style={S.label}>Alpaca Key ID â PRIMARY live scanner source (FREE)</label>
               <input type="password" value={settings.alpacaId} onChange={(e) => setSettings((s) => ({ ...s, alpacaId: e.target.value }))} placeholder="Alpaca key ID..." style={S.input} />
-              <div style={{ fontSize: "10px", color: T.muted, marginTop: 4 }}>Free paper account at alpaca.markets — 4am–8pm extended hours in real time. No credit card needed.</div>
+              <div style={{ fontSize: "10px", color: T.muted, marginTop: 4 }}>Free paper account at alpaca.markets â 4amâ8pm extended hours in real time. No credit card needed.</div>
             </div>
             <div>
               <label style={S.label}>Alpaca Secret Key</label>
@@ -759,13 +759,13 @@ export default function PreMarketEdge() {
           <div style={S.card}>
             <div style={{ fontSize: "11px", color: T.muted, marginBottom: 14 }}>7-SIGNAL GUIDE</div>
             {[
-              { icon: "⚡", name: "Catalyst", max: 25, note: "Earnings beat=25 · Analyst upgrade=12 · News=5 · None=0" },
-              { icon: "📊", name: "Relative Volume", max: 20, note: "Projected day vol vs 30-day avg. 3x RVOL ≈ 20pts" },
-              { icon: "📈", name: "Gap %", max: 20, note: "Pre-market vs prev close. 6%+ gap = full 20pts" },
-              { icon: "🚀", name: "PM Momentum", max: 10, note: "Last 30 PM bars trending up" },
-              { icon: "🌐", name: "Market Context", max: 10, note: "SPY PM green=10 · flat=5 · red=0" },
-              { icon: "✅", name: "PM Consistency", max: 5, note: "% of green candles pre-market" },
-              { icon: "🔥", name: "Short Interest", max: 5, note: "High SI = squeeze potential (neutral 2.5 if N/A)" },
+              { icon: "â¡", name: "Catalyst", max: 25, note: "Earnings beat=25 Â· Analyst upgrade=12 Â· News=5 Â· None=0" },
+              { icon: "ð", name: "Relative Volume", max: 20, note: "Projected day vol vs 30-day avg. 3x RVOL â 20pts" },
+              { icon: "ð", name: "Gap %", max: 20, note: "Pre-market vs prev close. 6%+ gap = full 20pts" },
+              { icon: "ð", name: "PM Momentum", max: 10, note: "Last 30 PM bars trending up" },
+              { icon: "ð", name: "Market Context", max: 10, note: "SPY PM green=10 Â· flat=5 Â· red=0" },
+              { icon: "â", name: "PM Consistency", max: 5, note: "% of green candles pre-market" },
+              { icon: "ð¥", name: "Short Interest", max: 5, note: "High SI = squeeze potential (neutral 2.5 if N/A)" },
             ].map(({ icon, name, max, note }) => (
               <div key={name} style={{ display: "flex", gap: 10, marginBottom: 10 }}>
                 <span style={{ fontSize: "14px", minWidth: 20 }}>{icon}</span>
@@ -773,7 +773,7 @@ export default function PreMarketEdge() {
               </div>
             ))}
             <div style={{ marginTop: 12, padding: 10, background: T.bg, borderRadius: 6, fontSize: "11px", color: T.muted, lineHeight: 1.8 }}>
-              <span style={{ color: T.amber }}>Tip:</span> Set min score 55–65 for selective signals. Score 70+ = act. Score 80+ = full size.
+              <span style={{ color: T.amber }}>Tip:</span> Set min score 55â65 for selective signals. Score 70+ = act. Score 80+ = full size.
             </div>
           </div>
         </div>
