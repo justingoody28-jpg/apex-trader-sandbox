@@ -1258,7 +1258,7 @@ export default function App(){
   }
   useEffect(function(){refreshWatchlist();},[]);
   var [cfg,setCfg]=useState(Object.assign({},INIT_CFG));
-  var [port,setPort]=useState({cash:INIT_CFG.startCash,pos:{},trades:[]});useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
+  var [port,setPort]=useState({cash:INIT_CFG.startCash,pos:{},trades:[]});useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);var [liveRefresh,setLiveRefresh]=useState(false);useEffect(function(){if(!liveRefresh)return;var id=setInterval(function(){refresh(true);},10000);return function(){clearInterval(id);};}, [liveRefresh,refresh]);
   var [storageReady,setStorageReady]=useState(false);
   var [btTicker,setBtTicker]=useState("AAPL");
   var [btResult,setBtResult]=useState(null);
@@ -1282,7 +1282,7 @@ export default function App(){
   var [apCountdown,setApCountdown]=useState(AP_SEC);
   // Refs for interval access to latest state
   var stocksRef=useRef([]);
-  var portRef=useRef({cash:INIT_CFG.startCash,pos:{},trades:[]});useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);
+  var portRef=useRef({cash:INIT_CFG.startCash,pos:{},trades:[]});useEffect(function(){try{localStorage.setItem("apex_port",JSON.stringify(port))}catch(e){}}, [port]);var [liveRefresh,setLiveRefresh]=useState(false);useEffect(function(){if(!liveRefresh)return;var id=setInterval(function(){refresh(true);},10000);return function(){clearInterval(id);};}, [liveRefresh,refresh]);
   var cfgRef=useRef(Object.assign({},INIT_CFG));
   var apOnRef=useRef(false);
   var intervalRef=useRef(null);
@@ -1345,7 +1345,7 @@ export default function App(){
               return{ticker:t,prices,cur:+cur.toFixed(2),h52:+h52hi.toFixed(2),dip:+dip.toFixed(1),rsi,mh,chg:0,vr,sig,score,sector:SECTORS[i%20],sl:+(cur*(1-c.sl/100)).toFixed(2),tp:+(cur*(1+c.tp/100)).toFixed(2),entry:"$"+(cur*0.98).toFixed(2)+"-$"+(cur*1.01).toFixed(2)};
             }
 
-    var refresh=useCallback(function(forceRefresh){
+    var refresh=useCallback(function(forceRefresh){if(forceRefresh){fetch("/api/market?source=fmp&endpoint=quote/"+TICKERS.join(",")).then(function(r){return r.json();}).catch(function(){return [];}).then(function(arr){var a=Array.isArray(arr)?arr:(arr&&arr[0]&&arr[0].symbol?arr:[]);if(!a.length)return;var qm={};a.forEach(function(q){if(q&&q.symbol)qm[q.symbol]=q;});setStocks(function(prev){return prev.map(function(s){var q=qm[s.ticker];if(!q||!q.price)return s;return Object.assign({},s,{cur:+q.price.toFixed(2),price:+q.price.toFixed(2),chg:+(q.changesPercentage||0).toFixed(2)});});});});return;}
     var c=cfgRef.current;
     var cacheKey="apex_quotes_daily";
     // Check daily cache - only fetch from API once per day unless forced
@@ -1744,7 +1744,7 @@ export default function App(){
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>PORTFOLIO</div><div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{"$"+portVal.toLocaleString("en-US",{maximumFractionDigits:0})}</div></div>
             <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"#334155",letterSpacing:2,marginBottom:1}}>RETURN</div><div style={{fontSize:14,fontWeight:700,color:portPct>=0?"#22c55e":"#ef4444"}}>{(portPct>=0?"+":"")+portPct.toFixed(2)+"%"}</div></div>
             <button onClick={function(){refresh(false);}} style={{background:"#0f172a",border:"1px solid #1e293b",color:"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11}}>{dataLoading?"Loading...":"Refresh"}</button>
-                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">↻ New Prices</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
+                <button onClick={function(){try{localStorage.removeItem("apex_quotes_daily");}catch(e){}refresh(true);}} style={{background:"transparent",border:"1px solid #1e293b",color:"#334155",borderRadius:6,padding:"6px 11px",fontSize:10}} title="Force fetch fresh prices from API">↻ New Prices</button><button onClick={function(){setLiveRefresh(function(p){return !p;});}} style={{background:liveRefresh?"#16a34a":"#0f172a",border:"1px solid "+(liveRefresh?"#16a34a":"#1e293b"),color:liveRefresh?"#fff":"#64748b",borderRadius:6,padding:"6px 11px",fontSize:11,marginLeft:4}}>{liveRefresh?"LIVE":"AUTO"}</button>{dataSource==="live"&&!dataLoading&&<span style={{fontSize:9,background:"#052e16",color:"#4ade80",border:"1px solid #15803d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>LIVE</span>}{dataSource==="error"&&<span style={{fontSize:9,background:"#1c0505",color:"#f87171",border:"1px solid #7f1d1d",borderRadius:4,padding:"2px 6px",marginLeft:6,letterSpacing:1}}>NO DATA</span>}
           </div>
         {deepDiveStock&&(
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={function(e){if(e.target===e.currentTarget){setDeepDiveStock(null);setDeepDiveResult(null);}}}> 
