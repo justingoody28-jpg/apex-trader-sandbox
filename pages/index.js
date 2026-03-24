@@ -578,7 +578,7 @@ function LosersTab(props){
               return Promise.all([
                 fetch("/api/market?source=fmp_fh&endpoint=quote&fh_endpoint=quote&symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
                 fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-                fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+                fetch("/api/market?source=fmp&endpoint=price-target-consensus/"+t).then(function(r){return r.json();}).catch(function(){return null;}),
               ]).then(function(res){
                 var q=res[0];
                 var synthMetric=q&&q.hi52?{metric:{"52WeekHigh":q.hi52,"52WeekLow":q.lo52,"peExclExtraTTM":q.pe,"beta":q.beta}}:null;
@@ -619,7 +619,7 @@ function LosersTab(props){
           var lo52=fh.metric&&fh.metric.metric&&fh.metric.metric["52WeekLow"]?fh.metric.metric["52WeekLow"]:null;
           var pe=fh.metric&&fh.metric.metric?fh.metric.metric["peExclExtraTTM"]:null;
           var beta=fh.metric&&fh.metric.metric?fh.metric.metric["beta"]:null;
-          var analystTarget=fh.pt&&fh.pt.targetMean?fh.pt.targetMean:null;
+          var _ptObj=fh.pt&&Array.isArray(fh.pt)?fh.pt[0]:fh.pt;var analystTarget=_ptObj&&_ptObj.targetConsensus?_ptObj.targetConsensus:null;
           var rec=fh.rec&&Array.isArray(fh.rec)&&fh.rec.length>0?fh.rec[0]:null;
           var buyPct=rec?Math.round(((rec.buy||0)+(rec.strongBuy||0))/((rec.buy||0)+(rec.hold||0)+(rec.sell||0)+(rec.strongBuy||0)+(rec.strongSell||0)||1)*100):null;
           return {
@@ -737,7 +737,7 @@ function LosersTab(props){
       fetch("/api/market?source=fmp&endpoint=historical-price-eod/full&symbol="+t+"&from="+fromStr+"&to="+toStr).then(function(r){return r.json();}).catch(function(){return null;}),
       fetch("/api/market?source=fmp_fh&endpoint=quote&fh_endpoint=quote&symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
       fetch("/api/market?source=fh&endpoint=stock/recommendation?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
-      fetch("/api/market?source=fh&endpoint=stock/price-target?symbol="+t).then(function(r){return r.json();}).catch(function(){return null;}),
+      fetch("/api/market?source=fmp&endpoint=price-target-consensus/"+t).then(function(r){return r.json();}).catch(function(){return null;}),
     ]).then(function(res){
       var hist=res[0],q=res[1],rec=res[2],pt=res[3];
       var m=q&&q.hi52?{metric:{"52WeekHigh":q.hi52,"52WeekLow":q.lo52,"peExclExtraTTM":q.pe,"beta":q.beta}}:null;
@@ -756,7 +756,7 @@ function LosersTab(props){
       var lo52=m&&m.metric&&m.metric["52WeekLow"]?m.metric["52WeekLow"]:null;
       var pe=m&&m.metric?m.metric["peExclExtraTTM"]:null;
       var beta=m&&m.metric?m.metric["beta"]:null;
-      var analystTarget=pt&&pt.targetMean?pt.targetMean:null;
+      var _ptObj2=pt&&Array.isArray(pt)?pt[0]:pt;var analystTarget=_ptObj2&&_ptObj2.targetConsensus?_ptObj2.targetConsensus:null;
       var recData=Array.isArray(rec)&&rec.length>0?rec[0]:null;
       var buyPct=recData?Math.round(((recData.buy||0)+(recData.strongBuy||0))/((recData.buy||0)+(recData.hold||0)+(recData.sell||0)+(recData.strongBuy||0)+(recData.strongSell||0)||1)*100):null;
       var perfStr=Object.entries(tfPerf).filter(function(e){return e[1]!==null;}).map(function(e){return e[0]+": "+(e[1]>0?"+":"")+e[1]+"%";}).join(", ");
