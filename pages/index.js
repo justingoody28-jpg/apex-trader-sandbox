@@ -1303,7 +1303,7 @@ async function spyContext(date, key) {
  } catch { return { spyScore: 5, spyGap: 0 }; }
 }
 
-function scoreSignals({ pmBars, prevClose, avgDailyVol, catalystData, spyData, shortInterestPct }) {
+function scoreSignals({ pmBars, prevClose: savedPrevClose, avgDailyVol, catalystData, spyData, shortInterestPct }) {
  const bd = { gap: 0, momentum: 0, consistency: 0, catalyst: 0, relVol: 0, marketCtx: 0, shortInt: 0 };
  if (!pmBars.length || !prevClose) return { score: 0, gap: 0, pmVol: 0, breakdown: bd };
  const lastC = pmBars.at(-1).c;
@@ -1568,12 +1568,6 @@ function PreMarketEdge() {
  setBtProgress(Math.round(((i + 1) / days.length) * 100));
  try {
  const bars = barsByDate[date] || [];
-  // Derive prevClose from previous day's bars in the bulk data
-  if (!prevClose && i > 0) {
-   const prevDayBars = barsByDate[days[i-1]] || [];
-   const prevReg = getRegular(prevDayBars);
-   if (prevReg.length) prevClose = prevReg.at(-1).c;
-  }
   const rawSpy = spyByDate[date] || [];
   const spyPm = filterPremarket(rawSpy);
   const spyGap = spyPm.length ? ((spyPm.at(-1).c - spyPm[0].o) / spyPm[0].o) * 100 : 0;
@@ -1585,8 +1579,10 @@ function PreMarketEdge() {
  const entry = get931Bar(bars);
  const intra = getIntraday(bars);
  const regular = getRegular(bars);
+ const savedPrevClose = prevClose; // previous day's close for gap scoring
+ if (regular.length) prevClose = regular.at(-1).c; // update for next iteration
  if (regular.length) prevClose = regular.at(-1).c;
- if (!pmBars.length || !entry || !prevClose) { addLog(`${date} no PM data`); continue; }
+ if (!pmBars.length || !entry || !savedPrevClose) { addLog(`${date} no PM data`); continue; }
  const sig = scoreSignals({ pmBars, prevClose, avgDailyVol, catalystData: catData, spyData: spy, shortInterestPct: null });
  if (sig.score < settings.minScore) { addLog(`${date} score ${sig.score}`); continue; }
  const trade = evaluateTrade(intra, entry.o, settings.winPct, settings.lossPct);
