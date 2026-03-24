@@ -451,17 +451,17 @@ function calcDataScore(d){
 
 function LosersTab(props){
   var SECTORS_LIST=[
-    {id:"Technology",label:"Technology",icon:"Ã°ÂÂÂ»"},
-    {id:"Healthcare",label:"Healthcare",icon:"Ã°ÂÂÂ¥"},
-    {id:"Financial Services",label:"Financials",icon:"Ã°ÂÂÂ¦"},
-    {id:"Energy",label:"Energy",icon:"Ã¢ÂÂ¡"},
-    {id:"Consumer Cyclical",label:"Consumer Cyclical",icon:"Ã°ÂÂÂÃ¯Â¸Â"},
-    {id:"Industrials",label:"Industrials",icon:"Ã°ÂÂÂ­"},
-    {id:"Communication Services",label:"Communication",icon:"Ã°ÂÂÂ¡"},
-    {id:"Basic Materials",label:"Materials",icon:"Ã¢ÂÂÃ¯Â¸Â"},
-    {id:"Consumer Defensive",label:"Consumer Staples",icon:"Ã°ÂÂÂ"},
-    {id:"Real Estate",label:"Real Estate",icon:"Ã°ÂÂÂ¢"},
-    {id:"Utilities",label:"Utilities",icon:"Ã°ÂÂÂ¡"},
+    {id:"Technology",label:"Technology",icon:"ÃÂ°ÃÂÃÂÃÂ»"},
+    {id:"Healthcare",label:"Healthcare",icon:"ÃÂ°ÃÂÃÂÃÂ¥"},
+    {id:"Financial Services",label:"Financials",icon:"ÃÂ°ÃÂÃÂÃÂ¦"},
+    {id:"Energy",label:"Energy",icon:"ÃÂ¢ÃÂÃÂ¡"},
+    {id:"Consumer Cyclical",label:"Consumer Cyclical",icon:"ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ"},
+    {id:"Industrials",label:"Industrials",icon:"ÃÂ°ÃÂÃÂÃÂ­"},
+    {id:"Communication Services",label:"Communication",icon:"ÃÂ°ÃÂÃÂÃÂ¡"},
+    {id:"Basic Materials",label:"Materials",icon:"ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ"},
+    {id:"Consumer Defensive",label:"Consumer Staples",icon:"ÃÂ°ÃÂÃÂÃÂ"},
+    {id:"Real Estate",label:"Real Estate",icon:"ÃÂ°ÃÂÃÂÃÂ¢"},
+    {id:"Utilities",label:"Utilities",icon:"ÃÂ°ÃÂÃÂÃÂ¡"},
   ];
   var TIMEFRAMES=[
     {id:"1W",label:"1 Week",days:7},
@@ -1585,7 +1585,7 @@ export default function App(){
     if(srt==="dip")return b.dip-a.dip;if(srt==="rsi")return a.rsi-b.rsi;if(srt==="change")return b.chg-a.chg;return b.score-a.score;
   });
 
-  var TABS=topTab==="apex"?["screener","signals","paper","backtest","autopilot","ai","settings"]:topTab==="module"?["ai","settings"]:[];
+  var TABS=topTab==="apex"?["screener","signals","paper","backtest","autopilot","ai","settings"]:[];
   var LABELS={screener:"Screener",signals:"Signals",paper:"Paper Trade",backtest:"Backtest",autopilot:"Autopilot",ai:"AI Analysis",settings:"Settings"};
 
   if(!mounted)return null;
@@ -1651,7 +1651,7 @@ export default function App(){
             </div>
           </div>
           <div style={{display:"flex",gap:4,marginBottom:4}}>
-            {["apex","module","edge"].map(function(m){var a=topTab===m;return(<button key={m} onClick={function(){setTopTab(m);if(m==="apex"&&topTab!=="apex")setTab("screener");}} style={{background:a?"linear-gradient(135deg,#1d4ed8,#7c3aed)":"transparent",border:"1px solid "+(a?"#1d4ed8":"#1e293b"),borderRadius:"6px 6px 0 0",padding:"5px 18px",fontSize:11,fontWeight:700,color:a?"#fff":"#475569",cursor:"pointer",letterSpacing:1}}>{m==="apex"?"APEX":m==="module"?"MODULE":"â EDGE"}</button>);})}
+            {["apex","module","edge"].map(function(m){var a=topTab===m;return(<button key={m} onClick={function(){setTopTab(m);if(m==="apex"&&topTab!=="apex")setTab("screener");}} style={{background:a?"linear-gradient(135deg,#1d4ed8,#7c3aed)":"transparent",border:"1px solid "+(a?"#1d4ed8":"#1e293b"),borderRadius:"6px 6px 0 0",padding:"5px 18px",fontSize:11,fontWeight:700,color:a?"#fff":"#475569",cursor:"pointer",letterSpacing:1}}>{m==="apex"?"APEX":m==="module"?"MODULE":"Ã¢ÂÂ EDGE"}</button>);})}
           </div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
             {TABS.map(function(t){
@@ -1702,7 +1702,8 @@ export default function App(){
 
       <div style={{maxWidth:1200,margin:"0 auto",padding:"20px 20px 0"}}>
 
-        {topTab==="edge"&&<PreMarketEdge/>}
+        {topTab==="module"&&<ArbTab/>}
+{topTab==="edge"&&<PreMarketEdge/>}
 {tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
           {tickerDetail&&(function(){
