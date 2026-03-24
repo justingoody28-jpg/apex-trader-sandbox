@@ -16,7 +16,7 @@ function AuthProvider({ children }) {
     // Hydrate from existing session on first load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-    })
+    }).catch(() => setUser(null))
 
     // Listen for login/logout/token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
