@@ -435,20 +435,19 @@ function ChartTip({ active, payload, label }) {
 
 export default function PreMarketEdge() {
  const [tab, setTab] = useState("backtest");
- const [settings, setSettings] = useState(() => {
- try {
-  const saved = localStorage.getItem('edge_settings');
-  if (saved) return JSON.parse(saved);
- } catch(e) {}
- return { polygonKey:"", fmpKey:"", alpacaId:"", alpacaSecret:"", winPct: 2.0, lossPct: 0.5, minScore: 55 };
-});
- const saveSettings = (updater) => {
-  setSettings(prev => {
-   const next = updater(prev);
-   try { localStorage.setItem('edge_settings', JSON.stringify(next)); } catch(e) {}
-   return next;
-  });
- };
+ const [settings, setSettings] = useState({ polygonKey:"", fmpKey:"", alpacaId:"", alpacaSecret:"", winPct: 2.0, lossPct: 0.5, minScore: 55 });
+ // Load persisted settings on mount (client-only, safe for Next.js SSR)
+ useEffect(() => {
+  try {
+   const saved = localStorage.getItem('edge_settings');
+   if (saved) setSettings(JSON.parse(saved));
+  } catch(e) {}
+ }, []);
+
+ // Persist settings whenever they change
+ useEffect(() => {
+  try { localStorage.setItem('edge_settings', JSON.stringify(settings)); } catch(e) {}
+ }, [settings]);
  const [btTicker, setBtTicker] = useState("NVDA");
  const [btStart, setBtStart] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() - 6); return d.toISOString().split("T")[0]; });
  const [btEnd, setBtEnd] = useState(() => new Date().toISOString().split("T")[0]);
@@ -739,30 +738,30 @@ export default function PreMarketEdge() {
  <div style={{ fontSize:"11px", color: T.amber, marginBottom: 16 }}> API KEYS leave blank for demo mode</div>
  <div style={{ marginBottom: 14 }}>
  <label style={S.label}>Polygon.io Key pre-market bars SPY context avg volume (Backtest)</label>
- <input type="password"value={settings.polygonKey} onChange={(e) => saveSettings((s) => ({ ...s, polygonKey: e.target.value }))} placeholder="Polygon key..."style={S.input} />
+ <input type="password"value={settings.polygonKey} onChange={(e) => setSettings((s) => ({ ...s, polygonKey: e.target.value }))} placeholder="Polygon key..."style={S.input} />
  <div style={{ fontSize:"10px", color: T.muted, marginTop: 4 }}>Free plan works for backtesting. Rate-limited to 5 calls/min.</div>
  </div>
  <div style={{ marginBottom: 14 }}>
  <label style={S.label}>FMP Key real earnings beats analyst upgrades (Optional)</label>
- <input type="password"value={settings.fmpKey} onChange={(e) => saveSettings((s) => ({ ...s, fmpKey: e.target.value }))} placeholder="FMP key..."style={S.input} />
+ <input type="password"value={settings.fmpKey} onChange={(e) => setSettings((s) => ({ ...s, fmpKey: e.target.value }))} placeholder="FMP key..."style={S.input} />
  <div style={{ fontSize:"10px", color: T.muted, marginTop: 4 }}>Optional. Free plan works. Upgrades catalyst from keyword matching to real EPS beat % and analyst data.</div>
  </div>
  <div style={{ marginBottom: 14 }}>
  <label style={S.label}>Alpaca Key ID PRIMARY live scanner source (FREE)</label>
- <input type="password"value={settings.alpacaId} onChange={(e) => saveSettings((s) => ({ ...s, alpacaId: e.target.value }))} placeholder="Alpaca key ID..."style={S.input} />
+ <input type="password"value={settings.alpacaId} onChange={(e) => setSettings((s) => ({ ...s, alpacaId: e.target.value }))} placeholder="Alpaca key ID..."style={S.input} />
  <div style={{ fontSize:"10px", color: T.muted, marginTop: 4 }}>Free paper account at alpaca.markets 4am8pm extended hours in real time. No credit card needed.</div>
  </div>
  <div>
  <label style={S.label}>Alpaca Secret Key</label>
- <input type="password"value={settings.alpacaSecret} onChange={(e) => saveSettings((s) => ({ ...s, alpacaSecret: e.target.value }))} placeholder="Alpaca secret..."style={S.input} />
+ <input type="password"value={settings.alpacaSecret} onChange={(e) => setSettings((s) => ({ ...s, alpacaSecret: e.target.value }))} placeholder="Alpaca secret..."style={S.input} />
  </div>
  </div>
  <div style={{ ...S.card, marginBottom: 16 }}>
  <div style={{ fontSize:"11px", color: T.muted, marginBottom: 14 }}>TRADE LOGIC</div>
  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap: 12 }}>
- <div><label style={S.label}>Win Target %</label><input type="number"step="0.1"min="0.5"max="20"value={settings.winPct} onChange={(e) => saveSettings((s) => ({ ...s, winPct: parseFloat(e.target.value) }))} style={S.input} /></div>
- <div><label style={S.label}>Stop Loss %</label><input type="number"step="0.1"min="0.1"max="5"value={settings.lossPct} onChange={(e) => saveSettings((s) => ({ ...s, lossPct: parseFloat(e.target.value) }))} style={S.input} /></div>
- <div><label style={S.label}>Min Score</label><input type="number"step="1"min="0"max="95"value={settings.minScore} onChange={(e) => saveSettings((s) => ({ ...s, minScore: parseInt(e.target.value) }))} style={S.input} /></div>
+ <div><label style={S.label}>Win Target %</label><input type="number"step="0.1"min="0.5"max="20"value={settings.winPct} onChange={(e) => setSettings((s) => ({ ...s, winPct: parseFloat(e.target.value) }))} style={S.input} /></div>
+ <div><label style={S.label}>Stop Loss %</label><input type="number"step="0.1"min="0.1"max="5"value={settings.lossPct} onChange={(e) => setSettings((s) => ({ ...s, lossPct: parseFloat(e.target.value) }))} style={S.input} /></div>
+ <div><label style={S.label}>Min Score</label><input type="number"step="1"min="0"max="95"value={settings.minScore} onChange={(e) => setSettings((s) => ({ ...s, minScore: parseInt(e.target.value) }))} style={S.input} /></div>
  </div>
  </div>
  <div style={S.card}>
