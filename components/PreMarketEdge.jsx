@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from"react";
+import { useState, useCallback, useRef } from"react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from"recharts";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -436,18 +436,7 @@ function ChartTip({ active, payload, label }) {
 export default function PreMarketEdge() {
  const [tab, setTab] = useState("backtest");
  const [settings, setSettings] = useState({ polygonKey:"", fmpKey:"", alpacaId:"", alpacaSecret:"", winPct: 2.0, lossPct: 0.5, minScore: 55 });
- // Load persisted settings on mount (client-only, safe for Next.js SSR)
- useEffect(() => {
-  try {
-   const saved = localStorage.getItem('edge_settings');
-   if (saved) setSettings(JSON.parse(saved));
-  } catch(e) {}
- }, []);
 
- // Persist settings whenever they change
- useEffect(() => {
-  try { localStorage.setItem('edge_settings', JSON.stringify(settings)); } catch(e) {}
- }, [settings]);
  const [btTicker, setBtTicker] = useState("NVDA");
  const [btStart, setBtStart] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() - 6); return d.toISOString().split("T")[0]; });
  const [btEnd, setBtEnd] = useState(() => new Date().toISOString().split("T")[0]);
