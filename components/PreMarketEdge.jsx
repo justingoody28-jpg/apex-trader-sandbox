@@ -679,7 +679,7 @@ export default function PreMarketEdge() {
  {scanTickers.map((tk) => (
  <div key={tk} style={{ background: T.panel, border:`1px solid ${T.border}`, borderRadius: 6, padding:"4px 10px", display:"flex", gap: 8, alignItems:"center"}}>
  <span>{tk}</span>
- <button onClick={() => setScanTickers((p) => p.filter((t) => t !== tk))} style={{ background:"none", border:"none", color: T.muted, cursor:"pointer", fontSize:"12px", padding: 0 }}></button>
+ <button onClick={() => setScanTickers((p) => p.filter((t) => t !== tk))} style={{ background:"none", border:"none", color: T.muted, cursor:"pointer", fontSize:"14px", padding:"0 4px", fontWeight:"bold" }}>×</button>
  </div>
  ))}
  </div>
