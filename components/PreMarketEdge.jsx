@@ -521,6 +521,12 @@ export default function PreMarketEdge() {
  setBtProgress(Math.round(((i + 1) / days.length) * 100));
  try {
  const bars = barsByDate[date] || [];
+  // Derive prevClose from previous day's bars in the bulk data
+  if (!prevClose && i > 0) {
+   const prevDayBars = barsByDate[days[i-1]] || [];
+   const prevReg = getRegular(prevDayBars);
+   if (prevReg.length) prevClose = prevReg.at(-1).c;
+  }
   const rawSpy = spyByDate[date] || [];
   const spyPm = filterPremarket(rawSpy);
   const spyGap = spyPm.length ? ((spyPm.at(-1).c - spyPm[0].o) / spyPm[0].o) * 100 : 0;
