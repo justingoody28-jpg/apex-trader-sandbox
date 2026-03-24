@@ -55,6 +55,22 @@ async function polyBars(ticker, date, key) {
  return d.results || [];
 }
 
+async function polyBarsRange(ticker, from, to, key) {
+ const res = await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/minute/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${key}`);
+ if (!res.ok) throw new Error(`Polygon ${res.status}`);
+ const d = await res.json();
+ return Array.isArray(d.results) ? d.results : [];
+}
+function groupBarsByDate(bars) {
+ const out = {};
+ for (const b of bars) {
+  const dt = new Date(b.t - 18000000);
+  const k = dt.getUTCFullYear() + '-' + String(dt.getUTCMonth()+1).padStart(2,'0') + '-' + String(dt.getUTCDate()).padStart(2,'0');
+  if (!out[k]) out[k] = [];
+  out[k].push(b);
+ }
+ return out;
+}
 async function polyPrevClose(ticker, key) {
  const res = await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${key}`);
  if (!res.ok) throw new Error(`Polygon prev ${res.status}`);
@@ -491,16 +507,26 @@ export default function PreMarketEdge() {
  const trades = []; let equity = 10000;
  const curve = [{ date:"Start", equity, cumPct: 0 }];
  let prevClose = null;
+ // Bulk fetch: 2 Polygon calls total instead of 3× per day
+ addLog('Fetching all bars in bulk...');
+ const [allBars, allSpyBars] = await Promise.all([
+  polyBarsRange(btTicker, btStart, btEnd, settings.polygonKey),
+  polyBarsRange('SPY', btStart, btEnd, settings.polygonKey),
+ ]);
+ const barsByDate = groupBarsByDate(allBars);
+ const spyByDate = groupBarsByDate(allSpyBars);
+ addLog(`Got ${allBars.length} bars (${btTicker}) + ${allSpyBars.length} (SPY)`);
  for (let i = 0; i < days.length; i++) {
  const date = days[i];
  setBtProgress(Math.round(((i + 1) / days.length) * 100));
  try {
- const [bars, catData, spy] = await Promise.all([
- polyBars(btTicker, date, settings.polygonKey),
- getCatalyst(btTicker, date, settings.polygonKey, settings.fmpKey),
- spyContext(date, settings.polygonKey),
- ]);
- await sleep(350);
+ const bars = barsByDate[date] || [];
+  const rawSpy = spyByDate[date] || [];
+  const spyPm = filterPremarket(rawSpy);
+  const spyGap = spyPm.length ? ((spyPm.at(-1).c - spyPm[0].o) / spyPm[0].o) * 100 : 0;
+  const spy = { spyScore: spyGap > 0.3 ? 10 : spyGap > 0 ? 5 : spyGap < -0.3 ? 0 : 3, spyGap };
+  const catData = await getCatalyst(btTicker, date, settings.polygonKey, settings.fmpKey);
+  await sleep(120);
  if (!bars.length) { addLog(`${date} no data`); continue; }
  if (prevClose === null) { prevClose = await polyPrevClose(btTicker, settings.polygonKey); await sleep(200); }
  const pmBars = filterPremarket(bars);
