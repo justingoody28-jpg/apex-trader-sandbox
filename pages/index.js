@@ -451,17 +451,17 @@ function calcDataScore(d){
 
 function LosersTab(props){
   var SECTORS_LIST=[
-    {id:"Technology",label:"Technology",icon:"ÃÂ°ÃÂÃÂÃÂ»"},
-    {id:"Healthcare",label:"Healthcare",icon:"ÃÂ°ÃÂÃÂÃÂ¥"},
-    {id:"Financial Services",label:"Financials",icon:"ÃÂ°ÃÂÃÂÃÂ¦"},
-    {id:"Energy",label:"Energy",icon:"ÃÂ¢ÃÂÃÂ¡"},
-    {id:"Consumer Cyclical",label:"Consumer Cyclical",icon:"ÃÂ°ÃÂÃÂÃÂÃÂ¯ÃÂ¸ÃÂ"},
-    {id:"Industrials",label:"Industrials",icon:"ÃÂ°ÃÂÃÂÃÂ­"},
-    {id:"Communication Services",label:"Communication",icon:"ÃÂ°ÃÂÃÂÃÂ¡"},
-    {id:"Basic Materials",label:"Materials",icon:"ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ"},
-    {id:"Consumer Defensive",label:"Consumer Staples",icon:"ÃÂ°ÃÂÃÂÃÂ"},
-    {id:"Real Estate",label:"Real Estate",icon:"ÃÂ°ÃÂÃÂÃÂ¢"},
-    {id:"Utilities",label:"Utilities",icon:"ÃÂ°ÃÂÃÂÃÂ¡"},
+    {id:"Technology",label:"Technology",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ»"},
+    {id:"Healthcare",label:"Healthcare",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ¥"},
+    {id:"Financial Services",label:"Financials",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ¦"},
+    {id:"Energy",label:"Energy",icon:"ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¡"},
+    {id:"Consumer Cyclical",label:"Consumer Cyclical",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¯ÃÂÃÂ¸ÃÂÃÂ"},
+    {id:"Industrials",label:"Industrials",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ­"},
+    {id:"Communication Services",label:"Communication",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ¡"},
+    {id:"Basic Materials",label:"Materials",icon:"ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¯ÃÂÃÂ¸ÃÂÃÂ"},
+    {id:"Consumer Defensive",label:"Consumer Staples",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ"},
+    {id:"Real Estate",label:"Real Estate",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ¢"},
+    {id:"Utilities",label:"Utilities",icon:"ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ¡"},
   ];
   var TIMEFRAMES=[
     {id:"1W",label:"1 Week",days:7},
@@ -1651,7 +1651,7 @@ export default function App(){
             </div>
           </div>
           <div style={{display:"flex",gap:4,marginBottom:4}}>
-            {["apex","module","edge"].map(function(m){var a=topTab===m;return(<button key={m} onClick={function(){setTopTab(m);if(m==="apex"&&topTab!=="apex")setTab("screener");}} style={{background:a?"linear-gradient(135deg,#1d4ed8,#7c3aed)":"transparent",border:"1px solid "+(a?"#1d4ed8":"#1e293b"),borderRadius:"6px 6px 0 0",padding:"5px 18px",fontSize:11,fontWeight:700,color:a?"#fff":"#475569",cursor:"pointer",letterSpacing:1}}>{m==="apex"?"APEX":m==="module"?"MODULE":"Ã¢ÂÂ EDGE"}</button>);})}
+            {["apex","module","edge"].map(function(m){var a=topTab===m;return(<button key={m} onClick={function(){setTopTab(m);if(m==="apex"&&topTab!=="apex")setTab("screener");}} style={{background:a?"linear-gradient(135deg,#1d4ed8,#7c3aed)":"transparent",border:"1px solid "+(a?"#1d4ed8":"#1e293b"),borderRadius:"6px 6px 0 0",padding:"5px 18px",fontSize:11,fontWeight:700,color:a?"#fff":"#475569",cursor:"pointer",letterSpacing:1}}>{m==="apex"?"APEX":m==="module"?"MODULE":"◈ EDGE"}</button>);})}
           </div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
             {TABS.map(function(t){
@@ -1704,7 +1704,7 @@ export default function App(){
 
         {topTab==="module"&&<ArbTab/>}
 {topTab==="edge"&&<PreMarketEdge/>}
-{tab==="screener"&&(
+{topTab==="apex"&&tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
           {tickerDetail&&(function(){
             var s=tickerDetail;
@@ -1919,7 +1919,7 @@ export default function App(){
           </div>
         )}
 
-        {tab==="signals"&&(
+        {topTab==="apex"&&tab==="signals"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Entry / Exit Signals</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Buy-dip and momentum confirmation strategy</div></div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10,marginBottom:18}}>
@@ -1949,7 +1949,7 @@ export default function App(){
           </div>
         )}
 
-        {tab==="paper"&&(
+        {topTab==="apex"&&tab==="paper"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
               <div><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Paper Portfolio</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Simulated trading - no real money</div></div>
@@ -2015,7 +2015,7 @@ export default function App(){
           </div>
         )}
 
-        {tab==="backtest"&&(
+        {topTab==="apex"&&tab==="backtest"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:14,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:12,alignItems:"flex-end"}}>
               <div><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Strategy Backtester</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>90-day simulation with self-tuned parameters</div></div>
@@ -2030,7 +2030,7 @@ export default function App(){
           </div>
         )}
 
-        {tab==="autopilot"&&(
+        {topTab==="apex"&&tab==="autopilot"&&(
           <div style={{animation:"fu 0.3s ease"}}>
             <div style={{marginBottom:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:14,alignItems:"flex-start"}}>
               <div>
@@ -2103,9 +2103,9 @@ export default function App(){
           </div>
         )}
 
-        {tab==="ai"&&<LosersTab stocks={stocks} setModal={setModal} setTab={setTab} setQty={setQty} anthropicKey={anthropicKey} fhKey={fhKey} fmpKey={fmpKey}/>}
+        {topTab==="apex"&&tab==="ai"&&<LosersTab stocks={stocks} setModal={setModal} setTab={setTab} setQty={setQty} anthropicKey={anthropicKey} fhKey={fhKey} fmpKey={fmpKey}/>}
 
-        {tab==="settings"&&(
+        {topTab==="apex"&&tab==="settings"&&(
           <div style={{animation:"fu 0.3s ease",maxWidth:560}}>
             <div style={{marginBottom:18}}><div style={{fontSize:20,fontWeight:700,color:"#f1f5f9"}}>Settings</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>Alpaca integration and strategy parameters</div></div>
             <div style={{background:"#0a0f1a",border:"1px solid #0f172a",borderRadius:12,padding:"22px",marginBottom:14}}>
