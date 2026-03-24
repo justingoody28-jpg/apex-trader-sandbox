@@ -534,7 +534,6 @@ export default function PreMarketEdge() {
   const catData = await getCatalyst(btTicker, date, settings.polygonKey, settings.fmpKey);
   await sleep(120);
  if (!bars.length) { addLog(`${date} no data`); continue; }
- if (prevClose === null) { prevClose = await polyPrevClose(btTicker, settings.polygonKey); await sleep(200); }
  const pmBars = filterPremarket(bars);
  const entry = get931Bar(bars);
  const intra = getIntraday(bars);
