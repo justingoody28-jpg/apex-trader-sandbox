@@ -1316,13 +1316,13 @@ function scoreSignals({ pmBars, prevClose: savedPrevClose, avgDailyVol, catalyst
  bd.consistency = parseFloat((pmBars.filter((b) => b.c >= b.o).length / pmBars.length * 5).toFixed(1));
  bd.catalyst = catalystData?.catalystScore ?? 0;
  if (avgDailyVol && avgDailyVol > 0) {
- const rvol = (pmVol * 1.18) / avgDailyVol;
+ const rvol = (pmVol * 1.18) / (avgDailyVol * 0.05);
  bd.relVol = parseFloat(Math.min(rvol * 6.5, 20).toFixed(1));
  } else { bd.relVol = 5; }
  bd.marketCtx = spyData?.spyScore ?? 5;
  bd.shortInt = shortInterestPct != null ? parseFloat(Math.min((shortInterestPct / 30) * 5, 5).toFixed(1)) : 2.5;
  const score = Math.min(Math.round(Object.values(bd).reduce((a, b) => a + b, 0)), 100);
- const rvol = avgDailyVol ? parseFloat((pmVol * 1.18 / avgDailyVol).toFixed(2)) : null;
+ const rvol = avgDailyVol ? parseFloat((pmVol * 1.18 / (avgDailyVol * 0.05)).toFixed(2)) : null;
  return { score, gap: parseFloat(gap.toFixed(2)), pmVol, breakdown: bd, rvol, spyGap: spyData?.spyGap ?? 0, headlines: catalystData?.headlines || [] };
 }
 
