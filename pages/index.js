@@ -1305,7 +1305,7 @@ async function spyContext(date, key) {
 
 function scoreSignals({ pmBars, prevClose: savedPrevClose, avgDailyVol, catalystData, spyData, shortInterestPct }) {
  const bd = { gap: 0, momentum: 0, consistency: 0, catalyst: 0, relVol: 0, marketCtx: 0, shortInt: 0 };
- if (!pmBars.length || !prevClose) return { score: 0, gap: 0, pmVol: 0, breakdown: bd };
+ if (!pmBars.length || !savedPrevClose) return { score: 0, gap: 0, pmVol: 0, breakdown: bd };
  const lastC = pmBars.at(-1).c;
  const gap = ((lastC - prevClose) / prevClose) * 100;
  const pmVol = pmBars.reduce((s, b) => s + b.v, 0);
