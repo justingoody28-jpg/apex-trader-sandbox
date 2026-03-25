@@ -1581,9 +1581,8 @@ function PreMarketEdge() {
  const regular = getRegular(bars);
  const savedPrevClose = prevClose; // previous day's close for gap scoring
  if (regular.length) prevClose = regular.at(-1).c; // update for next iteration
- if (regular.length) prevClose = regular.at(-1).c;
  if (!pmBars.length || !entry || !savedPrevClose) { addLog(`${date} no PM data`); continue; }
- const sig = scoreSignals({ pmBars, prevClose, avgDailyVol, catalystData: catData, spyData: spy, shortInterestPct: null });
+ const sig = scoreSignals({ pmBars, prevClose: savedPrevClose, avgDailyVol, catalystData: catData, spyData: spy, shortInterestPct: null });
  if (sig.score < settings.minScore) { addLog(`${date} score ${sig.score}`); continue; }
  const trade = evaluateTrade(intra, entry.o, settings.winPct, settings.lossPct);
  equity *= 1 + trade.pct / 100;
