@@ -1303,7 +1303,7 @@ async function spyContext(date, key) {
  } catch { return { spyScore: 5, spyGap: 0 }; }
 }
 
-function scoreSignals({ pmBars, prevClose: savedPrevClose, avgDailyVol, catalystData, spyData, shortInterestPct }) {
+function scoreSignals({ pmBars, prevClose, avgDailyVol, catalystData, spyData, shortInterestPct }) {
  const bd = { gap: 0, momentum: 0, consistency: 0, catalyst: 0, relVol: 0, marketCtx: 0, shortInt: 0 };
  if (!pmBars.length || !savedPrevClose) return { score: 0, gap: 0, pmVol: 0, breakdown: bd };
  const lastC = pmBars.at(-1).c;
