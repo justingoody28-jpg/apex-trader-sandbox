@@ -1103,17 +1103,10 @@ async function polyBars(ticker, date, key) {
 }
 
 async function polyBarsRange(ticker, from, to, key) {
- let url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/minute/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${key}`;
- let all = [], pages = 0;
- while (url && pages < 5) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Polygon ${res.status}`);
-  const d = await res.json();
-  if (Array.isArray(d.results)) all = all.concat(d.results);
-  url = d.next_url ? d.next_url + '&apiKey=' + key : null;
-  pages++;
- }
- return all;
+ const res = await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/minute/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${key}`);
+ if (!res.ok) throw new Error(`Polygon ${res.status}`);
+ const d = await res.json();
+ return Array.isArray(d.results) ? d.results : [];
 }
 function groupBarsByDate(bars) {
  const out = {};
