@@ -1103,10 +1103,17 @@ async function polyBars(ticker, date, key) {
 }
 
 async function polyBarsRange(ticker, from, to, key) {
- const res = await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/minute/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${key}`);
- if (!res.ok) throw new Error(`Polygon ${res.status}`);
- const d = await res.json();
- return Array.isArray(d.results) ? d.results : [];
+ let url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/minute/${from}/${to}?adjusted=true&sort=asc&limit=50000&apiKey=${key}`;
+ let all = [];
+ while (url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Polygon ${res.status}`);
+  const d = await res.json();
+  if (Array.isArray(d.results)) all = all.concat(d.results);
+  url = d.next_url ? d.next_url + '&apiKey=' + key : null;
+  if (url) await sleep(300);
+ }
+ return all;
 }
 function groupBarsByDate(bars) {
  const out = {};
@@ -1498,7 +1505,7 @@ function ChartTip({ active, payload, label }) {
 
 function PreMarketEdge() {
  const [tab, setTab] = useState("backtest");
- const [settings, setSettings] = useState({ polygonKey:"", fmpKey:"", alpacaId:"", alpacaSecret:"", winPct: 2.0, lossPct: 0.5, minScore: 30 });
+ const [settings, setSettings] = useState({ polygonKey:"", fmpKey:"", alpacaId:"", alpacaSecret:"", winPct: 2.0, lossPct: 0.5, minScore: 25 });
  // Load saved keys on mount — typeof guard makes this SSR-safe
  useEffect(() => {
   if (typeof window === 'undefined') return;
