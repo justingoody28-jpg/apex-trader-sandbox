@@ -1579,10 +1579,12 @@ function PreMarketEdge() {
  const entry = get931Bar(bars);
  const intra = getIntraday(bars);
  const regular = getRegular(bars);
- // Derive prevClose from previous day's bars if not already set
- if (!prevClose && i > 0) {
-  const pb = getRegular(barsByDate[days[i-1]] || []);
-  if (pb.length) prevClose = pb.at(-1).c;
+ // Derive prevClose by scanning back through previous days (handles weekend/holiday gaps)
+ if (!prevClose) {
+  for (let j = i - 1; j >= 0; j--) {
+   const pb = getRegular(barsByDate[days[j]] || []);
+   if (pb.length) { prevClose = pb.at(-1).c; break; }
+  }
  }
  const savedPrevClose = prevClose;
  if (regular.length) prevClose = regular.at(-1).c; // update for next iteration
