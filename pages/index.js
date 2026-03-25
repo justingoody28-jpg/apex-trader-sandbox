@@ -1498,7 +1498,7 @@ function ChartTip({ active, payload, label }) {
 
 function PreMarketEdge() {
  const [tab, setTab] = useState("backtest");
- const [settings, setSettings] = useState({ polygonKey:"", fmpKey:"", alpacaId:"", alpacaSecret:"", winPct: 2.0, lossPct: 0.5, minScore: 55 });
+ const [settings, setSettings] = useState({ polygonKey:"", fmpKey:"", alpacaId:"", alpacaSecret:"", winPct: 2.0, lossPct: 0.5, minScore: 30 });
  // Load saved keys on mount — typeof guard makes this SSR-safe
  useEffect(() => {
   if (typeof window === 'undefined') return;
