@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EDGE ÃÂ¢ÃÂÃÂ Scenario Tester v2</title>
+<title>EDGE ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Scenario Tester v2</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
@@ -648,8 +648,8 @@ function updateBatchBtn(){
   var grp=document.getElementById('batchGroup').value;
   var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
   var label=grp==='all'?'All 37':grp+' ('+count+')';
-  document.getElementById('runAllBtn').textContent='ÃÂ¢ÃÂÃÂ¡ Run '+label;
-  document.getElementById('expAllBtn').textContent='ÃÂ¢ÃÂ¬ÃÂ Export '+label;
+  document.getElementById('runAllBtn').textContent='ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¡ Run '+label;
+  document.getElementById('expAllBtn').textContent='ÃÂÃÂ¢ÃÂÃÂ¬ÃÂÃÂ Export '+label;
 }
 
 function getActiveTickers(){
@@ -681,10 +681,10 @@ async function checkAlpacaConn(){
   var keys=getAlpacaKeys();
   var el=document.getElementById("alpacaStatus");
   el.className="alpaca-dot chk";
-  el.textContent="Ã¢ÂÂ Checking...";
+  el.textContent="ÃÂ¢ÃÂÃÂ Checking...";
   if(!keys.id||!keys.secret){
     el.className="alpaca-dot err";
-    el.textContent="Ã¢ÂÂ No keys Ã¢ÂÂ set in EDGE Settings tab";
+    el.textContent="ÃÂ¢ÃÂÃÂ No keys ÃÂ¢ÃÂÃÂ set in EDGE Settings tab";
     return;
   }
   try{
@@ -693,14 +693,14 @@ async function checkAlpacaConn(){
     var d=await r.json();
     if(d.ok){
       el.className="alpaca-dot ok";
-      el.textContent="Ã¢ÂÂ Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
+      el.textContent="ÃÂ¢ÃÂÃÂ Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
     }else{
       el.className="alpaca-dot err";
-      el.textContent="Ã¢ÂÂ Error: "+(d.error||"unknown");
+      el.textContent="ÃÂ¢ÃÂÃÂ Error: "+(d.error||"unknown");
     }
   }catch(e){
     el.className="alpaca-dot err";
-    el.textContent="Ã¢ÂÂ Offline: "+e.message;
+    el.textContent="ÃÂ¢ÃÂÃÂ Offline: "+e.message;
   }
 }
 async function execTrade(scenario,side,stopPct){
@@ -716,7 +716,7 @@ async function execTrade(scenario,side,stopPct){
 
   var keys=getAlpacaKeys();
   if(!keys.id||!keys.secret){
-    alert("No Alpaca keys Ã¢ÂÂ set them in the EDGE Settings tab first.");
+    alert("No Alpaca keys ÃÂ¢ÃÂÃÂ set them in the EDGE Settings tab first.");
     return;
   }
   var tk=document.getElementById("ticker").value;
@@ -742,16 +742,16 @@ async function execTrade(scenario,side,stopPct){
     var d=await r.json();
     if(d.success){
       resEl.style.color="#3fb950";
-      resEl.textContent="Ã¢ÂÂ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
-      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" Ã¢ÂÂ "+d.order.status,"ok");
+      resEl.textContent="ÃÂ¢ÃÂÃÂ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
+      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" ÃÂ¢ÃÂÃÂ "+d.order.status,"ok");
     }else{
       resEl.style.color="#f85149";
-      resEl.textContent="Ã¢ÂÂ "+(d.error||JSON.stringify(d));
+      resEl.textContent="ÃÂ¢ÃÂÃÂ "+(d.error||JSON.stringify(d));
       lg("TRADE ERR "+scenario+": "+(d.error||"failed"),"err");
     }
   }catch(e){
     resEl.style.color="#f85149";
-    resEl.textContent="Ã¢ÂÂ "+e.message;
+    resEl.textContent="ÃÂ¢ÃÂÃÂ "+e.message;
     lg("TRADE ERR "+scenario+": "+e.message,"err");
   }
   if(btn){btn.disabled=false;btn.textContent=origLabel;}
@@ -852,6 +852,7 @@ function initTickerMgr(){
 }
 
 initTickerMgr();
+
 function parseBatchInput(raw){
   // Accept: newline or comma separated, optional group after comma
   // e.g. "PLTR", "PLTR,Mid", "PLTR Mid", "PLTR, Mid Cap"
@@ -868,41 +869,41 @@ function parseBatchInput(raw){
     return sym?{t:sym,grp:grp}:null;
   }).filter(Boolean);
 }
-function batchAddTickers(approveAll){
-  var raw=document.getElementById("batchInput").value||"";
-  var resEl=document.getElementById("batchResult");
-  if(!raw.trim()){resEl.className="batch-result err";resEl.textContent="Paste at least one ticker symbol";return;}
-  var parsed=parseBatchInput(raw);
-  if(!parsed.length){resEl.className="batch-result err";resEl.textContent="Could not parse any valid symbols";return;}
-  var list=loadTickers();
-  var approved=loadApproved();
-  var added=[],skipped=[];
-  parsed.forEach(function(item){
-    if(list.find(function(t){return t.t===item.t;})){skipped.push(item.t);}
-    else{list.push({t:item.t,grp:item.grp});added.push(item.t);}
-    if(approveAll&&approved.indexOf(item.t)===-1)approved.push(item.t);
+function batchAddTickers(approveAll) {
+  var raw = document.getElementById("batchInput").value || "";
+  var resEl = document.getElementById("batchResult");
+  if (!raw.trim()) { resEl.className="batch-result err"; resEl.textContent="Paste at least one ticker symbol"; return; }
+  var parsed = parseBatchInput(raw);
+  if (!parsed.length) { resEl.className="batch-result err"; resEl.textContent="Could not parse any valid symbols"; return; }
+  var list = loadTickers();
+  var approved = loadApproved();
+  var added = [], skipped = [];
+  parsed.forEach(function(item) {
+    if (list.find(function(t){ return t.t === item.t; })) { skipped.push(item.t); }
+    else { list.push({t:item.t, grp:item.grp}); added.push(item.t); }
+    if (approveAll && approved.indexOf(item.t) === -1) approved.push(item.t);
   });
-  localStorage.setItem("apex_tickers",JSON.stringify({list:list,approved:approved}));
-  ALL_TICKERS=loadTickers();
+  localStorage.setItem("apex_tickers", JSON.stringify({list:list, approved:approved}));
+  ALL_TICKERS = loadTickers();
   syncTickerDropdown();
   renderTickerMgr();
-  var msg="";
-  if(added.length)msg+="Added "+added.length+": "+added.join(", ")+(approveAll?" (all approved)":"");
-  if(skipped.length)msg+=(msg?" | ":"")+"Already existed: "+skipped.join(", ");
-  resEl.className="batch-result "+(added.length?"ok":"neu");
-  resEl.textContent=msg;
-  added.forEach(function(sym){lg("Batch added: "+sym+(approveAll?" + approved":""),"ok");});
+  var msg = "";
+  if (added.length) msg += "Added " + added.length + ": " + added.join(", ") + (approveAll ? " (all approved)" : "");
+  if (skipped.length) msg += (msg ? " | " : "") + "Already existed: " + skipped.join(", ");
+  resEl.className = "batch-result " + (added.length ? "ok" : "neu");
+  resEl.textContent = msg;
+  added.forEach(function(sym){ lg("Batch added: " + sym + (approveAll ? " + approved" : ""), "ok"); });
 }
-function batchExport(){
-  var list=loadTickers();
-  var approved=loadApproved();
-  var lines=list.map(function(t){return t.t+","+t.grp+(approved.indexOf(t.t)!==-1?",TRADE_APPROVED":"");});
-  var csv="# APEX Tickers Export\n# Format: SYMBOL,Group,TRADE_APPROVED(if whitelisted)\n"+lines.join("\n");
-  var a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download="apex_tickers_"+new Date().toISOString().slice(0,10)+".csv";
+function batchExport() {
+  var list = loadTickers();
+  var approved = loadApproved();
+  var lines = list.map(function(t){ return t.t + "," + t.grp + (approved.indexOf(t.t) !== -1 ? ",TRADE_APPROVED" : ""); });
+  var csv = "# APEX Tickers Export\n# Format: SYMBOL,Group,TRADE_APPROVED(if whitelisted)\n" + lines.join("\n");
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = "apex_tickers_" + new Date().toISOString().slice(0,10) + ".csv";
   a.click();
-  lg("Exported "+list.length+" tickers to CSV","ok");
+  lg("Exported " + list.length + " tickers to CSV", "ok");
 }
 </script>
 </body>
