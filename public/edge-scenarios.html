@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EDGE ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Scenario Tester v2</title>
+<title>EDGE ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Scenario Tester v2</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
@@ -648,8 +648,8 @@ function updateBatchBtn(){
   var grp=document.getElementById('batchGroup').value;
   var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
   var label=grp==='all'?'All 37':grp+' ('+count+')';
-  document.getElementById('runAllBtn').textContent='ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¡ Run '+label;
-  document.getElementById('expAllBtn').textContent='ÃÂÃÂ¢ÃÂÃÂ¬ÃÂÃÂ Export '+label;
+  document.getElementById('runAllBtn').textContent='ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ Run '+label;
+  document.getElementById('expAllBtn').textContent='ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¬ÃÂÃÂÃÂÃÂ Export '+label;
 }
 
 function getActiveTickers(){
@@ -681,10 +681,10 @@ async function checkAlpacaConn(){
   var keys=getAlpacaKeys();
   var el=document.getElementById("alpacaStatus");
   el.className="alpaca-dot chk";
-  el.textContent="ÃÂ¢ÃÂÃÂ Checking...";
+  el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Checking...";
   if(!keys.id||!keys.secret){
     el.className="alpaca-dot err";
-    el.textContent="ÃÂ¢ÃÂÃÂ No keys ÃÂ¢ÃÂÃÂ set in EDGE Settings tab";
+    el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ No keys ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ set in EDGE Settings tab";
     return;
   }
   try{
@@ -693,14 +693,14 @@ async function checkAlpacaConn(){
     var d=await r.json();
     if(d.ok){
       el.className="alpaca-dot ok";
-      el.textContent="ÃÂ¢ÃÂÃÂ Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
+      el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
     }else{
       el.className="alpaca-dot err";
-      el.textContent="ÃÂ¢ÃÂÃÂ Error: "+(d.error||"unknown");
+      el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Error: "+(d.error||"unknown");
     }
   }catch(e){
     el.className="alpaca-dot err";
-    el.textContent="ÃÂ¢ÃÂÃÂ Offline: "+e.message;
+    el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Offline: "+e.message;
   }
 }
 async function execTrade(scenario,side,stopPct){
@@ -716,7 +716,7 @@ async function execTrade(scenario,side,stopPct){
 
   var keys=getAlpacaKeys();
   if(!keys.id||!keys.secret){
-    alert("No Alpaca keys ÃÂ¢ÃÂÃÂ set them in the EDGE Settings tab first.");
+    alert("No Alpaca keys ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ set them in the EDGE Settings tab first.");
     return;
   }
   var tk=document.getElementById("ticker").value;
@@ -742,16 +742,16 @@ async function execTrade(scenario,side,stopPct){
     var d=await r.json();
     if(d.success){
       resEl.style.color="#3fb950";
-      resEl.textContent="ÃÂ¢ÃÂÃÂ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
-      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" ÃÂ¢ÃÂÃÂ "+d.order.status,"ok");
+      resEl.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
+      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "+d.order.status,"ok");
     }else{
       resEl.style.color="#f85149";
-      resEl.textContent="ÃÂ¢ÃÂÃÂ "+(d.error||JSON.stringify(d));
+      resEl.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "+(d.error||JSON.stringify(d));
       lg("TRADE ERR "+scenario+": "+(d.error||"failed"),"err");
     }
   }catch(e){
     resEl.style.color="#f85149";
-    resEl.textContent="ÃÂ¢ÃÂÃÂ "+e.message;
+    resEl.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "+e.message;
     lg("TRADE ERR "+scenario+": "+e.message,"err");
   }
   if(btn){btn.disabled=false;btn.textContent=origLabel;}
@@ -853,21 +853,57 @@ function initTickerMgr(){
 
 initTickerMgr();
 
-function parseBatchInput(raw){
-  // Accept: newline or comma separated, optional group after comma
-  // e.g. "PLTR", "PLTR,Mid", "PLTR Mid", "PLTR, Mid Cap"
-  var lines=raw.replace(/,\s*\n/g,"\n").split(/[\n]+/).map(function(l){return l.trim();}).filter(Boolean);
-  return lines.map(function(line){
-    // Split on comma or whitespace (first token = symbol, rest = group hint)
-    var parts=line.split(/[,\s]+/).map(function(p){return p.trim();}).filter(Boolean);
-    var sym=parts[0].toUpperCase().replace(/[^A-Z0-9.]/g,"");
-    var grpHint=(parts[1]||"").toLowerCase();
-    var grp="Small/Micro";
-    if(grpHint.indexOf("large")!==-1)grp="Large";
-    else if(grpHint.indexOf("mid")!==-1)grp="Mid";
-    else if(grpHint.indexOf("small")!==-1||grpHint.indexOf("micro")!==-1)grp="Small/Micro";
-    return sym?{t:sym,grp:grp}:null;
-  }).filter(Boolean);
+function parseBatchInput(raw) {
+  function looksLikeGroup(s) {
+    var l = (s||"").toLowerCase();
+    return l.indexOf("large")!==-1||l.indexOf("mid")!==-1||l.indexOf("small")!==-1||l.indexOf("micro")!==-1||l.indexOf("cap")!==-1;
+  }
+  function toGrp(hint) {
+    var l = (hint||"").toLowerCase();
+    if (l.indexOf("large")!==-1) return "Large";
+    if (l.indexOf("mid")!==-1) return "Mid";
+    return "Small/Micro";
+  }
+  function validSym(s) {
+    var clean = (s||"").toUpperCase().replace(/[^A-Z0-9.]/g,"");
+    return (clean.length>=1&&clean.length<=8) ? clean : null;
+  }
+  // Split into lines (newline or semicolon)
+  var lines = raw.split(/[\n;]+/).map(function(l){return l.trim();}).filter(Boolean);
+  var results = [];
+  lines.forEach(function(line) {
+    var parts = line.split(/,/).map(function(p){return p.trim();}).filter(Boolean);
+    if (parts.length === 0) return;
+    if (parts.length === 1) {
+      // Single segment: could be "PLTR", "PLTR ROOT HOOD" or "PLTR Mid"
+      var tokens = parts[0].split(/\s+/).filter(Boolean);
+      if (tokens.length >= 2 && looksLikeGroup(tokens[tokens.length-1])) {
+        var grp = toGrp(tokens[tokens.length-1]);
+        tokens.slice(0,-1).forEach(function(tok){ var sym=validSym(tok); if(sym)results.push({t:sym,grp:grp}); });
+      } else {
+        tokens.forEach(function(tok){ var sym=validSym(tok); if(sym)results.push({t:sym,grp:"Small/Micro"}); });
+      }
+    } else if (parts.length === 2 && looksLikeGroup(parts[1]) && parts[1].indexOf(" ")===-1) {
+      // "PLTR,Mid" exact group format
+      var sym = validSym(parts[0]);
+      if (sym) results.push({t:sym, grp:toGrp(parts[1])});
+    } else {
+      // Multiple comma-separated: "PLTR, ROOT, HOOD" or "PLTR Mid, NVDA Large"
+      parts.forEach(function(p) {
+        var tokens = p.split(/\s+/).filter(Boolean);
+        var grp = "Small/Micro";
+        var syms = tokens;
+        if (tokens.length >= 2 && looksLikeGroup(tokens[tokens.length-1])) {
+          grp = toGrp(tokens[tokens.length-1]);
+          syms = tokens.slice(0,-1);
+        }
+        syms.forEach(function(tok){ var sym=validSym(tok); if(sym)results.push({t:sym,grp:grp}); });
+      });
+    }
+  });
+  // Dedupe
+  var seen = {};
+  return results.filter(function(r){ if(seen[r.t])return false; seen[r.t]=true; return true; });
 }
 function batchAddTickers(approveAll) {
   var raw = document.getElementById("batchInput").value || "";
