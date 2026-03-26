@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EDGE — Scenario Tester v2</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
+h1 { color:#58a6ff; font-size:18px; margin-bottom:3px; }
+.sub { color:#8b949e; font-size:11px; margin-bottom:12px; }
+.key { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+.key-box { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; font-size:11px; line-height:1.8; }
+.key-box h4 { color:#58a6ff; font-size:11px; margin-bottom:6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.term { color:#e6edf3; font-weight:bold; }
+.def  { color:#8b949e; }
+.legend { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:11px; line-height:1.9; }
+.legend b { color:#58a6ff; }
+.controls { display:flex; gap:10px; margin-bottom:12px; align-items:flex-end; flex-wrap:wrap; }
+label { font-size:11px; color:#8b949e; display:block; margin-bottom:3px; }
+input[type=date] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:148px; }
+input[type=number] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:75px; }
+select { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; min-width:220px; }
+button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:bold; }
+#runOneBtn { background:#238636; color:#fff; }
+#runAllBtn { background:#1f6feb; color:#fff; font-size:13px; padding:8px 20px; }
+#runOneBtn:disabled, #runAllBtn:disabled { background:#21262d; color:#484f58; cursor:not-allowed; }
+#stopBtn   { background:#da3633; color:#fff; }
+#expOneBtn, #expAllBtn { background:#388bfd; color:#fff; }
+.prog-wrap { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px; margin-bottom:12px; }
+.bar-bg { background:#21262d; border-radius:4px; height:7px; margin:6px 0 3px; }
+.bar { background:#238636; height:7px; border-radius:4px; width:0%; transition:width 0.3s; }
+.plab { font-size:11px; color:#8b949e; }
+.log { background:#0d1117; border:1px solid #30363d; border-radius:5px; padding:8px 10px; height:65px; overflow-y:auto; font-size:11px; margin-bottom:12px; }
+.log .ok  { color:#3fb950; display:block; }
+.log .err { color:#f85149; display:block; }
+.log .inf { color:#58a6ff; display:block; }
+.log .neu { color:#8b949e; display:block; }
+.sc-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:12px; }
+.sbox { background:#161b22; border:1px solid #30363d; border-radius:7px; padding:10px; }
+.sbox h3 { font-size:10px; color:#8b949e; margin-bottom:8px; border-bottom:1px solid #30363d; padding-bottom:5px; line-height:1.4; }
+.sbox.win { border-color:#3fb950; }
+.sbox.win h3 { color:#3fb950; }
+.sr { display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; }
+.sl { color:#8b949e; } .sv { font-weight:bold; }
+.sv.g { color:#3fb950; } .sv.r { color:#f85149; } .sv.n { color:#e6edf3; }
+.stitle { color:#58a6ff; font-size:12px; font-weight:bold; margin:8px 0 6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.batch-wrap { max-height:400px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; margin-bottom:12px; }
+.batch-wrap table, .tbl-wrap table { width:100%; border-collapse:collapse; font-size:11px; }
+.batch-wrap th, .tbl-wrap th { background:#161b22; color:#8b949e; padding:6px 9px; text-align:left; border-bottom:1px solid #30363d; position:sticky; top:0; white-space:nowrap; cursor:pointer; }
+.batch-wrap th:hover, .tbl-wrap th:hover { color:#58a6ff; }
+.batch-wrap td, .tbl-wrap td { padding:5px 9px; border-bottom:1px solid #1c2128; }
+.batch-wrap tr:hover td, .tbl-wrap tr:hover td { background:#161b22; }
+.tbl-wrap { max-height:360px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; }
+.w { color:#3fb950; font-weight:bold; } .l { color:#f85149; font-weight:bold; } .n { color:#8b949e; }
+.badge { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:bold; }
+.bL { background:#1f3a5f; color:#79c0ff; } .bM { background:#2d1b69; color:#a78bfa; } .bS { background:#1a3a2a; color:#3fb950; }
+.fade-row { background:#1a1a0a; }
+.cb-row { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+.cb-label { color:#8b949e; font-size:11px; margin-right:4px; }
+.cb-pill { display:flex; align-items:center; gap:5px; background:#161b22; border:1px solid #30363d; border-radius:5px; padding:5px 10px; cursor:pointer; font-size:11px; user-select:none; transition:border-color 0.15s; }
+.cb-pill input[type=checkbox] { accent-color:#58a6ff; width:13px; height:13px; cursor:pointer; }
+.cb-pill.on { border-color:#58a6ff; color:#58a6ff; }
+.cb-pill.on-green { border-color:#3fb950; color:#3fb950; }
+.cb-pill.on-red { border-color:#f85149; color:#f85149; }
+.cb-pill.on-purple { border-color:#a78bfa; color:#a78bfa; }
+.cb-pill.on-orange { border-color:#ffa657; color:#ffa657; }
+.cb-pill.on-teal { border-color:#39d353; color:#39d353; }
+</style>
+</head>
+<body>
+<h1>&#x26A1; EDGE &#x2014; Scenario Tester v2</h1>
+<div class="sub">Run Single ticker or all 37 in batch &#x00B7; 5 scenarios simultaneously &#x00B7; Long and Short setups</div>
+
+<div class="key">
+  <div class="key-box">
+    <h4>&#x1F4CA; Signal Metrics</h4>
+    <span class="term">Signals</span> &#x2014; <span class="def">Trading days evaluated. A/B/C/D = every day with PM data. E = only days where gap exceeds your threshold.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F4C8; Performance</h4>
+    <span class="term">Win Rate</span> &#x2014; <span class="def">% hitting win target first. Green = above breakeven.</span><br>
+    <span class="term">PF (Profit Factor)</span> &#x2014; <span class="def">Total won / total lost. PF &gt; 1.0 = profitable. Card border turns green.</span><br>
+    <span class="term">Total Return</span> &#x2014; <span class="def">Sum of all P&amp;Ls per 1 unit risked. Not compounded.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F3AF; Results</h4>
+    <span class="term" style="color:#3fb950">WIN</span> &#x2014; <span class="def">Hit win target first.</span><br>
+    <span class="term" style="color:#f85149">LOSS</span> &#x2014; <span class="def">Hit stop first.</span><br>
+    <span class="term" style="color:#8b949e">TIMEOUT</span> &#x2014; <span class="def">Neither hit, exits at 4pm close.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F522; Breakeven Reference</h4>
+    <span class="def">A Long +2/-0.5 &#x2192; 20.0% &nbsp; B Long +3/-0.5 &#x2192; 14.3% &nbsp; C Long +4/-0.5 &#x2192; 11.1%<br>
+    D Short &#x2193;2/&#x2191;0.5 &#x2192; 20.0% &nbsp; E Gap Fade &#x2193;2/&#x2191;2 &#x2192; 50.0%</span>
+  </div>
+</div>
+
+<div class="legend">
+  <b>A &#x2014; LONG +2/-0.5:</b> Buy open, win if +2% before -0.5% | BE 20% &nbsp;&#x00B7;&nbsp;
+  <b>B &#x2014; LONG +3/-0.5:</b> Buy open, win if +3% before -0.5% | BE 14.3% &nbsp;&#x00B7;&nbsp;
+  <b>C &#x2014; LONG +4/-0.5:</b> Buy open, win if +4% before -0.5% | BE 11.1% &nbsp;&#x00B7;&nbsp;
+  <b>D &#x2014; SHORT mirror:</b> Short open, win if drops 2% before rising 0.5% | BE 20% (inverse hypothesis) &nbsp;&#x00B7;&nbsp;
+  <b>E &#x2014; GAP FADE:</b> Only on gap &gt; threshold &#x00B7; Short open &#x00B7; Win &#x2193;2% &#x00B7; Stop &#x2191;2% | BE 50%
+</div>
+
+<div class="controls">
+  <div>
+    <label>Single Ticker</label>
+    <select id="ticker">
+      <optgroup label="Top Performers (Small/Micro)">
+        <option value="ATER">ATER - Micro - 32.6% WR</option>
+        <option value="LAZR">LAZR - Small - 30.2% WR</option>
+        <option value="MRNA">MRNA - Mid - 29.5% WR</option>
+        <option value="AGEN">AGEN - Small - 29.5% WR</option>
+        <option value="GFAI">GFAI - Micro - 27.6% WR</option>
+        <option value="IONQ">IONQ - Small - 26.7% WR</option>
+        <option value="FCEL">FCEL - Small - 25.4% WR</option>
+        <option value="RCKT">RCKT - Small - 25.0% WR</option>
+        <option value="SPCE">SPCE - Small - 25.0% WR</option>
+        <option value="HUT">HUT - Small - 24.5% WR</option>
+        <option value="WOLF">WOLF - Small - 24.4% WR</option>
+        <option value="TWLO">TWLO - Mid - 24.1% WR</option>
+      </optgroup>
+      <optgroup label="Large Cap (test D/E inverse)">
+        <option value="AMD">AMD - Large - 25.0% WR</option>
+        <option value="TSLA">TSLA - Large - 18.5% WR</option>
+        <option value="NVDA">NVDA - Large - 11.3% WR</option>
+        <option value="GOOGL">GOOGL - Large - 14.3% WR</option>
+        <option value="META">META - Large - 7.0% WR</option>
+        <option value="NFLX">NFLX - Large - 10.0% WR</option>
+        <option value="INTC">INTC - Large - 21.1% WR</option>
+        <option value="AMZN">AMZN - Large - 1.6% WR</option>
+        <option value="AAPL">AAPL - Large - 4.2% WR</option>
+        <option value="MSFT">MSFT - Large - 5.4% WR</option>
+        <option value="JPM">JPM - Large - 5.8% WR</option>
+        <option value="LLY">LLY - Large - 21.1% WR</option>
+        <option value="UNH">UNH - Large - 17.9% WR</option>
+        <option value="GS">GS - Large - 12.7% WR</option>
+        <option value="PFE">PFE - Large - 14.9% WR</option>
+      </optgroup>
+      <optgroup label="Mid Cap">
+        <option value="COIN">COIN - Mid - 22.9% WR</option>
+        <option value="ACAD">ACAD - Mid - 23.2% WR</option>
+        <option value="NVCR">NVCR - Mid - 24.5% WR</option>
+        <option value="HUBS">HUBS - Mid - 25.0% WR</option>
+        <option value="OKTA">OKTA - Mid - 20.5% WR</option>
+        <option value="SNAP">SNAP - Mid - 14.6% WR</option>
+        <option value="HOOD">HOOD - Mid - 19.4% WR</option>
+        <option value="CRWD">CRWD - Mid - 18.7% WR</option>
+        <option value="DDOG">DDOG - Mid - 18.8% WR</option>
+        <option value="SOFI">SOFI - Mid - 20.3% WR</option>
+      </optgroup>
+    </select>
+  </div>
+  <div><label>Start</label><input type="date" id="s0" value="2025-09-25"></div>
+  <div><label>End</label><input type="date" id="s1" value="2026-03-25"></div>
+  <div><label>E Gap Min% (up)</label><input type="number" id="gapFade" value="10" min="1" max="30"></div>
+  <div><label>F Gap Min% (down)</label><input type="number" id="gapFadeF" value="5" min="1" max="30"></div>
+  <div><label>E Win%</label><input type="number" id="eWin" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E Stop%</label><input type="number" id="eStop" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>F Win%</label><input type="number" id="fWin" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>F Stop%</label><input type="number" id="fStop" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>Delay (sec)</label><input type="number" id="delay" value="13" min="1" max="60" style="width:65px"></div>
+  <div>
+    <label>Batch Group</label>
+    <select id="batchGroup" onchange="updateBatchBtn()" style="min-width:160px;">
+      <option value="all">All 37 Tickers</option>
+      <option value="Small/Micro">Small / Micro Cap</option>
+      <option value="Large">Large Cap</option>
+      <option value="Mid">Mid Cap</option>
+    </select>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button id="runOneBtn" onclick="runOne()">&#x25B6; Run Single</button>
+    <button id="runAllBtn" onclick="runAll()">&#x26A1; Run All 37</button>
+    <button id="stopBtn" onclick="stopRun()" disabled>&#x25A0; Stop</button>
+    <button id="expOneBtn" onclick="exportOne()" disabled>&#x2B07; Export Single</button>
+    <button id="expAllBtn" onclick="exportAll()" disabled>&#x2B07; Export Batch</button>
+  </div>
+</div>
+
+<div class="cb-row">
+  <span class="cb-label">Run scenarios:</span>
+  <label class="cb-pill on" id="pill_a"><input type="checkbox" id="cb_a" checked onchange="updatePills()"> A &mdash; Long +2/-0.5</label>
+  <label class="cb-pill on-green" id="pill_b"><input type="checkbox" id="cb_b" checked onchange="updatePills()"> B &mdash; Long +3/-0.5</label>
+  <label class="cb-pill on-purple" id="pill_c"><input type="checkbox" id="cb_c" checked onchange="updatePills()"> C &mdash; Long +4/-0.5</label>
+  <label class="cb-pill on-red" id="pill_d"><input type="checkbox" id="cb_d" checked onchange="updatePills()"> D &mdash; Short mirror</label>
+  <label class="cb-pill on-orange" id="pill_e"><input type="checkbox" id="cb_e" checked onchange="updatePills()"> E &mdash; Gap Fade Short</label>
+  <label class="cb-pill on-teal" id="pill_f"><input type="checkbox" id="cb_f" checked onchange="updatePills()"> F &mdash; Gap Fade Long</label>
+</div>
+
+<div class="prog-wrap">
+  <div class="plab" id="plab">Ready - Run Single for one ticker, or Run All 37 for the full batch (~8 min at 13s delay)</div>
+  <div class="bar-bg"><div class="bar" id="bar"></div></div>
+</div>
+
+<div class="log" id="log"></div>
+
+<!-- SINGLE TICKER CARDS -->
+<div id="singleTitle" class="stitle" style="display:none"></div>
+<div class="sc-grid">
+  <div class="sbox" id="boxA"><h3>A: LONG +2% / -0.5%<br>Breakeven: 20.0%</h3>
+    <div class="sr"><span class="sl">Signals</span><span class="sv n" id="a_n">--</span></div>
+    <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="a_wr">--</span></div>
+    <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="a_pf">--</span></div>
+    <div class="sr"><span class="sl">Total Return</span><span class="sv" id="a_ret">--</span></div>
+  </div>
+  <div class="sbox" id="boxB"><h3>B: LONG +3% / -0.5%<br>Breakeven: 14.3%</h3>
+    <div class="sr"><span class="sl">Signals</span><span class="sv n" id="b_n">--</span></div>
+    <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="b_wr">--</span></div>
+    <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="b_pf">--</span></div>
+    <div class="sr"><span class="sl">Total Return</span><span class="sv" id="b_ret">--</span></div>
+  </div>
+  <div class="sbox" id="boxC"><h3>C: LONG +4% / -0.5%<br>Breakeven: 11.1%</h3>
+    <div class="sr"><span class="sl">Signals</span><span class="sv n" id="c_n">--</span></div>
+    <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="c_wr">--</span></div>
+    <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="c_pf">--</span></div>
+    <div class="sr"><span class="sl">Total Return</span><span class="sv" id="c_ret">--</span></div>
+  </div>
+  <div class="sbox" id="boxD"><h3>D: SHORT down 2% / up 0.5% stop<br>Breakeven: 20.0% (inverse)</h3>
+    <div class="sr"><span class="sl">Signals</span><span class="sv n" id="d_n">--</span></div>
+    <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="d_wr">--</span></div>
+    <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="d_pf">--</span></div>
+    <div class="sr"><span class="sl">Total Return</span><span class="sv" id="d_ret">--</span></div>
+  </div>
+  <div class="sbox" id="boxE"><h3 id="eCardTitle">E: GAP FADE SHORT<br>Gap &gt;+10% &#x00B7; down 2% / up 2%</h3>
+    <div class="sr"><span class="sl">Signals (filtered)</span><span class="sv n" id="e_n">--</span></div>
+    <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e_wr">--</span></div>
+    <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e_pf">--</span></div>
+    <div class="sr"><span class="sl">Total Return</span><span class="sv" id="e_ret">--</span></div>
+  </div>
+  <div class="sbox" id="boxF"><h3 id="fCardTitle">F: GAP FADE LONG<br>PM min gap &lt;-5% &#x00B7; up 2% / down 2%</h3>
+    <div class="sr"><span class="sl">Signals (filtered)</span><span class="sv n" id="f_n">--</span></div>
+    <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="f_wr">--</span></div>
+    <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="f_pf">--</span></div>
+    <div class="sr"><span class="sl">Total Return</span><span class="sv" id="f_ret">--</span></div>
+  </div>
+</div>
+<div class="tbl-wrap" id="tradeLogWrap" style="display:none">
+  <table><thead><tr>
+    <th onclick="srt('date')">Date</th><th onclick="srt('gap')">Gap%</th><th onclick="srt('rvol')">RVOL</th>
+    <th>A</th><th>A P&amp;L</th><th>B</th><th>B P&amp;L</th><th>C</th><th>C P&amp;L</th>
+    <th>D</th><th>D P&amp;L</th><th>E</th><th>E P&amp;L</th>
+  </tr></thead><tbody id="tbody"></tbody></table>
+</div>
+
+<!-- BATCH TABLE -->
+<div id="batchSection" style="display:none">
+  <div class="stitle">Batch Results - All 37 Tickers (click any column to sort)</div>
+  <div class="batch-wrap">
+    <table><thead><tr>
+      <th onclick="bsrt('tk')">Ticker</th><th onclick="bsrt('grp')">Group</th>
+      <th onclick="bsrt('a_wr')">A WR%</th><th onclick="bsrt('a_pf')">A PF</th><th onclick="bsrt('a_ret')">A Ret%</th>
+      <th onclick="bsrt('b_wr')">B WR%</th><th onclick="bsrt('b_pf')">B PF</th><th onclick="bsrt('b_ret')">B Ret%</th>
+      <th onclick="bsrt('c_wr')">C WR%</th><th onclick="bsrt('c_pf')">C PF</th><th onclick="bsrt('c_ret')">C Ret%</th>
+      <th onclick="bsrt('d_wr')">D WR%</th><th onclick="bsrt('d_pf')">D PF</th><th onclick="bsrt('d_ret')">D Ret%</th>
+      <th onclick="bsrt('e_n')">E Sigs</th><th onclick="bsrt('e_wr')">E WR%</th><th onclick="bsrt('e_pf')">E PF</th>
+      <th onclick="bsrt('f_n')">F Sigs</th><th onclick="bsrt('f_wr')">F WR%</th><th onclick="bsrt('f_pf')">F PF</th>
+    </tr></thead><tbody id="batchTbody"></tbody></table>
+  </div>
+</div>
+
+<script>
+var KEY='Bnm35KUdSdLOFv37f6NyfUcQdc1aH5IF';
+var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
+
+var ALL_TICKERS=[
+  {t:'ATER',grp:'Small/Micro'},{t:'LAZR',grp:'Small/Micro'},{t:'MRNA',grp:'Small/Micro'},
+  {t:'AGEN',grp:'Small/Micro'},{t:'GFAI',grp:'Small/Micro'},{t:'IONQ',grp:'Small/Micro'},
+  {t:'FCEL',grp:'Small/Micro'},{t:'RCKT',grp:'Small/Micro'},{t:'SPCE',grp:'Small/Micro'},
+  {t:'HUT',grp:'Small/Micro'},{t:'WOLF',grp:'Small/Micro'},{t:'TWLO',grp:'Mid'},
+  {t:'AMD',grp:'Large'},{t:'TSLA',grp:'Large'},{t:'NVDA',grp:'Large'},{t:'GOOGL',grp:'Large'},
+  {t:'META',grp:'Large'},{t:'NFLX',grp:'Large'},{t:'INTC',grp:'Large'},{t:'AMZN',grp:'Large'},
+  {t:'AAPL',grp:'Large'},{t:'MSFT',grp:'Large'},{t:'JPM',grp:'Large'},{t:'LLY',grp:'Large'},
+  {t:'UNH',grp:'Large'},{t:'GS',grp:'Large'},{t:'PFE',grp:'Large'},
+  {t:'COIN',grp:'Mid'},{t:'ACAD',grp:'Mid'},{t:'NVCR',grp:'Mid'},{t:'HUBS',grp:'Mid'},
+  {t:'OKTA',grp:'Mid'},{t:'SNAP',grp:'Mid'},{t:'HOOD',grp:'Mid'},{t:'CRWD',grp:'Mid'},
+  {t:'DDOG',grp:'Mid'},{t:'SOFI',grp:'Mid'}
+];
+
+function etH(ts){var d=new Date(new Date(ts).toLocaleString('en-US',{timeZone:'America/New_York'}));return d.getHours()+d.getMinutes()/60;}
+function byDate(bars){var m={};bars.forEach(function(b){var d=new Date(new Date(b.t).toLocaleString('en-US',{timeZone:'America/New_York'}));var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(!m[k])m[k]=[];m[k].push(b);});return m;}
+function isPM(b){var h=etH(b.t);return h>=4&&h<9.5;}
+function isIn(b){var h=etH(b.t);return h>=9.517&&h<16;}
+function isReg(b){var h=etH(b.t);return h>=9.5&&h<16;}
+function get931(bs){return bs.find(function(b){var h=etH(b.t);return h>=9.517&&h<=9.65;});}
+function tradingDays(s,e){var out=[],end=new Date(e+'T12:00:00Z'),d=new Date(s+'T12:00:00Z');while(d<=end){if(d.getUTCDay()&&d.getUTCDay()!==6)out.push(d.toISOString().slice(0,10));d.setUTCDate(d.getUTCDate()+1);}return out;}
+
+async function fetchBars(tk,from,to){
+  var r=await fetch('https://api.polygon.io/v2/aggs/ticker/'+tk+'/range/1/minute/'+from+'/'+to+'?adjusted=true&sort=asc&limit=50000&apiKey='+KEY);
+  if(r.status===429){var e=new Error('RATE_LIMIT');e.retry=true;throw e;}
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  var d=await r.json();return d.results||[];
+}
+async function fetchAvgVol(tk){
+  try{
+    var to=new Date();to.setDate(to.getDate()-1);
+    var fr=new Date();fr.setDate(fr.getDate()-31);
+    var r=await fetch('https://api.polygon.io/v2/aggs/ticker/'+tk+'/range/1/day/'+fr.toISOString().slice(0,10)+'/'+to.toISOString().slice(0,10)+'?adjusted=true&sort=asc&limit=30&apiKey='+KEY);
+    if(!r.ok)return null;
+    var res=(await r.json()).results||[];
+    return res.length?res.reduce(function(s,b){return s+b.v;},0)/res.length:null;
+  }catch(e){return null;}
+}
+
+function evalLong(intra,ep,wp,sp){
+  var wt=ep*(1+wp/100),st=ep*(1-sp/100);
+  for(var i=0;i<intra.length;i++){if(intra[i].h>=wt)return{r:'WIN',p:wp};if(intra[i].l<=st)return{r:'LOSS',p:-sp};}
+  var last=intra[intra.length-1];return{r:'TIMEOUT',p:last?parseFloat(((last.c-ep)/ep*100).toFixed(2)):0};
+}
+function evalShort(intra,ep,wp,sp){
+  var wt=ep*(1-wp/100),st=ep*(1+sp/100);
+  for(var i=0;i<intra.length;i++){if(intra[i].l<=wt)return{r:'WIN',p:wp};if(intra[i].h>=st)return{r:'LOSS',p:-sp};}
+  var last=intra[intra.length-1];return{r:'TIMEOUT',p:last?parseFloat(((ep-last.c)/ep*100).toFixed(2)):0};
+}
+function calcStats(trades){
+  if(!trades.length)return{n:0,w:0,l:0,t:0,wr:0,pf:0,ret:0};
+  var ws=trades.filter(function(t){return t.r==='WIN';}),ls=trades.filter(function(t){return t.r==='LOSS';});
+  var ts=trades.filter(function(t){return t.r==='TIMEOUT';});
+  var aw=ws.length?ws.reduce(function(s,t){return s+t.p;},0)/ws.length:0;
+  var al=ls.length?ls.reduce(function(s,t){return s+t.p;},0)/ls.length:0;
+  var pf=(ls.length&&al)?Math.abs(ws.length*aw/(ls.length*al)):ws.length?99:0;
+  return{n:trades.length,w:ws.length,l:ls.length,t:ts.length,wr:ws.length/trades.length*100,pf:pf,ret:trades.reduce(function(s,t){return s+t.p;},0)};
+}
+
+async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,runC,runD,runE,runF,gfmF){
+  gfmF=gfmF||gfm;
+  var bars=await fetchBars(tk,from,to);
+  if(!bars.length)return null;
+  var avgVol=await fetchAvgVol(tk);
+  var dmap=byDate(bars),tdays=tradingDays(from,to),prevC=null;
+  var trades={a:[],b:[],c:[],d:[],e:[],f:[]},dayRows=[];
+  for(var j=0;j<tdays.length;j++){
+    var date=tdays[j],db=dmap[date]||[];
+    if(!db.length)continue;
+    if(!prevC&&j>0){var pb=dmap[tdays[j-1]]||[];pb=pb.filter(isReg);if(pb.length)prevC=pb[pb.length-1].c;}
+    var reg=db.filter(isReg);if(reg.length)prevC=reg[reg.length-1].c;
+    var pm=db.filter(isPM),ent=get931(db),intra=db.filter(isIn);
+    if(!pm.length||!ent||!prevC)continue;
+    var lastPM=pm[pm.length-1].c;
+    var minPM=pm.reduce(function(mn,b){return Math.min(mn,b.l);},Infinity);
+    var gap=((lastPM-prevC)/prevC)*100;
+    var gapDown=((minPM-prevC)/prevC)*100;
+    var pmVol=pm.reduce(function(s,b){return s+b.v;},0);
+    var rvol=avgVol?parseFloat((pmVol/(avgVol*0.05)).toFixed(2)):null;
+    var ep=ent.o;
+    var rA=runA?evalLong(intra,ep,2,0.5):null;
+    var rB=runB?evalLong(intra,ep,3,0.5):null;
+    var rC=runC?evalLong(intra,ep,4,0.5):null;
+    var rD=runD?evalShort(intra,ep,2,0.5):null;
+    var eActive=gap>=gfm,rE=(runE&&eActive)?evalShort(intra,ep,eWinP,eStopP):null;
+    var fActive=gapDown<=-gfmF,rF=(runF&&fActive)?evalLong(intra,ep,fWinP,fStopP):null;
+    if(rA)trades.a.push(rA);if(rB)trades.b.push(rB);if(rC)trades.c.push(rC);if(rD)trades.d.push(rD);
+    if(rE)trades.e.push(rE);if(rF)trades.f.push(rF);
+    dayRows.push({date:date,gap:parseFloat(gap.toFixed(2)),rvol:rvol,
+      ar:rA?rA.r:'--',ap:rA?rA.p:0,br:rB?rB.r:'--',bp:rB?rB.p:0,
+      cr:rC?rC.r:'--',cp:rC?rC.p:0,dr:rD?rD.r:'--',dp:rD?rD.p:0,
+      eActive:eActive&&runE,er:rE?rE.r:'',ep2:rE?rE.p:0,
+      fActive:fActive&&runF,fr:rF?rF.r:'',fp2:rF?rF.p:0,gapDown:parseFloat(gapDown.toFixed(2))});
+  }
+  return{a:calcStats(trades.a),b:calcStats(trades.b),c:calcStats(trades.c),d:calcStats(trades.d),e:calcStats(trades.e),f:calcStats(trades.f),dayRows:dayRows};
+}
+
+var running=false,singleRows=[],batchResults=[],sCol='date',sDir=1,bCol='a_wr',bDir=-1;
+
+function lg(msg,cls){var el=document.createElement('span');el.className=cls||'neu';el.textContent=new Date().toLocaleTimeString()+' '+msg;var b=document.getElementById('log');b.appendChild(el);b.scrollTop=b.scrollHeight;}
+function setBtn(dis){['runOneBtn','runAllBtn'].forEach(function(id){document.getElementById(id).disabled=dis;});document.getElementById('stopBtn').disabled=!dis;}
+
+function setCard(id,s,be,boxId){
+  document.getElementById(id+'_n').textContent=s.n||'--';
+  var w=document.getElementById(id+'_wr');w.textContent=s.n?s.wr.toFixed(1)+'%':'--';w.className='sv '+(s.wr>be?'g':s.wr>be*0.8?'n':'r');
+  var p=document.getElementById(id+'_pf');p.textContent=s.n?s.pf.toFixed(2):'--';p.className='sv '+(s.pf>=1?'g':'r');
+  var r=document.getElementById(id+'_ret');r.textContent=s.n?(s.ret>=0?'+':'')+s.ret.toFixed(2)+'%':'--';r.className='sv '+(s.ret>=0?'g':'r');
+  var b=document.getElementById(boxId);if(b){if(s.pf>=1)b.classList.add('win');else b.classList.remove('win');}
+}
+
+function rc(r){return r==='WIN'?'w':r==='LOSS'?'l':'n';}
+function fmt(p){return(p>=0?'+':'')+parseFloat(p).toFixed(2)+'%';}
+
+function rebuildLogHeaders(){
+  var all=['A','B','C','D','E','F'];
+  var ids=['a','b','c','d','e','f'];
+  var thead=document.querySelector('#tradeLogWrap thead tr');
+  while(thead.children.length>3)thead.removeChild(thead.lastChild);
+  ids.forEach(function(id,i){
+    if(!isOn(id))return;
+    var th1=document.createElement('th');th1.textContent=all[i];
+    var th2=document.createElement('th');th2.textContent=all[i]+' P&L';th2.onclick=function(){srt(id+'p2');};
+    th1.onclick=function(){srt(id+'r');};
+    thead.appendChild(th1);thead.appendChild(th2);
+  });
+}
+
+function renderLog(){
+  var s=singleRows.slice().sort(function(a,b){var av=a[sCol]||'',bv=b[sCol]||'';return(av>bv?1:av<bv?-1:0)*sDir;});
+  document.getElementById('tbody').innerHTML=s.map(function(r){
+    return '<tr class="'+(r.eActive?'fade-row':'')+'">'+'<td>'+r.date+'</td><td>'+(r.gap>=0?'+':'')+r.gap+'%</td><td>'+(r.rvol!=null?r.rvol+'x':'--')+'</td>'+'<td class="'+rc(r.ar)+'">'+r.ar+'</td><td class="'+rc(r.ar)+'">'+fmt(r.ap)+'</td>'+'<td class="'+rc(r.br)+'">'+r.br+'</td><td class="'+rc(r.br)+'">'+fmt(r.bp)+'</td>'+'<td class="'+rc(r.cr)+'">'+r.cr+'</td><td class="'+rc(r.cr)+'">'+fmt(r.cp)+'</td>'+'<td class="'+rc(r.dr)+'">'+r.dr+'</td><td class="'+rc(r.dr)+'">'+fmt(r.dp)+'</td>'+'<td class="'+(r.eActive?rc(r.er):'n')+'">'+(r.eActive?r.er:'--')+'</td>'+'<td class="'+(r.eActive?rc(r.er):'n')+'">'+(r.eActive?fmt(r.ep2):'')+'</td>'+'</tr>';
+  }).join('');
+}
+function srt(c){sCol===c?sDir*=-1:(sCol=c,sDir=1);renderLog();}
+
+function gb(g){return g==='Large'?'<span class="badge bL">Large</span>':g==='Mid'?'<span class="badge bM">Mid</span>':'<span class="badge bS">S/Micro</span>';}
+function cWR(v,be){if(!v||!v.n)return'--';var c=v.wr>be?'#3fb950':v.wr>be*0.8?'#ffa657':'#f85149';return'<span style="color:'+c+'">'+v.wr.toFixed(1)+'%</span>';}
+function cPF(v){if(!v||!v.n)return'--';var c=v.pf>=1?'#3fb950':v.pf>=0.8?'#ffa657':'#f85149';return'<span style="color:'+c+'">'+v.pf.toFixed(2)+'</span>';}
+function cRet(v){if(!v||!v.n)return'--';var c=v.ret>=0?'#3fb950':'#f85149';return'<span style="color:'+c+'">'+(v.ret>=0?'+':'')+v.ret.toFixed(1)+'%</span>';}
+
+function renderBatch(){
+  var s=batchResults.slice().sort(function(a,b){var av=a[bCol]||(-999),bv=b[bCol]||(-999);return(av>bv?1:av<bv?-1:0)*bDir;});
+  document.getElementById('batchTbody').innerHTML=s.map(function(r){
+    return '<tr><td><b>'+r.tk+'</b></td><td>'+gb(r.grp)+'</td>'+'<td>'+cWR(r.a,20)+'</td><td>'+cPF(r.a)+'</td><td>'+cRet(r.a)+'</td>'+'<td>'+cWR(r.b,14.3)+'</td><td>'+cPF(r.b)+'</td><td>'+cRet(r.b)+'</td>'+'<td>'+cWR(r.c,11.1)+'</td><td>'+cPF(r.c)+'</td><td>'+cRet(r.c)+'</td>'+'<td>'+cWR(r.d,20)+'</td><td>'+cPF(r.d)+'</td><td>'+cRet(r.d)+'</td>'+'<td>'+(r.e?r.e.n:0)+'</td><td>'+cWR(r.e,50)+'</td><td>'+cPF(r.e)+'</td>'+'</tr>';
+  }).join('');
+}
+function bsrt(c){bCol===c?bDir*=-1:(bCol=c,bDir=-1);renderBatch();}
+
+async function runOne(){
+  var tk=document.getElementById('ticker').value;
+  var from=document.getElementById('s0').value,to=document.getElementById('s1').value;
+  var gfm=+document.getElementById('gapFade').value;
+  running=true;singleRows=[];
+  setBtn(true);document.getElementById('expOneBtn').disabled=true;
+  document.getElementById('log').innerHTML='';
+  document.getElementById('tradeLogWrap').style.display='none';
+  document.getElementById('batchSection').style.display='none';
+  ['a','b','c','d','e','f'].forEach(function(id){['n','wr','pf','ret'].forEach(function(f){var el=document.getElementById(id+'_'+f);if(el)el.textContent='--';});});
+  ['boxA','boxB','boxC','boxD','boxE','boxF'].forEach(function(id){document.getElementById(id).classList.remove('win');});
+  document.getElementById('singleTitle').textContent=tk+' -- Single Ticker Results';
+  document.getElementById('singleTitle').style.display='block';
+  var cardMap={a:'boxA',b:'boxB',c:'boxC',d:'boxD',e:'boxE',f:'boxF'};
+  Object.keys(cardMap).forEach(function(id){document.getElementById(cardMap[id]).style.display=isOn(id)?'':'none';});
+  document.getElementById('plab').textContent='Fetching '+tk+'...';
+  document.getElementById('bar').style.width='30%';
+  lg('Running '+tk+'...','inf');
+  try{
+    var eWinP=+document.getElementById('eWin').value,eStopP=+document.getElementById('eStop').value;
+    var fWinP=+document.getElementById('fWin').value,fStopP=+document.getElementById('fStop').value;
+    var gfmV=+document.getElementById('gapFade').value;
+    var gfmF=+document.getElementById('gapFadeF').value;
+    var eBE=(eStopP/(eWinP+eStopP)*100).toFixed(1),fBE=(fStopP/(fWinP+fStopP)*100).toFixed(1);
+    document.getElementById('eCardTitle').innerHTML='E: GAP FADE SHORT<br>Gap &gt;+'+gfmV+'% &#x00B7; down '+eWinP+'% / up '+eStopP+'% | BE '+eBE+'%';
+    document.getElementById('fCardTitle').innerHTML='F: GAP FADE LONG<br>PM min gap &lt;-'+gfmF+'% &#x00B7; up '+fWinP+'% / down '+fStopP+'% | BE '+fBE+'%';
+    var res=await processTicker(tk,from,to,gfmV,eWinP,eStopP,fWinP,fStopP,isOn('a'),isOn('b'),isOn('c'),isOn('d'),isOn('e'),isOn('f'),gfmF);
+    document.getElementById('bar').style.width='100%';
+    if(!res){lg(tk+': no data','err');}
+    else{
+      singleRows=res.dayRows;
+      var eBE2=eStopP/(eWinP+eStopP)*100,fBE2=fStopP/(fWinP+fStopP)*100;
+      setCard('a',res.a,20,'boxA');setCard('b',res.b,14.3,'boxB');
+      setCard('c',res.c,11.1,'boxC');setCard('d',res.d,20,'boxD');
+      setCard('e',res.e,eBE2,'boxE');setCard('f',res.f,fBE2,'boxF');
+      rebuildLogHeaders();
+      renderLog();
+      document.getElementById('tradeLogWrap').style.display='block';
+      document.getElementById('expOneBtn').disabled=false;
+      lg(tk+' | A WR'+res.a.wr.toFixed(0)+'% PF'+res.a.pf.toFixed(2)+' | D WR'+res.d.wr.toFixed(0)+'% PF'+res.d.pf.toFixed(2)+' | E sigs:'+res.e.n+' | F sigs:'+res.f.n,(res.a.pf>=1||res.d.pf>=1||res.e.pf>=1||res.f.pf>=1)?'ok':'neu');
+    }
+  }catch(e){lg(tk+': '+e.message,'err');document.getElementById('bar').style.width='100%';}
+  document.getElementById('plab').textContent='Single run complete';
+  setBtn(false);running=false;
+}
+
+async function runAll(){
+  var from=document.getElementById('s0').value,to=document.getElementById('s1').value;
+  var gfm=+document.getElementById('gapFade').value,delayMs=+document.getElementById('delay').value*1000;
+  var tickers=getActiveTickers();
+  running=true;batchResults=[];
+  setBtn(true);document.getElementById('expAllBtn').disabled=true;
+  document.getElementById('log').innerHTML='';
+  document.getElementById('batchSection').style.display='block';
+  document.getElementById('batchTbody').innerHTML='';
+  lg('Batch started: '+tickers.length+' tickers, '+delayMs/1000+'s delay, ~'+Math.round(tickers.length*delayMs/60000)+'min total','inf');
+  for(var i=0;i<tickers.length;i++){
+    if(!running)break;
+    var tk=tickers[i].t,grp=tickers[i].grp;
+    var pct=Math.round(i/tickers.length*100);
+    document.getElementById('bar').style.width=pct+'%';
+    document.getElementById('plab').textContent='Batch: '+(i+1)+'/'+tickers.length+' -- '+tk+' ('+pct+'%)';
+    var res=null,attempts=0,errMsg='';
+    while(res===null&&attempts<3){
+      try{res=await processTicker(tk,from,to,gfm,+document.getElementById('eWin').value,+document.getElementById('eStop').value,+document.getElementById('fWin').value,+document.getElementById('fStop').value,isOn('a'),isOn('b'),isOn('c'),isOn('d'),isOn('e'),isOn('f'),+document.getElementById('gapFadeF').value);}
+      catch(e){if(e.retry){lg(tk+': rate limited, waiting 65s...','err');await sleep(65000);attempts++;}else{errMsg=e.message;lg(tk+': '+e.message,'err');break;}}
+    }
+    var row={tk:tk,grp:grp,a:res?res.a:null,b:res?res.b:null,c:res?res.c:null,d:res?res.d:null,e:res?res.e:null,f:res?res.f:null,error:res?null:errMsg,a_wr:res?res.a.wr:-999,a_pf:res?res.a.pf:-999,a_ret:res?res.a.ret:-999,b_wr:res?res.b.wr:-999,b_pf:res?res.b.pf:-999,b_ret:res?res.b.ret:-999,c_wr:res?res.c.wr:-999,c_pf:res?res.c.pf:-999,c_ret:res?res.c.ret:-999,d_wr:res?res.d.wr:-999,d_pf:res?res.d.pf:-999,d_ret:res?res.d.ret:-999,e_n:res?res.e.n:0,e_wr:res?res.e.wr:-999,e_pf:res?res.e.pf:-999,f_n:res?res.f.n:0,f_wr:res?res.f.wr:-999,f_pf:res?res.f.pf:-999};
+    batchResults.push(row);
+    renderBatch();
+    if(res)lg(tk+'['+grp+'] A:WR'+res.a.wr.toFixed(0)+'%/PF'+res.a.pf.toFixed(2)+' | D:WR'+res.d.wr.toFixed(0)+'%/PF'+res.d.pf.toFixed(2)+' | E:'+res.e.n+' | F:'+res.f.n+' sigs',(res.d.pf>=1||res.e.pf>=1||res.f.pf>=1)?'ok':'neu');
+    if(i<tickers.length-1&&running)await sleep(delayMs);
+  }
+  document.getElementById('bar').style.width='100%';
+  document.getElementById('plab').textContent='Batch complete -- '+batchResults.length+' tickers processed';
+  document.getElementById('expAllBtn').disabled=false;
+  setBtn(false);running=false;
+  lg('=== BATCH DONE ===','inf');
+}
+
+function stopRun(){running=false;document.getElementById('stopBtn').disabled=true;setBtn(false);lg('Stopped','err');}
+
+function exportOne(){
+  var tk=document.getElementById('ticker').value;
+  var c='EDGE SCENARIO -- '+tk+'\nRange,'+document.getElementById('s0').value+' to '+document.getElementById('s1').value+'\n\n';
+  c+='SCENARIO,Signals,WR%,PF,Return,Breakeven WR\n';
+  var eBEexp=(+document.getElementById('eStop').value/((+document.getElementById('eWin').value)+(+document.getElementById('eStop').value))*100).toFixed(1);
+  var fBEexp=(+document.getElementById('fStop').value/((+document.getElementById('fWin').value)+(+document.getElementById('fStop').value))*100).toFixed(1);
+  [['a','A Long +2/-0.5',20],['b','B Long +3/-0.5',14.3],['c','C Long +4/-0.5',11.1],['d','D Short down2/up0.5',20],['e','E Gap Fade Short',eBEexp],['f','F Gap Fade Long',fBEexp]].forEach(function(x){
+    c+=x[1]+','+document.getElementById(x[0]+'_n').textContent+','+document.getElementById(x[0]+'_wr').textContent+','+document.getElementById(x[0]+'_pf').textContent+','+document.getElementById(x[0]+'_ret').textContent+','+x[2]+'%\n';
+  });
+  c+='\nDAILY LOG\nDate,Gap%,RVOL,A,A P&L,B,B P&L,C,C P&L,D,D P&L,E Active,E,E P&L\n';
+  singleRows.forEach(function(r){c+=r.date+','+r.gap+','+(r.rvol||'')+','+r.ar+','+r.ap.toFixed(2)+','+r.br+','+r.bp.toFixed(2)+','+r.cr+','+r.cp.toFixed(2)+','+r.dr+','+r.dp.toFixed(2)+','+(r.eActive?'YES':'NO')+','+(r.er||'')+','+(r.ep2||'')+'\n';});
+  dl(c,'edge_scenarios_'+tk+'.csv');
+}
+
+function exportAll(){
+  var c='EDGE SCENARIO BATCH -- ALL 37 TICKERS\nRange,'+document.getElementById('s0').value+' to '+document.getElementById('s1').value+'\nGap Fade Min,'+document.getElementById('gapFade').value+'%\nGenerated,'+new Date().toLocaleString()+'\n\n';
+  c+='Ticker,Group,A WR%,A PF,A Return,A Signals,B WR%,B PF,B Return,B Signals,C WR%,C PF,C Return,C Signals,D WR%,D PF,D Return,D Signals,E Signals,E WR%,E PF,E Return,F Signals,F WR%,F PF,F Return,Error\n';
+  batchResults.forEach(function(r){
+    function fs(s){return s&&s.n?s.wr.toFixed(1)+','+s.pf.toFixed(2)+','+s.ret.toFixed(2)+','+s.n:',,,';}
+    c+=r.tk+','+r.grp+','+fs(r.a)+','+fs(r.b)+','+fs(r.c)+','+fs(r.d)+','+(r.e?r.e.n:0)+','+(r.e&&r.e.n?r.e.wr.toFixed(1):'')+','+(r.e&&r.e.n?r.e.pf.toFixed(2):'')+','+(r.e&&r.e.n?r.e.ret.toFixed(2):'')+','+(r.f?r.f.n:0)+','+(r.f&&r.f.n?r.f.wr.toFixed(1):'')+','+(r.f&&r.f.n?r.f.pf.toFixed(2):'')+','+(r.f&&r.f.n?r.f.ret.toFixed(2):'')+','+(r.error||'')+'\n';
+  });
+  dl(c,'edge_scenarios_all37_'+document.getElementById('s0').value+'.csv');
+}
+
+function dl(c,name){var a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([c],{type:'text/csv'})),download:name});a.click();}
+
+function updatePills(){
+  var map={a:'on',b:'on-green',c:'on-purple',d:'on-red',e:'on-orange',f:'on-teal'};
+  Object.keys(map).forEach(function(id){
+    var pill=document.getElementById('pill_'+id);
+    var cb=document.getElementById('cb_'+id);
+    if(cb.checked){pill.classList.add(map[id]);}else{pill.classList.remove(map[id]);}
+  });
+}
+
+function updateBatchBtn(){
+  var grp=document.getElementById('batchGroup').value;
+  var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
+  var label=grp==='all'?'All 37':grp+' ('+count+')';
+  document.getElementById('runAllBtn').textContent='⚡ Run '+label;
+  document.getElementById('expAllBtn').textContent='⬇ Export '+label;
+}
+
+function getActiveTickers(){
+  var grp=document.getElementById('batchGroup').value;
+  return grp==='all'?ALL_TICKERS:ALL_TICKERS.filter(function(t){return t.grp===grp;});
+}
+
+function isOn(id){return document.getElementById('cb_'+id).checked;}
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EDGE — Scenario Tester v2</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
+h1 { color:#58a6ff; font-size:18px; margin-bottom:3px; }
+.sub { color:#8b949e; font-size:11px; margin-bottom:12px; }
+.key { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+.key-box { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; font-size:11px; line-height:1.8; }
+.key-box h4 { color:#58a6ff; font-size:11px; margin-bottom:6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.term { color:#e6edf3; font-weight:bold; }
+.def  { color:#8b949e; }
+.legend { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:11px; line-height:1.9; }
+.legend b { color:#58a6ff; }
+.controls { display:flex; gap:10px; margin-bottom:12px; align-items:flex-end; flex-wrap:wrap; }
+label { font-size:11px; color:#8b949e; display:block; margin-bottom:3px; }
+input[type=date] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:148px; }
+input[type=number] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:75px; }
+select { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; min-width:220px; }
+button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:bold; }
+#runOneBtn { background:#238636; color:#fff; }
+#runAllBtn { background:#1f6feb; color:#fff; font-size:13px; padding:8px 20px; }
+#runOneBtn:disabled, #runAllBtn:disabled { background:#21262d; color:#484f58; cursor:not-allowed; }
+#stopBtn   { background:#da3633; color:#fff; }
+#expOneBtn, #expAllBtn { background:#388bfd; color:#fff; }
+.prog-wrap { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px; margin-bottom:12px; }
+.bar-bg { background:#21262d; border-radius:4px; height:7px; margin:6px 0 3px; }
+.bar { background:#238636; height:7px; border-radius:4px; width:0%; transition:width 0.3s; }
+.plab { font-size:11px; color:#8b949e; }
+.log { background:#0d1117; border:1px solid #30363d; border-radius:5px; padding:8px 10px; height:65px; overflow-y:auto; font-size:11px; margin-bottom:12px; }
+.log .ok  { color:#3fb950; display:block; }
+.log .err { color:#f85149; display:block; }
+.log .inf { color:#58a6ff; display:block; }
+.log .neu { color:#8b949e; display:block; }
+.sc-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:12px; }
+.sbox { background:#161b22; border:1px solid #30363d; border-radius:7px; padding:10px; }
+.sbox h3 { font-size:10px; color:#8b949e; margin-bottom:8px; border-bottom:1px solid #30363d; padding-bottom:5px; line-height:1.4; }
+.sbox.win { border-color:#3fb950; }
+.sbox.win h3 { color:#3fb950; }
+.sr { display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; }
+.sl { color:#8b949e; } .sv { font-weight:bold; }
+.sv.g { color:#3fb950; } .sv.r { color:#f85149; } .sv.n { color:#e6edf3; }
+.stitle { color:#58a6ff; font-size:12px; font-weight:bold; margin:8px 0 6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.batch-wrap { max-height:400px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; margin-bottom:12px; }
+.batch-wrap table, .tbl-wrap table { width:100%; border-collapse:collapse; font-size:11px; }
+.batch-wrap th, .tbl-wrap th { background:#161b22; color:#8b949e; padding:6px 9px; text-align:left; border-bottom:1px solid #30363d; position:sticky; top:0; white-space:nowrap; cursor:pointer; }
+.batch-wrap th:hover, .tbl-wrap th:hover { color:#58a6ff; }
+.batch-wrap td, .tbl-wrap td { padding:5px 9px; border-bottom:1px solid #1c2128; }
+.batch-wrap tr:hover td, .tbl-wrap tr:hover td { background:#161b22; }
+.tbl-wrap { max-height:360px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; }
+.w { color:#3fb950; font-weight:bold; } .l { color:#f85149; font-weight:bold; } .n { color:#8b949e; }
+.badge { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:bold; }
+.bL { background:#1f3a5f; color:#79c0ff; } .bM { background:#2d1b69; color:#a78bfa; } .bS { background:#1a3a2a; color:#3fb950; }
+.fade-row { background:#1a1a0a; }
+.cb-row { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+.cb-label { color:#8b949e; font-size:11px; margin-right:4px; }
+.cb-pill { display:flex; align-items:center; gap:5px; background:#161b22; border:1px solid #30363d; border-radius:5px; padding:5px 10px; cursor:pointer; font-size:11px; user-select:none; transition:border-color 0.15s; }
+.cb-pill input[type=checkbox] { accent-color:#58a6ff; width:13px; height:13px; cursor:pointer; }
+.cb-pill.on { border-color:#58a6ff; color:#58a6ff; }
+.cb-pill.on-green { border-color:#3fb950; color:#3fb950; }
+.cb-pill.on-red { border-color:#f85149; color:#f85149; }
+.cb-pill.on-purple { border-color:#a78bfa; color:#a78bfa; }
+.cb-pill.on-orange { border-color:#ffa657; color:#ffa657; }
+.cb-pill.on-teal { border-color:#39d353; color:#39d353; }
+</style>
+</head>
+<body>
+<h1>&#x26A1; EDGE &#x2014; Scenario Tester v2</h1>
+<div class="sub">Run Single ticker or all 37 in batch &#x00B7; 5 scenarios simultaneously &#x00B7; Long and Short setups</div>
+
+<div class="key">
+  <div class="key-box">
+    <h4>&#x1F4CA; Signal Metrics</h4>
+    <span class="term">Signals</span> &#x2014; <span class="def">Trading days evaluated. A/B/C/D = every day with PM data. E = only days where gap exceeds your threshold.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F4C8; Performance</h4>
+    <span class="term">Win Rate</span> &#x2014; <span class="def">% hitting win target first. Green = above breakeven.</span><br>
+    <span class="term">PF (Profit Factor)</span> &#x2014; <span class="def">Total won / total lost. PF &gt; 1.0 = profitable. Card border turns green.</span><br>
+    <span class="term">Total Return</span> &#x2014; <span class="def">Sum of all P&amp;Ls per 1 unit risked. Not compounded.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F3AF; Results</h4>
+    <span class="term" style="color:#3fb950">WIN</span> &#x2014; <span class="def">Hit win target first.</span><br>
+    <span class="term" style="color:#f85149">LOSS</span> &#x2014; <span class="def">Hit stop first.</span><br>
+    <span class="term" style="color:#8b949e">TIMEOUT</span> &#x2014; <span class="def">Neither hit, exits at 4pm close.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F522; Breakeven Reference</h4>
+    <span class="def">A Long +2/-0.5 &#x2192; 20.0% &nbsp; B Long +3/-0.5 &#x2192; 14.3% &nbsp; C Long +4/-0.5 &#x2192; 11.1%<br>
+    D Short &#x2193;2/&#x2191;0.5 &#x2192; 20.0% &nbsp; E Gap Fade &#x2193;2/&#x2191;2 &#x2192; 50.0%</span>
+  </div>
+</div>
+
+<div class="legend">
+  <b>A &#x2014; LONG +2/-0.5:</b> Buy open, win if +2% before -0.5% | BE 20% &nbsp;&#x00B7;&nbsp;
+  <b>B &#x2014; LONG +3/-0.5:</b> Buy open, win if +3% before -0.5% | BE 14.3% &nbsp;&#x00B7;&nbsp;
+  <b>C &#x2014; LONG +4/-0.5:</b> Buy open, win if +4% before -0.5% | BE 11.1% &nbsp;&#x00B7;&nbsp;
+  <b>D &#x2014; SHORT mirror:</b> Short open, win if drops 2% before rising 0.5% | BE 20% (inverse hypothesis) &nbsp;&#x00B7;&nbsp;
+  <b>E &#x2014; GAP FADE:</b> Only on gap &gt; threshold &#x00B7; Short open &#x00B7; Win &#x2193;2% &#x00B7; Stop &#x2191;2% | BE 50%
+</div>
+
+<div class="controls">
+  <div>
+    <label>Single Ticker</label>
+    <select id="ticker">
+      <optgroup label="Top Performers (Small/Micro)">
+        <option value="ATER">ATER - Micro - 32.6% WR</option>
+        <option value="LAZR">LAZR - Small - 30.2% WR</option>
+        <option value="MRNA">MRNA - Mid - 29.5% WR</option>
+        <option value="AGEN">AGEN - Small - 29.5% WR</option>
+        <option value="GFAI">GFAI - Micro - 27.6% WR</option>
+        <option value="IONQ">IONQ - Small - 26.7% WR</option>
