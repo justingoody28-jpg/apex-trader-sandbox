@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EDGE Ã¢ÂÂ Scenario Tester v2</title>
+<title>EDGE ÃÂ¢ÃÂÃÂ Scenario Tester v2</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
@@ -101,6 +101,20 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
 .trade-badge.allowed { background:#1a3a2a; color:#3fb950; border:1px solid #238636; }
 .trade-badge.blocked { background:#21262d; color:#484f58; border:1px solid #30363d; }
 .mgr-stats { font-size:10px; color:#8b949e; }
+.batch-upload-row { display:flex; gap:6px; margin-top:8px; align-items:flex-start; }
+.batch-textarea { background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:6px 8px; border-radius:4px; font-family:monospace; font-size:11px; width:100%; resize:vertical; min-height:60px; }
+.batch-textarea::placeholder { color:#484f58; }
+.batch-btns { display:flex; flex-direction:column; gap:4px; min-width:110px; }
+.batch-btns button { background:#1f6feb; color:#fff; border:none; border-radius:4px; padding:5px 10px; font-size:11px; cursor:pointer; font-family:monospace; white-space:nowrap; }
+.batch-btns button:hover { background:#388bfd; }
+.batch-btns button.sec { background:#21262d; color:#8b949e; border:1px solid #30363d; }
+.batch-btns button.sec:hover { color:#e6edf3; border-color:#8b949e; }
+.batch-result { font-size:10px; margin-top:5px; min-height:14px; }
+.batch-result.ok { color:#3fb950; }
+.batch-result.err { color:#f85149; }
+.batch-result.neu { color:#8b949e; }
+.batch-section-hdr { font-size:10px; color:#8b949e; margin:8px 0 4px; border-top:1px solid #30363d; padding-top:6px; }
+
 
 </style>
 </head>
@@ -247,6 +261,20 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
       <select id="addTickerGrp"><option value="Small/Micro">Small/Micro</option><option value="Mid">Mid Cap</option><option value="Large">Large Cap</option></select>
       <button onclick="addTicker()">+ Add Ticker</button>
       <button onclick="syncTickerDropdown()" style="background:#21262d;color:#8b949e;border:1px solid #30363d;padding:5px 12px;border-radius:4px;font-size:11px;cursor:pointer;font-family:monospace;">&#x21BA; Sync Dropdown</button>
+    <div class="batch-section-hdr">&#x1F4E5; BATCH UPLOAD &mdash; paste a list of tickers to add multiple at once</div>
+    <div class="batch-upload-row">
+      <div style="flex:1">
+        <textarea id="batchInput" class="batch-textarea" placeholder="One per line: AAPL&#10;TSLA&#10;PLTR&#10;&#10;Or comma-separated: AAPL, TSLA, PLTR&#10;&#10;Or with group: PLTR,Mid&#10;HOOD,Mid&#10;RBLX,Mid"></textarea>
+        <div id="batchResult" class="batch-result"></div>
+      </div>
+      <div class="batch-btns">
+        <button onclick="batchAddTickers()">&#x2B; Add All</button>
+        <button onclick="batchAddTickers(true)">&#x2B; Add + Approve</button>
+        <button class="sec" onclick="document.getElementById('batchInput').value='';document.getElementById('batchResult').textContent=''">Clear</button>
+        <button class="sec" onclick="batchExport()">&#x2B07; Export List</button>
+      </div>
+    </div>
+
     </div>
   </div>
 </div>
@@ -620,8 +648,8 @@ function updateBatchBtn(){
   var grp=document.getElementById('batchGroup').value;
   var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
   var label=grp==='all'?'All 37':grp+' ('+count+')';
-  document.getElementById('runAllBtn').textContent='Ã¢ÂÂ¡ Run '+label;
-  document.getElementById('expAllBtn').textContent='Ã¢Â¬Â Export '+label;
+  document.getElementById('runAllBtn').textContent='ÃÂ¢ÃÂÃÂ¡ Run '+label;
+  document.getElementById('expAllBtn').textContent='ÃÂ¢ÃÂ¬ÃÂ Export '+label;
 }
 
 function getActiveTickers(){
@@ -653,10 +681,10 @@ async function checkAlpacaConn(){
   var keys=getAlpacaKeys();
   var el=document.getElementById("alpacaStatus");
   el.className="alpaca-dot chk";
-  el.textContent="â Checking...";
+  el.textContent="Ã¢ÂÂ Checking...";
   if(!keys.id||!keys.secret){
     el.className="alpaca-dot err";
-    el.textContent="â No keys â set in EDGE Settings tab";
+    el.textContent="Ã¢ÂÂ No keys Ã¢ÂÂ set in EDGE Settings tab";
     return;
   }
   try{
@@ -665,14 +693,14 @@ async function checkAlpacaConn(){
     var d=await r.json();
     if(d.ok){
       el.className="alpaca-dot ok";
-      el.textContent="â Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
+      el.textContent="Ã¢ÂÂ Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
     }else{
       el.className="alpaca-dot err";
-      el.textContent="â Error: "+(d.error||"unknown");
+      el.textContent="Ã¢ÂÂ Error: "+(d.error||"unknown");
     }
   }catch(e){
     el.className="alpaca-dot err";
-    el.textContent="â Offline: "+e.message;
+    el.textContent="Ã¢ÂÂ Offline: "+e.message;
   }
 }
 async function execTrade(scenario,side,stopPct){
@@ -688,7 +716,7 @@ async function execTrade(scenario,side,stopPct){
 
   var keys=getAlpacaKeys();
   if(!keys.id||!keys.secret){
-    alert("No Alpaca keys â set them in the EDGE Settings tab first.");
+    alert("No Alpaca keys Ã¢ÂÂ set them in the EDGE Settings tab first.");
     return;
   }
   var tk=document.getElementById("ticker").value;
@@ -714,16 +742,16 @@ async function execTrade(scenario,side,stopPct){
     var d=await r.json();
     if(d.success){
       resEl.style.color="#3fb950";
-      resEl.textContent="â Order "+d.order.id.slice(0,8)+"... "+d.order.status;
-      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" â "+d.order.status,"ok");
+      resEl.textContent="Ã¢ÂÂ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
+      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" Ã¢ÂÂ "+d.order.status,"ok");
     }else{
       resEl.style.color="#f85149";
-      resEl.textContent="â "+(d.error||JSON.stringify(d));
+      resEl.textContent="Ã¢ÂÂ "+(d.error||JSON.stringify(d));
       lg("TRADE ERR "+scenario+": "+(d.error||"failed"),"err");
     }
   }catch(e){
     resEl.style.color="#f85149";
-    resEl.textContent="â "+e.message;
+    resEl.textContent="Ã¢ÂÂ "+e.message;
     lg("TRADE ERR "+scenario+": "+e.message,"err");
   }
   if(btn){btn.disabled=false;btn.textContent=origLabel;}
@@ -824,6 +852,58 @@ function initTickerMgr(){
 }
 
 initTickerMgr();
+function parseBatchInput(raw){
+  // Accept: newline or comma separated, optional group after comma
+  // e.g. "PLTR", "PLTR,Mid", "PLTR Mid", "PLTR, Mid Cap"
+  var lines=raw.replace(/,\s*\n/g,"\n").split(/[\n]+/).map(function(l){return l.trim();}).filter(Boolean);
+  return lines.map(function(line){
+    // Split on comma or whitespace (first token = symbol, rest = group hint)
+    var parts=line.split(/[,\s]+/).map(function(p){return p.trim();}).filter(Boolean);
+    var sym=parts[0].toUpperCase().replace(/[^A-Z0-9.]/g,"");
+    var grpHint=(parts[1]||"").toLowerCase();
+    var grp="Small/Micro";
+    if(grpHint.indexOf("large")!==-1)grp="Large";
+    else if(grpHint.indexOf("mid")!==-1)grp="Mid";
+    else if(grpHint.indexOf("small")!==-1||grpHint.indexOf("micro")!==-1)grp="Small/Micro";
+    return sym?{t:sym,grp:grp}:null;
+  }).filter(Boolean);
+}
+function batchAddTickers(approveAll){
+  var raw=document.getElementById("batchInput").value||"";
+  var resEl=document.getElementById("batchResult");
+  if(!raw.trim()){resEl.className="batch-result err";resEl.textContent="Paste at least one ticker symbol";return;}
+  var parsed=parseBatchInput(raw);
+  if(!parsed.length){resEl.className="batch-result err";resEl.textContent="Could not parse any valid symbols";return;}
+  var list=loadTickers();
+  var approved=loadApproved();
+  var added=[],skipped=[];
+  parsed.forEach(function(item){
+    if(list.find(function(t){return t.t===item.t;})){skipped.push(item.t);}
+    else{list.push({t:item.t,grp:item.grp});added.push(item.t);}
+    if(approveAll&&approved.indexOf(item.t)===-1)approved.push(item.t);
+  });
+  localStorage.setItem("apex_tickers",JSON.stringify({list:list,approved:approved}));
+  ALL_TICKERS=loadTickers();
+  syncTickerDropdown();
+  renderTickerMgr();
+  var msg="";
+  if(added.length)msg+="Added "+added.length+": "+added.join(", ")+(approveAll?" (all approved)":"");
+  if(skipped.length)msg+=(msg?" | ":"")+"Already existed: "+skipped.join(", ");
+  resEl.className="batch-result "+(added.length?"ok":"neu");
+  resEl.textContent=msg;
+  added.forEach(function(sym){lg("Batch added: "+sym+(approveAll?" + approved":""),"ok");});
+}
+function batchExport(){
+  var list=loadTickers();
+  var approved=loadApproved();
+  var lines=list.map(function(t){return t.t+","+t.grp+(approved.indexOf(t.t)!==-1?",TRADE_APPROVED":"");});
+  var csv="# APEX Tickers Export\n# Format: SYMBOL,Group,TRADE_APPROVED(if whitelisted)\n"+lines.join("\n");
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="apex_tickers_"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();
+  lg("Exported "+list.length+" tickers to CSV","ok");
+}
 </script>
 </body>
 </html>
