@@ -575,24 +575,93 @@ function getActiveTickers(){
 function isOn(id){return document.getElementById('cb_'+id).checked;}
 
 // === ALPACA PAPER TRADING ===
-function getAlpacaKeys(){try{var s=JSON.parse(localStorage.getItem('edge_settings')||'{}');return{id:s.alpacaId||'',secret:s.alpacaSecret||''};}catch(e){return{id:'',secret:''};}}
+function getAlpacaKeys(){
+  try{
+    var s=JSON.parse(localStorage.getItem("edge_settings")||"{}");
+    return{id:s.alpacaId||"",secret:s.alpacaSecret||""};
+  }catch(e){return{id:"",secret:""};}}
 function updateSharesEst(){
-  var risk=+document.getElementById('dollarRisk').value,price=+document.getElementById('entryPrice').value;
-  var el=document.getElementById('sharesEst');
-  if(!price||price<=0){el.textContent='Enter price to estimate shares';return;}
+  var risk=+document.getElementById("dollarRisk").value;
+  var price=+document.getElementById("entryPrice").value;
+  var el=document.getElementById("sharesEst");
+  if(!price||price<=0){el.textContent="Enter price to estimate shares";return;}
   var s05=Math.floor(risk/(price*0.5/100));
-  var esp=+document.getElementById('eStop').value,fsp=+document.getElementById('fStop').value;
-  var sE=Math.floor(risk/(price*esp/100)),sF=Math.floor(risk/(price*fsp/100));
-  el.innerHTML='A/B/C/D: <b style="color:#e6edf3">'+s05+'</b> sh &nbsp; E: <b style="color:#e6edf3">'+sE+'</b> sh &nbsp; F: <b style="color:#e6edf3">'+sF+'</b> sh';
+  var esp=+document.getElementById("eStop").value;
+  var fsp=+document.getElementById("fStop").value;
+  var sE=Math.floor(risk/(price*esp/100));
+  var sF=Math.floor(risk/(price*fsp/100));
+  el.innerHTML="A/B/C/D: <b style='color:#e6edf3'>"+s05+"</b> sh &nbsp; E: <b style='color:#e6edf3'>"+sE+"</b> sh &nbsp; F: <b style='color:#e6edf3'>"+sF+"</b> sh";
 }
 async function checkAlpacaConn(){
-  var keys=getAlpacaKeys(),el=document.getElementById('alpacaStatus');
-  el.className='alpaca-dot chk';el.textContent='● Checking...';
-  if(!keys.id||!keys.secret){el.className='alpaca-dot err';el.textContent='● No keys — set in EDGE Settings tab';return;}
+  var keys=getAlpacaKeys();
+  var el=document.getElementById("alpacaStatus");
+  el.className="alpaca-dot chk";
+  el.textContent="● Checking...";
+  if(!keys.id||!keys.secret){
+    el.className="alpaca-dot err";
+    el.textContent="● No keys — set in EDGE Settings tab";
+    return;
+  }
   try{
-    var r=await fetch('/api/alpaca',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check',alpacaId:keys.id,alpacaSecret:keys.secret})});
+    var r=await fetch("/api/alpaca",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action:"check",alpacaId:keys.id,alpacaSecret:keys.secret})});
     var d=await r.json();
-    if(d.ok){el.className='alpaca-dot ok';el.textContent='● Paper: 
+    if(d.ok){
+      el.className="alpaca-dot ok";
+      el.textContent="● Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
+    }else{
+      el.className="alpaca-dot err";
+      el.textContent="● Error: "+(d.error||"unknown");
+    }
+  }catch(e){
+    el.className="alpaca-dot err";
+    el.textContent="● Offline: "+e.message;
+  }
+}
+async function execTrade(scenario,side,stopPct){
+  var keys=getAlpacaKeys();
+  if(!keys.id||!keys.secret){
+    alert("No Alpaca keys — set them in the EDGE Settings tab first.");
+    return;
+  }
+  var tk=document.getElementById("ticker").value;
+  var risk=+document.getElementById("dollarRisk").value;
+  var price=+document.getElementById("entryPrice").value;
+  var resEl=document.getElementById("execResult"+scenario);
+  var btn=document.getElementById("execBtn"+scenario);
+  var origLabel=btn?btn.textContent:"";
+  var qty=0;
+  if(price>0&&stopPct>0)qty=Math.floor(risk/(price*stopPct/100));
+  if(qty<=0&&price>0){
+    resEl.style.color="#f85149";
+    resEl.textContent="Risk too small for 1 share at this price";
+    return;
+  }
+  var payload={ticker:tk,side:side,alpacaId:keys.id,alpacaSecret:keys.secret,scenario:scenario};
+  if(qty>0)payload.qty=qty;else payload.notional=risk;
+  if(btn){btn.disabled=true;btn.textContent="Sending...";}
+  resEl.style.color="#8b949e";
+  resEl.textContent="Submitting "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:"")+"...";
+  try{
+    var r=await fetch("/api/alpaca",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    var d=await r.json();
+    if(d.success){
+      resEl.style.color="#3fb950";
+      resEl.textContent="✓ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
+      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" — "+d.order.status,"ok");
+    }else{
+      resEl.style.color="#f85149";
+      resEl.textContent="✗ "+(d.error||JSON.stringify(d));
+      lg("TRADE ERR "+scenario+": "+(d.error||"failed"),"err");
+    }
+  }catch(e){
+    resEl.style.color="#f85149";
+    resEl.textContent="✗ "+e.message;
+    lg("TRADE ERR "+scenario+": "+e.message,"err");
+  }
+  if(btn){btn.disabled=false;btn.textContent=origLabel;}
+}
+
 </script>
 </body>
 </html>
