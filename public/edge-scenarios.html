@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EDGE ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Scenario Tester v2</title>
+<title>EDGE &#x2014; Scenario Tester v2</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
@@ -648,8 +648,8 @@ function updateBatchBtn(){
   var grp=document.getElementById('batchGroup').value;
   var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
   var label=grp==='all'?'All 37':grp+' ('+count+')';
-  document.getElementById('runAllBtn').textContent='ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ Run '+label;
-  document.getElementById('expAllBtn').textContent='ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¬ÃÂÃÂÃÂÃÂ Export '+label;
+  document.getElementById('runAllBtn').textContent='\u26A1 Run '+label;
+  document.getElementById('expAllBtn').textContent='\u2B07 Export '+label;
 }
 
 function getActiveTickers(){
@@ -681,10 +681,10 @@ async function checkAlpacaConn(){
   var keys=getAlpacaKeys();
   var el=document.getElementById("alpacaStatus");
   el.className="alpaca-dot chk";
-  el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Checking...";
+  el.textContent="\u25CF Checking...";
   if(!keys.id||!keys.secret){
     el.className="alpaca-dot err";
-    el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ No keys ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ set in EDGE Settings tab";
+    el.textContent="\u25CF No keys \u2014 set in EDGE Settings tab";
     return;
   }
   try{
@@ -693,14 +693,14 @@ async function checkAlpacaConn(){
     var d=await r.json();
     if(d.ok){
       el.className="alpaca-dot ok";
-      el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
+      el.textContent="\u25CF Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
     }else{
       el.className="alpaca-dot err";
-      el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Error: "+(d.error||"unknown");
+      el.textContent="\u25CF Error: "+(d.error||"unknown");
     }
   }catch(e){
     el.className="alpaca-dot err";
-    el.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Offline: "+e.message;
+    el.textContent="\u25CF Offline: "+e.message;
   }
 }
 async function execTrade(scenario,side,stopPct){
@@ -716,7 +716,7 @@ async function execTrade(scenario,side,stopPct){
 
   var keys=getAlpacaKeys();
   if(!keys.id||!keys.secret){
-    alert("No Alpaca keys ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ set them in the EDGE Settings tab first.");
+    alert("No Alpaca keys \u2014 set them in the EDGE Settings tab first.");
     return;
   }
   var tk=document.getElementById("ticker").value;
@@ -742,16 +742,16 @@ async function execTrade(scenario,side,stopPct){
     var d=await r.json();
     if(d.success){
       resEl.style.color="#3fb950";
-      resEl.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
-      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "+d.order.status,"ok");
+      resEl.textContent="\u2713 Order "+d.order.id.slice(0,8)+"... "+d.order.status;
+      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" \u2014 "+d.order.status,"ok");
     }else{
       resEl.style.color="#f85149";
-      resEl.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "+(d.error||JSON.stringify(d));
+      resEl.textContent="\u2717 "+(d.error||JSON.stringify(d));
       lg("TRADE ERR "+scenario+": "+(d.error||"failed"),"err");
     }
   }catch(e){
     resEl.style.color="#f85149";
-    resEl.textContent="ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "+e.message;
+    resEl.textContent="\u2717 "+e.message;
     lg("TRADE ERR "+scenario+": "+e.message,"err");
   }
   if(btn){btn.disabled=false;btn.textContent=origLabel;}
