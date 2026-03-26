@@ -14,9 +14,12 @@ function AuthProvider({ children }) {
 
   useEffect(() => {
     // Hydrate from existing session on first load
+    // Timeout fallback: if Supabase never resolves (missing env vars etc), unblock the app
+    const _authTimeout = setTimeout(() => setUser(null), 3000)
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(_authTimeout)
       setUser(session?.user ?? null)
-    }).catch(() => setUser(null))
+    }).catch(() => { clearTimeout(_authTimeout); setUser(null) })
 
     // Listen for login/logout/token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
