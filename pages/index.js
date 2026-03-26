@@ -2,6 +2,7 @@
 import Head from "next/head";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ArbTab } from '../lib/ArbTab';
+import { EdgeScenariosTab } from '../lib/EdgeScenariosTab';
 import { useAuth } from './_app';
 import LoginPage from './login';
 import { signOut, supabase } from '../lib/supabase';
@@ -2477,7 +2478,7 @@ export default function App(){
             </div>
           </div>
           <div style={{display:"flex",gap:4,marginBottom:4}}>
-            {["apex","module","edge"].map(function(m){var a=topTab===m;return(<button key={m} onClick={function(){setTopTab(m);if(m==="apex"&&topTab!=="apex")setTab("screener");}} style={{background:a?"linear-gradient(135deg,#1d4ed8,#7c3aed)":"transparent",border:"1px solid "+(a?"#1d4ed8":"#1e293b"),borderRadius:"6px 6px 0 0",padding:"5px 18px",fontSize:11,fontWeight:700,color:a?"#fff":"#475569",cursor:"pointer",letterSpacing:1}}>{m==="apex"?"APEX":m==="module"?"MODULE":"◈ EDGE"}</button>);})}
+            {["apex","module","edge","scenarios"].map(function(m){var a=topTab===m;return(<button key={m} onClick={function(){setTopTab(m);if(m==="apex"&&topTab!=="apex")setTab("screener");}} style={{background:a?"linear-gradient(135deg,#1d4ed8,#7c3aed)":"transparent",border:"1px solid "+(a?"#1d4ed8":"#1e293b"),borderRadius:"6px 6px 0 0",padding:"5px 18px",fontSize:11,fontWeight:700,color:a?"#fff":"#475569",cursor:"pointer",letterSpacing:1}}>{m==="apex"?"APEX":m==="module"?"MODULE":m==="edge"?"◈ EDGE":"⚡ SCENARIOS"}</button>);})}
           </div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
             {TABS.map(function(t){
@@ -2530,6 +2531,7 @@ export default function App(){
 
         {topTab==="module"&&<ArbTab/>}
 {topTab==="edge"&&<PreMarketEdge/>}
+            {topTab==="scenarios"&&<EdgeScenariosTab/>}
 {topTab==="apex"&&tab==="screener"&&(
           <div style={{animation:"fu 0.3s ease"}}>
           {tickerDetail&&(function(){
