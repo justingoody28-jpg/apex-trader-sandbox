@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EDGE â Scenario Tester v2</title>
+<title>EDGE Ã¢ÂÂ Scenario Tester v2</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
@@ -76,6 +76,32 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
 .exec-short { background:#3a1a1a; color:#f85149; border:1px solid #f85149; }
 .exec-btn:hover { opacity:0.8; } .exec-btn:disabled { opacity:0.4; cursor:not-allowed; }
 .trade-result { font-size:10px; margin-top:3px; text-align:center; min-height:14px; }
+.ticker-mgr { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px 14px; margin-bottom:12px; }
+.ticker-mgr-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:11px; color:#58a6ff; font-weight:bold; cursor:pointer; user-select:none; }
+.ticker-mgr-hdr:hover { color:#79c0ff; }
+.ticker-mgr-body { display:none; }
+.ticker-mgr-body.open { display:block; }
+.ticker-cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px; }
+.ticker-col-hdr { font-size:10px; color:#8b949e; margin-bottom:6px; border-bottom:1px solid #30363d; padding-bottom:4px; display:flex; justify-content:space-between; }
+.ticker-col-hdr span { font-weight:bold; }
+.ticker-list { max-height:180px; overflow-y:auto; }
+.ticker-row { display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid #1c2128; font-size:11px; }
+.ticker-row:hover { background:#1c2128; }
+.ticker-sym { font-weight:bold; color:#e6edf3; min-width:55px; }
+.ticker-grp { color:#8b949e; font-size:10px; flex:1; }
+.ticker-trade-chk { accent-color:#3fb950; width:13px; height:13px; cursor:pointer; }
+.ticker-del { background:none; border:none; color:#f85149; cursor:pointer; font-size:12px; padding:0 4px; line-height:1; }
+.ticker-del:hover { color:#ff7b72; }
+.ticker-add-row { display:flex; gap:6px; margin-top:8px; }
+.ticker-add-row input { background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:5px 8px; border-radius:4px; font-family:monospace; font-size:11px; width:90px; text-transform:uppercase; }
+.ticker-add-row select { background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:5px 8px; border-radius:4px; font-family:monospace; font-size:11px; min-width:110px; }
+.ticker-add-row button { background:#238636; color:#fff; border:none; border-radius:4px; padding:5px 12px; font-size:11px; cursor:pointer; font-family:monospace; }
+.ticker-add-row button:hover { background:#2ea043; }
+.trade-badge { font-size:9px; padding:1px 5px; border-radius:3px; font-weight:bold; }
+.trade-badge.allowed { background:#1a3a2a; color:#3fb950; border:1px solid #238636; }
+.trade-badge.blocked { background:#21262d; color:#484f58; border:1px solid #30363d; }
+.mgr-stats { font-size:10px; color:#8b949e; }
+
 </style>
 </head>
 <body>
@@ -200,6 +226,30 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
   <label class="cb-pill on-teal" id="pill_f"><input type="checkbox" id="cb_f" checked onchange="updatePills()"> F &mdash; Gap Fade Long</label>
 </div>
 
+<div class="ticker-mgr">
+  <div class="ticker-mgr-hdr" onclick="toggleTickerMgr()">
+    <span>&#x1F4CB; TICKER MANAGER</span>
+    <span class="mgr-stats" id="mgrStats">Loading...</span>
+  </div>
+  <div class="ticker-mgr-body" id="tickerMgrBody">
+    <div class="ticker-cols">
+      <div>
+        <div class="ticker-col-hdr"><span>Backtest Universe</span><span id="btCount">0 tickers</span></div>
+        <div class="ticker-list" id="tickerListBT"></div>
+      </div>
+      <div>
+        <div class="ticker-col-hdr"><span>&#x2705; Approved for Auto-Trade</span><span id="tradeCount">0 approved</span></div>
+        <div class="ticker-list" id="tickerListTrade"></div>
+      </div>
+    </div>
+    <div class="ticker-add-row">
+      <input type="text" id="addTickerSym" placeholder="SYMBOL" maxlength="8" oninput="this.value=this.value.toUpperCase()">
+      <select id="addTickerGrp"><option value="Small/Micro">Small/Micro</option><option value="Mid">Mid Cap</option><option value="Large">Large Cap</option></select>
+      <button onclick="addTicker()">+ Add Ticker</button>
+      <button onclick="syncTickerDropdown()" style="background:#21262d;color:#8b949e;border:1px solid #30363d;padding:5px 12px;border-radius:4px;font-size:11px;cursor:pointer;font-family:monospace;">&#x21BA; Sync Dropdown</button>
+    </div>
+  </div>
+</div>
 <div class="trade-panel">
   <div class="trade-panel-hdr">
     <span>&#x1F4E1; ALPACA PAPER TRADING</span>
@@ -293,7 +343,7 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
 var KEY='Bnm35KUdSdLOFv37f6NyfUcQdc1aH5IF';
 var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
 
-var ALL_TICKERS=[
+var DEFAULT_TICKERS=[
   {t:'ATER',grp:'Small/Micro'},{t:'LAZR',grp:'Small/Micro'},{t:'MRNA',grp:'Small/Micro'},
   {t:'AGEN',grp:'Small/Micro'},{t:'GFAI',grp:'Small/Micro'},{t:'IONQ',grp:'Small/Micro'},
   {t:'FCEL',grp:'Small/Micro'},{t:'RCKT',grp:'Small/Micro'},{t:'SPCE',grp:'Small/Micro'},
@@ -306,6 +356,13 @@ var ALL_TICKERS=[
   {t:'OKTA',grp:'Mid'},{t:'SNAP',grp:'Mid'},{t:'HOOD',grp:'Mid'},{t:'CRWD',grp:'Mid'},
   {t:'DDOG',grp:'Mid'},{t:'SOFI',grp:'Mid'}
 ];
+function loadTickers(){try{var s=JSON.parse(localStorage.getItem("apex_tickers")||"null");return s&&s.list?s.list:DEFAULT_TICKERS.map(function(t){return{t:t.t,grp:t.grp};});}catch(e){return DEFAULT_TICKERS.map(function(t){return{t:t.t,grp:t.grp};});}}
+function saveTickers(list){var s={list:list,approved:loadApproved()};localStorage.setItem("apex_tickers",JSON.stringify(s));}
+function loadApproved(){try{var s=JSON.parse(localStorage.getItem("apex_tickers")||"null");return s&&s.approved?s.approved:[];}catch(e){return[];}}
+function saveApproved(arr){var s={list:loadTickers(),approved:arr};localStorage.setItem("apex_tickers",JSON.stringify(s));}
+function isApproved(sym){return loadApproved().indexOf(sym)!==-1;}
+var ALL_TICKERS=loadTickers();
+
 
 function etH(ts){var d=new Date(new Date(ts).toLocaleString('en-US',{timeZone:'America/New_York'}));return d.getHours()+d.getMinutes()/60;}
 function byDate(bars){var m={};bars.forEach(function(b){var d=new Date(new Date(b.t).toLocaleString('en-US',{timeZone:'America/New_York'}));var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(!m[k])m[k]=[];m[k].push(b);});return m;}
@@ -563,8 +620,8 @@ function updateBatchBtn(){
   var grp=document.getElementById('batchGroup').value;
   var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
   var label=grp==='all'?'All 37':grp+' ('+count+')';
-  document.getElementById('runAllBtn').textContent='â¡ Run '+label;
-  document.getElementById('expAllBtn').textContent='â¬ Export '+label;
+  document.getElementById('runAllBtn').textContent='Ã¢ÂÂ¡ Run '+label;
+  document.getElementById('expAllBtn').textContent='Ã¢Â¬Â Export '+label;
 }
 
 function getActiveTickers(){
@@ -596,10 +653,10 @@ async function checkAlpacaConn(){
   var keys=getAlpacaKeys();
   var el=document.getElementById("alpacaStatus");
   el.className="alpaca-dot chk";
-  el.textContent="● Checking...";
+  el.textContent="â Checking...";
   if(!keys.id||!keys.secret){
     el.className="alpaca-dot err";
-    el.textContent="● No keys — set in EDGE Settings tab";
+    el.textContent="â No keys â set in EDGE Settings tab";
     return;
   }
   try{
@@ -608,20 +665,30 @@ async function checkAlpacaConn(){
     var d=await r.json();
     if(d.ok){
       el.className="alpaca-dot ok";
-      el.textContent="● Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
+      el.textContent="â Paper: $"+parseFloat(d.equity||0).toLocaleString("en-US",{maximumFractionDigits:0});
     }else{
       el.className="alpaca-dot err";
-      el.textContent="● Error: "+(d.error||"unknown");
+      el.textContent="â Error: "+(d.error||"unknown");
     }
   }catch(e){
     el.className="alpaca-dot err";
-    el.textContent="● Offline: "+e.message;
+    el.textContent="â Offline: "+e.message;
   }
 }
 async function execTrade(scenario,side,stopPct){
+  var tk=document.getElementById("ticker").value;
+  if(!isApproved(tk)){
+    var approved=loadApproved();
+    var msg=approved.length===0
+      ?"No tickers are approved for trading. Open Ticker Manager and check the trade whitelist for "+tk+"."
+      :""+tk+" is not on your trade whitelist. Approved: "+approved.join(", ")+". Add it in Ticker Manager.";
+    alert(msg);
+    return;
+  }
+
   var keys=getAlpacaKeys();
   if(!keys.id||!keys.secret){
-    alert("No Alpaca keys — set them in the EDGE Settings tab first.");
+    alert("No Alpaca keys â set them in the EDGE Settings tab first.");
     return;
   }
   var tk=document.getElementById("ticker").value;
@@ -647,21 +714,116 @@ async function execTrade(scenario,side,stopPct){
     var d=await r.json();
     if(d.success){
       resEl.style.color="#3fb950";
-      resEl.textContent="✓ Order "+d.order.id.slice(0,8)+"... "+d.order.status;
-      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" — "+d.order.status,"ok");
+      resEl.textContent="â Order "+d.order.id.slice(0,8)+"... "+d.order.status;
+      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" â "+d.order.status,"ok");
     }else{
       resEl.style.color="#f85149";
-      resEl.textContent="✗ "+(d.error||JSON.stringify(d));
+      resEl.textContent="â "+(d.error||JSON.stringify(d));
       lg("TRADE ERR "+scenario+": "+(d.error||"failed"),"err");
     }
   }catch(e){
     resEl.style.color="#f85149";
-    resEl.textContent="✗ "+e.message;
+    resEl.textContent="â "+e.message;
     lg("TRADE ERR "+scenario+": "+e.message,"err");
   }
   if(btn){btn.disabled=false;btn.textContent=origLabel;}
 }
 
+
+// === TICKER MANAGER ===
+function toggleTickerMgr(){
+  var body=document.getElementById("tickerMgrBody");
+  body.classList.toggle("open");
+  renderTickerMgr();
+}
+function renderTickerMgr(){
+  var list=loadTickers();
+  var approved=loadApproved();
+  var btEl=document.getElementById("tickerListBT");
+  var trEl=document.getElementById("tickerListTrade");
+  var statsEl=document.getElementById("mgrStats");
+  var btCntEl=document.getElementById("btCount");
+  var trCntEl=document.getElementById("tradeCount");
+  if(statsEl)statsEl.textContent=list.length+" tickers | "+approved.length+" approved to trade | click to expand";
+  if(btCntEl)btCntEl.textContent=list.length+" tickers";
+  if(trCntEl)trCntEl.textContent=approved.length+" approved";
+  if(btEl)btEl.innerHTML=list.map(function(item){
+    var isApp=approved.indexOf(item.t)!==-1;
+    return '<div class="ticker-row">'
+      +'<span class="ticker-sym">'+item.t+'</span>'
+      +'<span class="ticker-grp">'+item.grp+'</span>'
+      +'<span class="trade-badge '+(isApp?"allowed":"blocked")+'">'+(isApp?"TRADE":"NO TRADE")+'</span>'
+      +'<button class="ticker-del" onclick="removeTicker(\''+ item.t +'\')" title="Remove from backtest">&#x2715;</button>'
+      +'</div>';
+  }).join("");
+  if(trEl)trEl.innerHTML=list.map(function(item){
+    var isApp=approved.indexOf(item.t)!==-1;
+    return '<div class="ticker-row">'
+      +'<input type="checkbox" class="ticker-trade-chk" '+(isApp?"checked":"")+' onchange="toggleApproved(\''+ item.t +'\')" title="Allow Alpaca to trade this ticker">'
+      +'<span class="ticker-sym" style="cursor:pointer" onclick="toggleApproved(\''+ item.t +'\')">'+item.t+'</span>'
+      +'<span class="ticker-grp">'+item.grp+'</span>'
+      +'</div>';
+  }).join("");
+}
+function addTicker(){
+  var sym=(document.getElementById("addTickerSym").value||"").trim().toUpperCase();
+  var grp=document.getElementById("addTickerGrp").value;
+  if(!sym||sym.length<1||sym.length>8){alert("Enter a valid ticker symbol");return;}
+  var list=loadTickers();
+  if(list.find(function(t){return t.t===sym;})){alert(sym+" is already in your list");return;}
+  list.push({t:sym,grp:grp});
+  saveTickers(list);
+  ALL_TICKERS=loadTickers();
+  document.getElementById("addTickerSym").value="";
+  syncTickerDropdown();
+  renderTickerMgr();
+  lg("Added ticker: "+sym+" ("+grp+")","ok");
+}
+function removeTicker(sym){
+  if(!confirm("Remove "+sym+" from your backtest universe?"))return;
+  var list=loadTickers().filter(function(t){return t.t!==sym;});
+  var approved=loadApproved().filter(function(t){return t!==sym;});
+  localStorage.setItem("apex_tickers",JSON.stringify({list:list,approved:approved}));
+  ALL_TICKERS=loadTickers();
+  syncTickerDropdown();
+  renderTickerMgr();
+  lg("Removed ticker: "+sym,"neu");
+}
+function toggleApproved(sym){
+  var approved=loadApproved();
+  var idx=approved.indexOf(sym);
+  if(idx===-1){approved.push(sym);lg(sym+" added to trade whitelist","ok");}
+  else{approved.splice(idx,1);lg(sym+" removed from trade whitelist","neu");}
+  saveApproved(approved);
+  renderTickerMgr();
+}
+function syncTickerDropdown(){
+  var sel=document.getElementById("ticker");
+  var cur=sel.value;
+  var list=loadTickers();
+  sel.innerHTML="";
+  var groups={};
+  list.forEach(function(t){if(!groups[t.grp])groups[t.grp]=[];groups[t.grp].push(t);});
+  Object.keys(groups).forEach(function(grp){
+    var og=document.createElement("optgroup");og.label=grp;
+    groups[grp].forEach(function(t){
+      var op=document.createElement("option");op.value=t.t;
+      var badge=isApproved(t.t)?" \u2705":"";
+      op.textContent=t.t+" - "+t.grp+badge;
+      og.appendChild(op);
+    });
+    sel.appendChild(og);
+  });
+  if(cur)sel.value=cur;
+  updateBatchBtn();
+}
+function initTickerMgr(){
+  ALL_TICKERS=loadTickers();
+  syncTickerDropdown();
+  renderTickerMgr();
+}
+
+initTickerMgr();
 </script>
 </body>
 </html>
