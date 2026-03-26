@@ -284,9 +284,8 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
     <span id="alpacaStatus" class="alpaca-dot chk">&#x25CF; Click Test Connection to verify keys</span>
   </div>
   <div class="trade-ctrls">
-    <div><label>$ Risk / Trade</label><input type="number" id="dollarRisk" value="100" min="10" max="50000" step="10" style="width:90px" oninput="updateSharesEst()"></div>
-    <div><label>Est. Price ($)</label><input type="number" id="entryPrice" value="" min="0.01" step="0.01" style="width:90px" placeholder="e.g. 12.50" oninput="updateSharesEst()"></div>
-    <div id="sharesEst" style="font-size:11px;color:#8b949e;padding-top:18px;min-width:160px">Enter price to estimate shares</div>
+    <div><label>$ Bet Per Trade</label><input type="number" id="dollarRisk" value="100" min="10" max="50000" step="10" style="width:110px"></div>
+    <div id="sharesEst" style="font-size:11px;color:#8b949e;padding-top:18px;min-width:200px">Shares calculated at open price automatically</div>
     <button onclick="checkAlpacaConn()" style="background:#21262d;color:#8b949e;border:1px solid #30363d;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:11px;font-family:monospace;">&#x27F3; Test Connection</button>
   </div>
 </div>
@@ -665,18 +664,7 @@ function getAlpacaKeys(){
     var s=JSON.parse(localStorage.getItem("edge_settings")||"{}");
     return{id:s.alpacaId||"",secret:s.alpacaSecret||""};
   }catch(e){return{id:"",secret:""};}}
-function updateSharesEst(){
-  var risk=+document.getElementById("dollarRisk").value;
-  var price=+document.getElementById("entryPrice").value;
-  var el=document.getElementById("sharesEst");
-  if(!price||price<=0){el.textContent="Enter price to estimate shares";return;}
-  var s05=Math.floor(risk/(price*0.5/100));
-  var esp=+document.getElementById("eStop").value;
-  var fsp=+document.getElementById("fStop").value;
-  var sE=Math.floor(risk/(price*esp/100));
-  var sF=Math.floor(risk/(price*fsp/100));
-  el.innerHTML="A/B/C/D: <b style='color:#e6edf3'>"+s05+"</b> sh &nbsp; E: <b style='color:#e6edf3'>"+sE+"</b> sh &nbsp; F: <b style='color:#e6edf3'>"+sF+"</b> sh";
-}
+function updateSharesEst(){}
 async function checkAlpacaConn(){
   var keys=getAlpacaKeys();
   var el=document.getElementById("alpacaStatus");
@@ -703,58 +691,84 @@ async function checkAlpacaConn(){
     el.textContent="\u25CF Offline: "+e.message;
   }
 }
-async function execTrade(scenario,side,stopPct){
-  var tk=document.getElementById("ticker").value;
-  if(!isApproved(tk)){
-    var approved=loadApproved();
-    var msg=approved.length===0
-      ?"No tickers are approved for trading. Open Ticker Manager and check the trade whitelist for "+tk+"."
-      :""+tk+" is not on your trade whitelist. Approved: "+approved.join(", ")+". Add it in Ticker Manager.";
+async function execTrade(scenario, side, stopPct) {
+  var tk = document.getElementById("ticker").value;
+  if (!isApproved(tk)) {
+    var approved = loadApproved();
+    var msg = approved.length === 0
+      ? tk + " is not approved for trading. Open Ticker Manager and approve it first."
+      : tk + " is not on your trade whitelist. Approved: " + approved.join(", ");
     alert(msg);
     return;
   }
-
-  var keys=getAlpacaKeys();
-  if(!keys.id||!keys.secret){
+  var keys = getAlpacaKeys();
+  if (!keys.id || !keys.secret) {
     alert("No Alpaca keys \u2014 set them in the EDGE Settings tab first.");
     return;
   }
-  var tk=document.getElementById("ticker").value;
-  var risk=+document.getElementById("dollarRisk").value;
-  var price=+document.getElementById("entryPrice").value;
-  var resEl=document.getElementById("execResult"+scenario);
-  var btn=document.getElementById("execBtn"+scenario);
-  var origLabel=btn?btn.textContent:"";
-  var qty=0;
-  if(price>0&&stopPct>0)qty=Math.floor(risk/(price*stopPct/100));
-  if(qty<=0&&price>0){
-    resEl.style.color="#f85149";
-    resEl.textContent="Risk too small for 1 share at this price";
+  var bet = +document.getElementById("dollarRisk").value;
+  var resEl = document.getElementById("execResult" + scenario);
+  var btn = document.getElementById("execBtn" + scenario);
+  var origLabel = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Fetching price..."; }
+  resEl.style.color = "#8b949e";
+  resEl.textContent = "Fetching open price for " + tk + "...";
+  // Fetch today's open price from Polygon
+  var openPrice = null;
+  try {
+    var today = new Date().toISOString().slice(0, 10);
+    var polyKey = JSON.parse(localStorage.getItem("edge_settings") || "{}").polygonKey || "";
+    var pr = await fetch("https://api.polygon.io/v1/open-close/" + tk + "/" + today + "?adjusted=true&apiKey=" + polyKey);
+    if (pr.ok) {
+      var pd = await pr.json();
+      openPrice = pd.open || pd.preMarket || null;
+    }
+    // Fallback: try previous close via snapshot
+    if (!openPrice) {
+      var sr = await fetch("https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/" + tk + "?apiKey=" + polyKey);
+      if (sr.ok) {
+        var sd = await sr.json();
+        openPrice = sd.ticker && (sd.ticker.day && sd.ticker.day.o || sd.ticker.prevDay && sd.ticker.prevDay.c) || null;
+      }
+    }
+  } catch(e) {}
+  if (!openPrice || openPrice <= 0) {
+    resEl.style.color = "#f85149";
+    resEl.textContent = "\u2717 Could not fetch open price for " + tk + " \u2014 try again or check Polygon key";
+    if (btn) { btn.disabled = false; btn.textContent = origLabel; }
     return;
   }
-  var payload={ticker:tk,side:side,alpacaId:keys.id,alpacaSecret:keys.secret,scenario:scenario};
-  if(qty>0)payload.qty=qty;else payload.notional=risk;
-  if(btn){btn.disabled=true;btn.textContent="Sending...";}
-  resEl.style.color="#8b949e";
-  resEl.textContent="Submitting "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:"")+"...";
-  try{
-    var r=await fetch("/api/alpaca",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    var d=await r.json();
-    if(d.success){
-      resEl.style.color="#3fb950";
-      resEl.textContent="\u2713 Order "+d.order.id.slice(0,8)+"... "+d.order.status;
-      lg("TRADE "+scenario+" "+side.toUpperCase()+" "+tk+(qty?" x"+qty:" $"+risk)+" \u2014 "+d.order.status,"ok");
-    }else{
-      resEl.style.color="#f85149";
-      resEl.textContent="\u2717 "+(d.error||JSON.stringify(d));
-      lg("TRADE ERR "+scenario+": "+(d.error||"failed"),"err");
-    }
-  }catch(e){
-    resEl.style.color="#f85149";
-    resEl.textContent="\u2717 "+e.message;
-    lg("TRADE ERR "+scenario+": "+e.message,"err");
+  var qty = Math.floor(bet / openPrice);
+  if (qty < 1) {
+    resEl.style.color = "#f85149";
+    resEl.textContent = "\u2717 $" + bet + " is less than 1 share at $" + openPrice.toFixed(2) + " open price";
+    if (btn) { btn.disabled = false; btn.textContent = origLabel; }
+    return;
   }
-  if(btn){btn.disabled=false;btn.textContent=origLabel;}
+  if (btn) btn.textContent = "Sending...";
+  resEl.textContent = "Open $" + openPrice.toFixed(2) + " \u2192 " + qty + " shares \u2014 submitting " + scenario + " " + side.toUpperCase() + " " + tk + "...";
+  try {
+    var r = await fetch("/api/alpaca", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ticker: tk, side: side, qty: qty, alpacaId: keys.id, alpacaSecret: keys.secret, scenario: scenario})
+    });
+    var d = await r.json();
+    if (d.success) {
+      resEl.style.color = "#3fb950";
+      resEl.textContent = "\u2713 " + qty + " shares @ ~$" + openPrice.toFixed(2) + " open \u2014 Order " + d.order.id.slice(0,8) + "... " + d.order.status;
+      lg("TRADE " + scenario + " " + side.toUpperCase() + " " + tk + " x" + qty + " @ ~$" + openPrice.toFixed(2) + " \u2014 " + d.order.status, "ok");
+    } else {
+      resEl.style.color = "#f85149";
+      resEl.textContent = "\u2717 " + (d.error || JSON.stringify(d));
+      lg("TRADE ERR " + scenario + ": " + (d.error || "failed"), "err");
+    }
+  } catch(e) {
+    resEl.style.color = "#f85149";
+    resEl.textContent = "\u2717 " + e.message;
+    lg("TRADE ERR " + scenario + ": " + e.message, "err");
+  }
+  if (btn) { btn.disabled = false; btn.textContent = origLabel; }
 }
 
 
