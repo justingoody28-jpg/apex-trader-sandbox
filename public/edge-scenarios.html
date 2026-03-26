@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EDGE — Scenario Tester v2</title>
+<title>EDGE â Scenario Tester v2</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
@@ -65,6 +65,17 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
 .cb-pill.on-purple { border-color:#a78bfa; color:#a78bfa; }
 .cb-pill.on-orange { border-color:#ffa657; color:#ffa657; }
 .cb-pill.on-teal { border-color:#39d353; color:#39d353; }
+.trade-panel { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px 14px; margin-bottom:12px; }
+.trade-panel-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:11px; color:#58a6ff; font-weight:bold; }
+.alpaca-dot { font-size:11px; padding:2px 8px; border-radius:3px; font-weight:bold; }
+.alpaca-dot.ok { color:#3fb950; } .alpaca-dot.err { color:#f85149; } .alpaca-dot.chk { color:#ffa657; }
+.trade-ctrls { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+.exec-wrap { margin-top:8px; padding-top:6px; border-top:1px solid #30363d; display:none; }
+.exec-btn { width:100%; padding:5px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold; font-family:monospace; }
+.exec-long { background:#1a3a2a; color:#3fb950; border:1px solid #3fb950; }
+.exec-short { background:#3a1a1a; color:#f85149; border:1px solid #f85149; }
+.exec-btn:hover { opacity:0.8; } .exec-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.trade-result { font-size:10px; margin-top:3px; text-align:center; min-height:14px; }
 </style>
 </head>
 <body>
@@ -189,6 +200,18 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
   <label class="cb-pill on-teal" id="pill_f"><input type="checkbox" id="cb_f" checked onchange="updatePills()"> F &mdash; Gap Fade Long</label>
 </div>
 
+<div class="trade-panel">
+  <div class="trade-panel-hdr">
+    <span>&#x1F4E1; ALPACA PAPER TRADING</span>
+    <span id="alpacaStatus" class="alpaca-dot chk">&#x25CF; Click Test Connection to verify keys</span>
+  </div>
+  <div class="trade-ctrls">
+    <div><label>$ Risk / Trade</label><input type="number" id="dollarRisk" value="100" min="10" max="50000" step="10" style="width:90px" oninput="updateSharesEst()"></div>
+    <div><label>Est. Price ($)</label><input type="number" id="entryPrice" value="" min="0.01" step="0.01" style="width:90px" placeholder="e.g. 12.50" oninput="updateSharesEst()"></div>
+    <div id="sharesEst" style="font-size:11px;color:#8b949e;padding-top:18px;min-width:160px">Enter price to estimate shares</div>
+    <button onclick="checkAlpacaConn()" style="background:#21262d;color:#8b949e;border:1px solid #30363d;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:11px;font-family:monospace;">&#x27F3; Test Connection</button>
+  </div>
+</div>
 <div class="prog-wrap">
   <div class="plab" id="plab">Ready - Run Single for one ticker, or Run All 37 for the full batch (~8 min at 13s delay)</div>
   <div class="bar-bg"><div class="bar" id="bar"></div></div>
@@ -204,36 +227,42 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="a_wr">--</span></div>
     <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="a_pf">--</span></div>
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="a_ret">--</span></div>
+  <div class="exec-wrap" id="execWrapA"><button class="exec-btn exec-long" id="execBtnA" onclick="execTrade('A','buy',0.5)">&#x25B6; Execute A &#x2014; BUY LONG</button><div class="trade-result" id="execResultA"></div></div>
   </div>
   <div class="sbox" id="boxB"><h3>B: LONG +3% / -0.5%<br>Breakeven: 14.3%</h3>
     <div class="sr"><span class="sl">Signals</span><span class="sv n" id="b_n">--</span></div>
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="b_wr">--</span></div>
     <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="b_pf">--</span></div>
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="b_ret">--</span></div>
+  <div class="exec-wrap" id="execWrapB"><button class="exec-btn exec-long" id="execBtnB" onclick="execTrade('B','buy',0.5)">&#x25B6; Execute B &#x2014; BUY LONG</button><div class="trade-result" id="execResultB"></div></div>
   </div>
   <div class="sbox" id="boxC"><h3>C: LONG +4% / -0.5%<br>Breakeven: 11.1%</h3>
     <div class="sr"><span class="sl">Signals</span><span class="sv n" id="c_n">--</span></div>
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="c_wr">--</span></div>
     <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="c_pf">--</span></div>
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="c_ret">--</span></div>
+  <div class="exec-wrap" id="execWrapC"><button class="exec-btn exec-long" id="execBtnC" onclick="execTrade('C','buy',0.5)">&#x25B6; Execute C &#x2014; BUY LONG</button><div class="trade-result" id="execResultC"></div></div>
   </div>
   <div class="sbox" id="boxD"><h3>D: SHORT down 2% / up 0.5% stop<br>Breakeven: 20.0% (inverse)</h3>
     <div class="sr"><span class="sl">Signals</span><span class="sv n" id="d_n">--</span></div>
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="d_wr">--</span></div>
     <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="d_pf">--</span></div>
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="d_ret">--</span></div>
+  <div class="exec-wrap" id="execWrapD"><button class="exec-btn exec-short" id="execBtnD" onclick="execTrade('D','sell',0.5)">&#x25BC; Execute D &#x2014; SHORT</button><div class="trade-result" id="execResultD"></div></div>
   </div>
   <div class="sbox" id="boxE"><h3 id="eCardTitle">E: GAP FADE SHORT<br>Gap &gt;+10% &#x00B7; down 2% / up 2%</h3>
     <div class="sr"><span class="sl">Signals (filtered)</span><span class="sv n" id="e_n">--</span></div>
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e_wr">--</span></div>
     <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e_pf">--</span></div>
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="e_ret">--</span></div>
+  <div class="exec-wrap" id="execWrapE"><button class="exec-btn exec-short" id="execBtnE" onclick="execTrade('E','sell',+document.getElementById('eStop').value)">&#x25BC; Execute E &#x2014; SHORT FADE</button><div class="trade-result" id="execResultE"></div></div>
   </div>
   <div class="sbox" id="boxF"><h3 id="fCardTitle">F: GAP FADE LONG<br>PM min gap &lt;-5% &#x00B7; up 2% / down 2%</h3>
     <div class="sr"><span class="sl">Signals (filtered)</span><span class="sv n" id="f_n">--</span></div>
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="f_wr">--</span></div>
     <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="f_pf">--</span></div>
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="f_ret">--</span></div>
+  <div class="exec-wrap" id="execWrapF"><button class="exec-btn exec-long" id="execBtnF" onclick="execTrade('F','buy',+document.getElementById('fStop').value)">&#x25B6; Execute F &#x2014; BUY FADE</button><div class="trade-result" id="execResultF"></div></div>
   </div>
 </div>
 <div class="tbl-wrap" id="tradeLogWrap" style="display:none">
@@ -451,6 +480,7 @@ async function runOne(){
       renderLog();
       document.getElementById('tradeLogWrap').style.display='block';
       document.getElementById('expOneBtn').disabled=false;
+        ['A','B','C','D','E','F'].forEach(function(s){var w=document.getElementById('execWrap'+s);if(w)w.style.display=isOn(s.toLowerCase())?'block':'none';});
       lg(tk+' | A WR'+res.a.wr.toFixed(0)+'% PF'+res.a.pf.toFixed(2)+' | D WR'+res.d.wr.toFixed(0)+'% PF'+res.d.pf.toFixed(2)+' | E sigs:'+res.e.n+' | F sigs:'+res.f.n,(res.a.pf>=1||res.d.pf>=1||res.e.pf>=1||res.f.pf>=1)?'ok':'neu');
     }
   }catch(e){lg(tk+': '+e.message,'err');document.getElementById('bar').style.width='100%';}
@@ -533,8 +563,8 @@ function updateBatchBtn(){
   var grp=document.getElementById('batchGroup').value;
   var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
   var label=grp==='all'?'All 37':grp+' ('+count+')';
-  document.getElementById('runAllBtn').textContent='⚡ Run '+label;
-  document.getElementById('expAllBtn').textContent='⬇ Export '+label;
+  document.getElementById('runAllBtn').textContent='â¡ Run '+label;
+  document.getElementById('expAllBtn').textContent='â¬ Export '+label;
 }
 
 function getActiveTickers(){
@@ -543,6 +573,26 @@ function getActiveTickers(){
 }
 
 function isOn(id){return document.getElementById('cb_'+id).checked;}
+
+// === ALPACA PAPER TRADING ===
+function getAlpacaKeys(){try{var s=JSON.parse(localStorage.getItem('edge_settings')||'{}');return{id:s.alpacaId||'',secret:s.alpacaSecret||''};}catch(e){return{id:'',secret:''};}}
+function updateSharesEst(){
+  var risk=+document.getElementById('dollarRisk').value,price=+document.getElementById('entryPrice').value;
+  var el=document.getElementById('sharesEst');
+  if(!price||price<=0){el.textContent='Enter price to estimate shares';return;}
+  var s05=Math.floor(risk/(price*0.5/100));
+  var esp=+document.getElementById('eStop').value,fsp=+document.getElementById('fStop').value;
+  var sE=Math.floor(risk/(price*esp/100)),sF=Math.floor(risk/(price*fsp/100));
+  el.innerHTML='A/B/C/D: <b style="color:#e6edf3">'+s05+'</b> sh &nbsp; E: <b style="color:#e6edf3">'+sE+'</b> sh &nbsp; F: <b style="color:#e6edf3">'+sF+'</b> sh';
+}
+async function checkAlpacaConn(){
+  var keys=getAlpacaKeys(),el=document.getElementById('alpacaStatus');
+  el.className='alpaca-dot chk';el.textContent='● Checking...';
+  if(!keys.id||!keys.secret){el.className='alpaca-dot err';el.textContent='● No keys — set in EDGE Settings tab';return;}
+  try{
+    var r=await fetch('/api/alpaca',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check',alpacaId:keys.id,alpacaSecret:keys.secret})});
+    var d=await r.json();
+    if(d.ok){el.className='alpaca-dot ok';el.textContent='● Paper: 
 </script>
 </body>
 </html>
@@ -550,7 +600,273 @@ function isOn(id){return document.getElementById('cb_'+id).checked;}
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EDGE — Scenario Tester v2</title>
+<title>EDGE â Scenario Tester v2</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
+h1 { color:#58a6ff; font-size:18px; margin-bottom:3px; }
+.sub { color:#8b949e; font-size:11px; margin-bottom:12px; }
+.key { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+.key-box { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; font-size:11px; line-height:1.8; }
+.key-box h4 { color:#58a6ff; font-size:11px; margin-bottom:6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.term { color:#e6edf3; font-weight:bold; }
+.def  { color:#8b949e; }
+.legend { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:11px; line-height:1.9; }
+.legend b { color:#58a6ff; }
+.controls { display:flex; gap:10px; margin-bottom:12px; align-items:flex-end; flex-wrap:wrap; }
+label { font-size:11px; color:#8b949e; display:block; margin-bottom:3px; }
+input[type=date] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:148px; }
+input[type=number] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:75px; }
+select { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; min-width:220px; }
+button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:bold; }
+#runOneBtn { background:#238636; color:#fff; }
+#runAllBtn { background:#1f6feb; color:#fff; font-size:13px; padding:8px 20px; }
+#runOneBtn:disabled, #runAllBtn:disabled { background:#21262d; color:#484f58; cursor:not-allowed; }
+#stopBtn   { background:#da3633; color:#fff; }
+#expOneBtn, #expAllBtn { background:#388bfd; color:#fff; }
+.prog-wrap { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px; margin-bottom:12px; }
+.bar-bg { background:#21262d; border-radius:4px; height:7px; margin:6px 0 3px; }
+.bar { background:#238636; height:7px; border-radius:4px; width:0%; transition:width 0.3s; }
+.plab { font-size:11px; color:#8b949e; }
+.log { background:#0d1117; border:1px solid #30363d; border-radius:5px; padding:8px 10px; height:65px; overflow-y:auto; font-size:11px; margin-bottom:12px; }
+.log .ok  { color:#3fb950; display:block; }
+.log .err { color:#f85149; display:block; }
+.log .inf { color:#58a6ff; display:block; }
+.log .neu { color:#8b949e; display:block; }
+.sc-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:12px; }
+.sbox { background:#161b22; border:1px solid #30363d; border-radius:7px; padding:10px; }
+.sbox h3 { font-size:10px; color:#8b949e; margin-bottom:8px; border-bottom:1px solid #30363d; padding-bottom:5px; line-height:1.4; }
+.sbox.win { border-color:#3fb950; }
+.sbox.win h3 { color:#3fb950; }
+.sr { display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; }
+.sl { color:#8b949e; } .sv { font-weight:bold; }
+.sv.g { color:#3fb950; } .sv.r { color:#f85149; } .sv.n { color:#e6edf3; }
+.stitle { color:#58a6ff; font-size:12px; font-weight:bold; margin:8px 0 6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.batch-wrap { max-height:400px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; margin-bottom:12px; }
+.batch-wrap table, .tbl-wrap table { width:100%; border-collapse:collapse; font-size:11px; }
+.batch-wrap th, .tbl-wrap th { background:#161b22; color:#8b949e; padding:6px 9px; text-align:left; border-bottom:1px solid #30363d; position:sticky; top:0; white-space:nowrap; cursor:pointer; }
+.batch-wrap th:hover, .tbl-wrap th:hover { color:#58a6ff; }
+.batch-wrap td, .tbl-wrap td { padding:5px 9px; border-bottom:1px solid #1c2128; }
+.batch-wrap tr:hover td, .tbl-wrap tr:hover td { background:#161b22; }
+.tbl-wrap { max-height:360px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; }
+.w { color:#3fb950; font-weight:bold; } .l { color:#f85149; font-weight:bold; } .n { color:#8b949e; }
+.badge { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:bold; }
+.bL { background:#1f3a5f; color:#79c0ff; } .bM { background:#2d1b69; color:#a78bfa; } .bS { background:#1a3a2a; color:#3fb950; }
+.fade-row { background:#1a1a0a; }
+.cb-row { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+.cb-label { color:#8b949e; font-size:11px; margin-right:4px; }
+.cb-pill { display:flex; align-items:center; gap:5px; background:#161b22; border:1px solid #30363d; border-radius:5px; padding:5px 10px; cursor:pointer; font-size:11px; user-select:none; transition:border-color 0.15s; }
+.cb-pill input[type=checkbox] { accent-color:#58a6ff; width:13px; height:13px; cursor:pointer; }
+.cb-pill.on { border-color:#58a6ff; color:#58a6ff; }
+.cb-pill.on-green { border-color:#3fb950; color:#3fb950; }
+.cb-pill.on-red { border-color:#f85149; color:#f85149; }
+.cb-pill.on-purple { border-color:#a78bfa; color:#a78bfa; }
+.cb-pill.on-orange { border-color:#ffa657; color:#ffa657; }
+.cb-pill.on-teal { border-color:#39d353; color:#39d353; }
+</style>
+</head>
+<body>
+<h1>&#x26A1; EDGE &#x2014; Scenario Tester v2</h1>
+<div class="sub">Run Single ticker or all 37 in batch &#x00B7; 5 scenarios simultaneously &#x00B7; Long and Short setups</div>
+
+<div class="key">
+  <div class="key-box">
+    <h4>&#x1F4CA; Signal Metrics</h4>
+    <span class="term">Signals</span> &#x2014; <span class="def">Trading days evaluated. A/B/C/D = every day with PM data. E = only days where gap exceeds your threshold.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F4C8; Performance</h4>
+    <span class="term">Win Rate</span> &#x2014; <span class="def">% hitting win target first. Green = above breakeven.</span><br>
+    <span class="term">PF (Profit Factor)</span> &#x2014; <span class="def">Total won / total lost. PF &gt; 1.0 = profitable. Card border turns green.</span><br>
+    <span class="term">Total Return</span> &#x2014; <span class="def">Sum of all P&amp;Ls per 1 unit risked. Not compounded.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F3AF; Results</h4>
+    <span class="term" style="color:#3fb950">WIN</span> &#x2014; <span class="def">Hit win target first.</span><br>
+    <span class="term" style="color:#f85149">LOSS</span> &#x2014; <span class="def">Hit stop first.</span><br>
+    <span class="term" style="color:#8b949e">TIMEOUT</span> &#x2014; <span class="def">Neither hit, exits at 4pm close.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F522; Breakeven Reference</h4>
+    <span class="def">A Long +2/-0.5 &#x2192; 20.0% &nbsp; B Long +3/-0.5 &#x2192; 14.3% &nbsp; C Long +4/-0.5 &#x2192; 11.1%<br>
+    D Short &#x2193;2/&#x2191;0.5 &#x2192; 20.0% &nbsp; E Gap Fade &#x2193;2/&#x2191;2 &#x2192; 50.0%</span>
+  </div>
+</div>
+
+<div class="legend">
+  <b>A &#x2014; LONG +2/-0.5:</b> Buy open, win if +2% before -0.5% | BE 20% &nbsp;&#x00B7;&nbsp;
+  <b>B &#x2014; LONG +3/-0.5:</b> Buy open, win if +3% before -0.5% | BE 14.3% &nbsp;&#x00B7;&nbsp;
+  <b>C &#x2014; LONG +4/-0.5:</b> Buy open, win if +4% before -0.5% | BE 11.1% &nbsp;&#x00B7;&nbsp;
+  <b>D &#x2014; SHORT mirror:</b> Short open, win if drops 2% before rising 0.5% | BE 20% (inverse hypothesis) &nbsp;&#x00B7;&nbsp;
+  <b>E &#x2014; GAP FADE:</b> Only on gap &gt; threshold &#x00B7; Short open &#x00B7; Win &#x2193;2% &#x00B7; Stop &#x2191;2% | BE 50%
+</div>
+
+<div class="controls">
+  <div>
+    <label>Single Ticker</label>
+    <select id="ticker">
+      <optgroup label="Top Performers (Small/Micro)">
+        <option value="ATER">ATER - Micro - 32.6% WR</option>
+        <option value="LAZR">LAZR - Small - 30.2% WR</option>
+        <option value="MRNA">MRNA - Mid - 29.5% WR</option>
+        <option value="AGEN">AGEN - Small - 29.5% WR</option>
+        <option value="GFAI">GFAI - Micro - 27.6% WR</option>
+        <option value="IONQ">IONQ - Small - 26.7% WR</option>
++parseFloat(d.equity||0).toLocaleString('en-US',{maximumFractionDigits:0});}
+    else{el.className='alpaca-dot err';el.textContent='● Error: '+(d.error||'unknown');}
+  }catch(e){el.className='alpaca-dot err';el.textContent='● Offline: '+e.message;}
+}
+async function execTrade(scenario,side,stopPct){
+  var keys=getAlpacaKeys();
+  if(!keys.id||!keys.secret){alert('No Alpaca keys — set them in the EDGE Settings tab first.');return;}
+  var tk=document.getElementById('ticker').value;
+  var risk=+document.getElementById('dollarRisk').value;
+  var price=+document.getElementById('entryPrice').value;
+  var resEl=document.getElementById('execResult'+scenario),btn=document.getElementById('execBtn'+scenario);
+  var origLabel=btn?btn.textContent:'';
+  var qty=0;
+  if(price>0&&stopPct>0)qty=Math.floor(risk/(price*stopPct/100));
+  if(qty<=0&&price>0){resEl.style.color='#f85149';resEl.textContent='Risk too small for 1 share at this price';return;}
+  var payload={ticker:tk,side:side,alpacaId:keys.id,alpacaSecret:keys.secret,scenario:scenario};
+  if(qty>0)payload.qty=qty;else payload.notional=risk;
+  if(btn){btn.disabled=true;btn.textContent='Sending...';}
+  resEl.style.color='#8b949e';resEl.textContent='Submitting '+scenario+' '+side.toUpperCase()+' '+tk+(qty?' x'+qty:'')+'...';
+  try{
+    var r=await fetch('/api/alpaca',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    var d=await r.json();
+    if(d.success){resEl.style.color='#3fb950';resEl.textContent='✓ Order '+d.order.id.slice(0,8)+'... '+d.order.status;lg('TRADE '+scenario+' '+side.toUpperCase()+' '+tk+(qty?' x'+qty:' 
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EDGE â Scenario Tester v2</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
+h1 { color:#58a6ff; font-size:18px; margin-bottom:3px; }
+.sub { color:#8b949e; font-size:11px; margin-bottom:12px; }
+.key { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+.key-box { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; font-size:11px; line-height:1.8; }
+.key-box h4 { color:#58a6ff; font-size:11px; margin-bottom:6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.term { color:#e6edf3; font-weight:bold; }
+.def  { color:#8b949e; }
+.legend { background:#161b22; border:1px solid #30363d; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:11px; line-height:1.9; }
+.legend b { color:#58a6ff; }
+.controls { display:flex; gap:10px; margin-bottom:12px; align-items:flex-end; flex-wrap:wrap; }
+label { font-size:11px; color:#8b949e; display:block; margin-bottom:3px; }
+input[type=date] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:148px; }
+input[type=number] { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; width:75px; }
+select { background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:7px 10px; border-radius:5px; font-family:monospace; font-size:12px; min-width:220px; }
+button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:bold; }
+#runOneBtn { background:#238636; color:#fff; }
+#runAllBtn { background:#1f6feb; color:#fff; font-size:13px; padding:8px 20px; }
+#runOneBtn:disabled, #runAllBtn:disabled { background:#21262d; color:#484f58; cursor:not-allowed; }
+#stopBtn   { background:#da3633; color:#fff; }
+#expOneBtn, #expAllBtn { background:#388bfd; color:#fff; }
+.prog-wrap { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px; margin-bottom:12px; }
+.bar-bg { background:#21262d; border-radius:4px; height:7px; margin:6px 0 3px; }
+.bar { background:#238636; height:7px; border-radius:4px; width:0%; transition:width 0.3s; }
+.plab { font-size:11px; color:#8b949e; }
+.log { background:#0d1117; border:1px solid #30363d; border-radius:5px; padding:8px 10px; height:65px; overflow-y:auto; font-size:11px; margin-bottom:12px; }
+.log .ok  { color:#3fb950; display:block; }
+.log .err { color:#f85149; display:block; }
+.log .inf { color:#58a6ff; display:block; }
+.log .neu { color:#8b949e; display:block; }
+.sc-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:12px; }
+.sbox { background:#161b22; border:1px solid #30363d; border-radius:7px; padding:10px; }
+.sbox h3 { font-size:10px; color:#8b949e; margin-bottom:8px; border-bottom:1px solid #30363d; padding-bottom:5px; line-height:1.4; }
+.sbox.win { border-color:#3fb950; }
+.sbox.win h3 { color:#3fb950; }
+.sr { display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; }
+.sl { color:#8b949e; } .sv { font-weight:bold; }
+.sv.g { color:#3fb950; } .sv.r { color:#f85149; } .sv.n { color:#e6edf3; }
+.stitle { color:#58a6ff; font-size:12px; font-weight:bold; margin:8px 0 6px; border-bottom:1px solid #30363d; padding-bottom:4px; }
+.batch-wrap { max-height:400px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; margin-bottom:12px; }
+.batch-wrap table, .tbl-wrap table { width:100%; border-collapse:collapse; font-size:11px; }
+.batch-wrap th, .tbl-wrap th { background:#161b22; color:#8b949e; padding:6px 9px; text-align:left; border-bottom:1px solid #30363d; position:sticky; top:0; white-space:nowrap; cursor:pointer; }
+.batch-wrap th:hover, .tbl-wrap th:hover { color:#58a6ff; }
+.batch-wrap td, .tbl-wrap td { padding:5px 9px; border-bottom:1px solid #1c2128; }
+.batch-wrap tr:hover td, .tbl-wrap tr:hover td { background:#161b22; }
+.tbl-wrap { max-height:360px; overflow-y:auto; border:1px solid #30363d; border-radius:8px; }
+.w { color:#3fb950; font-weight:bold; } .l { color:#f85149; font-weight:bold; } .n { color:#8b949e; }
+.badge { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:bold; }
+.bL { background:#1f3a5f; color:#79c0ff; } .bM { background:#2d1b69; color:#a78bfa; } .bS { background:#1a3a2a; color:#3fb950; }
+.fade-row { background:#1a1a0a; }
+.cb-row { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+.cb-label { color:#8b949e; font-size:11px; margin-right:4px; }
+.cb-pill { display:flex; align-items:center; gap:5px; background:#161b22; border:1px solid #30363d; border-radius:5px; padding:5px 10px; cursor:pointer; font-size:11px; user-select:none; transition:border-color 0.15s; }
+.cb-pill input[type=checkbox] { accent-color:#58a6ff; width:13px; height:13px; cursor:pointer; }
+.cb-pill.on { border-color:#58a6ff; color:#58a6ff; }
+.cb-pill.on-green { border-color:#3fb950; color:#3fb950; }
+.cb-pill.on-red { border-color:#f85149; color:#f85149; }
+.cb-pill.on-purple { border-color:#a78bfa; color:#a78bfa; }
+.cb-pill.on-orange { border-color:#ffa657; color:#ffa657; }
+.cb-pill.on-teal { border-color:#39d353; color:#39d353; }
+</style>
+</head>
+<body>
+<h1>&#x26A1; EDGE &#x2014; Scenario Tester v2</h1>
+<div class="sub">Run Single ticker or all 37 in batch &#x00B7; 5 scenarios simultaneously &#x00B7; Long and Short setups</div>
+
+<div class="key">
+  <div class="key-box">
+    <h4>&#x1F4CA; Signal Metrics</h4>
+    <span class="term">Signals</span> &#x2014; <span class="def">Trading days evaluated. A/B/C/D = every day with PM data. E = only days where gap exceeds your threshold.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F4C8; Performance</h4>
+    <span class="term">Win Rate</span> &#x2014; <span class="def">% hitting win target first. Green = above breakeven.</span><br>
+    <span class="term">PF (Profit Factor)</span> &#x2014; <span class="def">Total won / total lost. PF &gt; 1.0 = profitable. Card border turns green.</span><br>
+    <span class="term">Total Return</span> &#x2014; <span class="def">Sum of all P&amp;Ls per 1 unit risked. Not compounded.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F3AF; Results</h4>
+    <span class="term" style="color:#3fb950">WIN</span> &#x2014; <span class="def">Hit win target first.</span><br>
+    <span class="term" style="color:#f85149">LOSS</span> &#x2014; <span class="def">Hit stop first.</span><br>
+    <span class="term" style="color:#8b949e">TIMEOUT</span> &#x2014; <span class="def">Neither hit, exits at 4pm close.</span>
+  </div>
+  <div class="key-box">
+    <h4>&#x1F522; Breakeven Reference</h4>
+    <span class="def">A Long +2/-0.5 &#x2192; 20.0% &nbsp; B Long +3/-0.5 &#x2192; 14.3% &nbsp; C Long +4/-0.5 &#x2192; 11.1%<br>
+    D Short &#x2193;2/&#x2191;0.5 &#x2192; 20.0% &nbsp; E Gap Fade &#x2193;2/&#x2191;2 &#x2192; 50.0%</span>
+  </div>
+</div>
+
+<div class="legend">
+  <b>A &#x2014; LONG +2/-0.5:</b> Buy open, win if +2% before -0.5% | BE 20% &nbsp;&#x00B7;&nbsp;
+  <b>B &#x2014; LONG +3/-0.5:</b> Buy open, win if +3% before -0.5% | BE 14.3% &nbsp;&#x00B7;&nbsp;
+  <b>C &#x2014; LONG +4/-0.5:</b> Buy open, win if +4% before -0.5% | BE 11.1% &nbsp;&#x00B7;&nbsp;
+  <b>D &#x2014; SHORT mirror:</b> Short open, win if drops 2% before rising 0.5% | BE 20% (inverse hypothesis) &nbsp;&#x00B7;&nbsp;
+  <b>E &#x2014; GAP FADE:</b> Only on gap &gt; threshold &#x00B7; Short open &#x00B7; Win &#x2193;2% &#x00B7; Stop &#x2191;2% | BE 50%
+</div>
+
+<div class="controls">
+  <div>
+    <label>Single Ticker</label>
+    <select id="ticker">
+      <optgroup label="Top Performers (Small/Micro)">
+        <option value="ATER">ATER - Micro - 32.6% WR</option>
+        <option value="LAZR">LAZR - Small - 30.2% WR</option>
+        <option value="MRNA">MRNA - Mid - 29.5% WR</option>
+        <option value="AGEN">AGEN - Small - 29.5% WR</option>
+        <option value="GFAI">GFAI - Micro - 27.6% WR</option>
+        <option value="IONQ">IONQ - Small - 26.7% WR</option>
++risk)+' — '+d.order.status,'ok');}
+    else{resEl.style.color='#f85149';resEl.textContent='✗ '+(d.error||JSON.stringify(d));lg('TRADE ERR '+scenario+': '+(d.error||'failed'),'err');}
+  }catch(e){resEl.style.color='#f85149';resEl.textContent='✗ '+e.message;lg('TRADE ERR '+scenario+': '+e.message,'err');}
+  if(btn){btn.disabled=false;btn.textContent=origLabel;}
+}
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EDGE â Scenario Tester v2</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 body { background:#0d1117; color:#e6edf3; font-family:monospace; padding:20px; font-size:13px; }
