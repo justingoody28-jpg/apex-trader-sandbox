@@ -1,0 +1,14 @@
+name: Auto-Trade B (9:30:30 IEX)
+on:
+  schedule:
+    - cron: '30 13 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait 30s for open prints
+        run: sleep 30
+      - name: Trigger auto-trade-b
+        run: curl -f -s https://apex-trader-sandbox.vercel.app/api/auto-trade-b
