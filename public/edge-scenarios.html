@@ -297,6 +297,15 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
     <span id="atStatus" style="font-size:11px;color:#8b949e;margin-left:8px">fires at 9:29 AM EDT weekdays</span>
   </div>
   <div class="trade-ctrls">
+    <div style="margin-bottom:8px">
+      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">BULK ADD — paste tickers (comma, space, or newline separated)</div>
+      <textarea id="bulkTickerInput" rows="3" placeholder="AAPL, TSLA, NVDA..." style="width:100%;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box"></textarea>
+      <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+        <label style="font-size:11px;color:#8b949e;white-space:nowrap">$ Bet each:</label>
+        <input id="bulkBet" type="number" value="500" min="1" style="width:80px;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:4px 6px;font-size:12px">
+        <button onclick="bulkSchedule()" style="flex:1;background:#1f6feb;color:#fff;border:none;padding:5px 0;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">+ Add to Schedule</button>
+      </div>
+    </div>
     <div id="schedList" style="font-size:12px;min-height:30px;color:#c9d1d9;line-height:1.8"></div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button onclick="syncSchedules()" style="flex:1;background:#238636;color:#fff;border:none;padding:6px 0;border-radius:6px;cursor:pointer;font-size:12px">&#x1F504; Sync to Server</button>
@@ -1060,6 +1069,29 @@ function clearSchedules() {
   renderScheduleList();
   var st = document.getElementById('syncStatus');
   if (st) st.textContent='Schedule cleared';
+}
+
+function bulkSchedule() {
+  var raw = (document.getElementById('bulkTickerInput')||{}).value || '';
+  var bet = +(document.getElementById('bulkBet')||{}).value || 500;
+  var tickers = raw.split(/[,\s\n]+/).map(function(t){ return t.trim().toUpperCase(); }).filter(Boolean);
+  if (!tickers.length) { alert('Paste at least one ticker'); return; }
+  var schedules = [];
+  try { schedules = JSON.parse(localStorage.getItem('apex_auto_schedules') || '[]'); } catch(e) {}
+  var added = 0;
+  tickers.forEach(function(sym) {
+    var exists = schedules.some(function(x){ return x.symbol === sym && x.scenario === 'scenarioE'; });
+    if (!exists) {
+      schedules.push({ symbol: sym, scenario: 'scenarioE', side: 'sell', bet: bet, added: new Date().toISOString() });
+      added++;
+    }
+  });
+  localStorage.setItem('apex_auto_schedules', JSON.stringify(schedules));
+  renderScheduleList();
+  var inp = document.getElementById('bulkTickerInput');
+  if (inp) inp.value = '';
+  var st = document.getElementById('syncStatus');
+  if (st) { st.style.color='#3fb950'; st.textContent='+ Added '+added+' tickers — click Sync to Server when ready'; }
 }
 </script>
 </body>
