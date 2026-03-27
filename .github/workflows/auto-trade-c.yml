@@ -1,0 +1,12 @@
+name: Auto-Trade C (9:29 SIP)
+on:
+  schedule:
+    - cron: '29 13 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger auto-trade-c SIP feed
+        run: curl -f -s https://apex-trader-sandbox.vercel.app/api/auto-trade-c
