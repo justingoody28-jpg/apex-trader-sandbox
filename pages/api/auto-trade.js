@@ -2,7 +2,7 @@
 // Cron: 13:29 UTC Mon-Fri (= 9:29 AM EDT)
 // Required env vars: ALPACA_ID, ALPACA_SECRET
 // Config source: public/auto-trade-config.json (synced from browser via /api/save-auto-config)
-// Price source: Alpaca snapshot API (works pre-market, no paid plan required)
+// Price source: Alpaca snapshot API — orders sent as notional (supports fractional shares)
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     'Content-Type':        'application/json',
   };
 
-  // Fetch config JSON from the Vercel deployment public folder
+  // Fetch config from GitHub raw URL — always current, no redeploy needed
   let config;
   try {
     const configRes = await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json');
@@ -39,19 +39,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ message: 'No schedules configured', trades: [] });
   }
 
-  // Batch-fetch snapshots for all scheduled symbols from Alpaca in one call
-  const symbols = [...new Set(schedules.map(s => s.symbol.toUpperCase()))];
-  let snapshots = {};
-  try {
-    const snapRes = await fetch(
-      `https://data.alpaca.markets/v2/stocks/snapshots?symbols=${symbols.join(',')}`,
-      { headers: ALPACA_HEADERS }
-    );
-    if (snapRes.ok) {
-      snapshots = await snapRes.json();
-    }
-  } catch (_) { /* snapshots stays empty, orders will handle missing price */ }
-
   const results = [];
 
   for (const sched of schedules) {
@@ -64,36 +51,13 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Price: prefer today open, fall back to last trade price
-      const snap = snapshots[sym];
-      const price = snap && snap.dailyBar && snap.dailyBar.o
-        ? snap.dailyBar.o
-        : snap && snap.latestTrade && snap.latestTrade.p
-        ? snap.latestTrade.p
-        : null;
-
-      if (!price || price <= 0) {
-        results.push({ symbol: sym, status: 'skipped', reason: 'Could not fetch price from Alpaca' });
-        continue;
-      }
-
-      // shares = floor($ bet / price)
-      const shares = Math.floor(bet / price);
-      if (shares < 1) {
-        results.push({
-          symbol: sym, status: 'skipped',
-          reason: `Bet $${bet} too small for $${price.toFixed(2)} price (< 1 share)`
-        });
-        continue;
-      }
-
-      // Fire Alpaca market order
+      // Send as notional — Alpaca handles fractional shares automatically
       const orderBody = {
         symbol:        sym,
         side:          side,
         type:          'market',
         time_in_force: 'day',
-        qty:           String(shares),
+        notional:      String(bet),
       };
 
       const orderRes = await fetch('https://paper-api.alpaca.markets/v2/orders', {
@@ -108,7 +72,7 @@ export default async function handler(req, res) {
       } else {
         results.push({
           symbol: sym, status: 'traded', scenario, side,
-          shares, price, orderId: order.id, orderStatus: order.status
+          notional: bet, orderId: order.id, orderStatus: order.status
         });
       }
 
