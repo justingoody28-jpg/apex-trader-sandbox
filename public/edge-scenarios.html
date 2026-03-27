@@ -289,6 +289,22 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
     <button onclick="checkAlpacaConn()" style="background:#21262d;color:#8b949e;border:1px solid #30363d;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:11px;font-family:monospace;">&#x27F3; Test Connection</button>
   </div>
 </div>
+
+<!-- AUTO-TRADER PANEL -->
+<div class="trade-panel" id="autoTraderPanel" style="margin-top:10px">
+  <div class="trade-panel-hdr">
+    <span>&#x1F916; AUTO-TRADER</span>
+    <span id="atStatus" style="font-size:11px;color:#8b949e;margin-left:8px">fires at 9:29 AM EDT weekdays</span>
+  </div>
+  <div class="trade-ctrls">
+    <div id="schedList" style="font-size:12px;min-height:30px;color:#c9d1d9;line-height:1.8"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button onclick="syncSchedules()" style="flex:1;background:#238636;color:#fff;border:none;padding:6px 0;border-radius:6px;cursor:pointer;font-size:12px">&#x1F504; Sync to Server</button>
+      <button onclick="clearSchedules()" style="background:#21262d;color:#f85149;border:1px solid #f85149;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px">&#x1F5D1;</button>
+    </div>
+    <div id="syncStatus" style="font-size:11px;margin-top:4px;color:#8b949e"></div>
+  </div>
+</div>
 <div class="prog-wrap">
   <div class="plab" id="plab">Ready - Run Single for one ticker, or Run All 37 for the full batch (~8 min at 13s delay)</div>
   <div class="bar-bg"><div class="bar" id="bar"></div></div>
@@ -565,6 +581,7 @@ async function runOne(){
       document.getElementById('tradeLogWrap').style.display='block';
       document.getElementById('expOneBtn').disabled=false;
         ['A','B','C','D','E','F'].forEach(function(s){var w=document.getElementById('execWrap'+s);if(w)w.style.display=isOn(s.toLowerCase())?'block':'none';});
+    injectScheduleBtns();
       lg(tk+' | A WR'+res.a.wr.toFixed(0)+'% PF'+res.a.pf.toFixed(2)+' | D WR'+res.d.wr.toFixed(0)+'% PF'+res.d.pf.toFixed(2)+' | E sigs:'+res.e.n+' | F sigs:'+res.f.n,(res.a.pf>=1||res.d.pf>=1||res.e.pf>=1||res.f.pf>=1)?'ok':'neu');
     }
   }catch(e){lg(tk+': '+e.message,'err');document.getElementById('bar').style.width='100%';}
@@ -954,6 +971,95 @@ function batchExport() {
   a.download = "apex_tickers_" + new Date().toISOString().slice(0,10) + ".csv";
   a.click();
   lg("Exported " + list.length + " tickers to CSV", "ok");
+}
+
+// ── AUTO-TRADER helpers ─────────────────────────────────────────────
+function injectScheduleBtns() {
+  ['A','B','C','D','E','F'].forEach(function(s) {
+    var wrap = document.getElementById('execWrap' + s);
+    if (!wrap) return;
+    var old = document.getElementById('schedBtn' + s);
+    if (old) old.remove();
+    var btn = document.createElement('button');
+    btn.id = 'schedBtn' + s;
+    btn.textContent = '\u{1F4C5} Schedule';
+    btn.title = 'Add to auto-trade schedule (fires 9:29 AM EDT)';
+    btn.style.cssText = 'background:#1f3447;color:#58a6ff;border:1px solid #1f6feb;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:6px';
+    var sc = s;
+    btn.onclick = function() { scheduleScenario(sc); };
+    wrap.appendChild(btn);
+  });
+  renderScheduleList();
+}
+
+function scheduleScenario(s) {
+  var tk = (window.currentTicker || '').toUpperCase();
+  if (!tk) { alert('Run a backtest first'); return; }
+  var bet = +(document.getElementById('dollarRisk') ? document.getElementById('dollarRisk').value : 100) || 100;
+  var card = document.getElementById('box' + s);
+  var side = 'buy';
+  if (card) {
+    var h3 = card.querySelector('h3');
+    if (h3 && h3.style && h3.style.background && h3.style.background.indexOf('f85149') > -1) side = 'sell';
+  }
+  var schedules = [];
+  try { schedules = JSON.parse(localStorage.getItem('apex_auto_schedules') || '[]'); } catch(e) {}
+  var idx = -1;
+  for(var i=0;i<schedules.length;i++) { if(schedules[i].symbol===tk && schedules[i].scenario==='scenario'+s) { idx=i; break; } }
+  if (idx > -1) schedules.splice(idx, 1);
+  schedules.push({ symbol: tk, scenario: 'scenario'+s, side: side, bet: bet, added: new Date().toISOString() });
+  localStorage.setItem('apex_auto_schedules', JSON.stringify(schedules));
+  renderScheduleList();
+  var btn = document.getElementById('schedBtn' + s);
+  if (btn) { btn.textContent = '\u2713 Scheduled'; btn.style.background='#1a3828'; btn.style.color='#3fb950'; }
+}
+
+function renderScheduleList() {
+  var el = document.getElementById('schedList');
+  if (!el) return;
+  var schedules = [];
+  try { schedules = JSON.parse(localStorage.getItem('apex_auto_schedules') || '[]'); } catch(e) {}
+  if (!schedules.length) {
+    el.innerHTML = '<em style="color:#8b949e">No schedules yet — run a backtest, then click 📅 Schedule</em>';
+    return;
+  }
+  el.innerHTML = schedules.map(function(x) {
+    return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid #21262d;padding:2px 0">' +
+      '<span>▶ ' + x.symbol + ' ' + x.scenario + ' ' + x.side.toUpperCase() + ' $' + x.bet + '</span>' +
+      '<span style="color:#8b949e;font-size:10px">' + (x.added||''). slice(0,10) + '</span></div>';
+  }).join('');
+}
+
+function syncSchedules() {
+  var schedules = [];
+  try { schedules = JSON.parse(localStorage.getItem('apex_auto_schedules') || '[]'); } catch(e) {}
+  var st = document.getElementById('syncStatus');
+  if (!schedules.length) { if(st) st.textContent='Nothing to sync'; return; }
+  if (st) { st.style.color='#8b949e'; st.textContent='Syncing...'; }
+  fetch('/api/save-auto-config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schedules: schedules })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (!st) return;
+    if (d.ok) {
+      st.style.color='#3fb950';
+      st.textContent='✓ Synced '+d.saved+' schedules at '+new Date().toLocaleTimeString();
+    } else {
+      st.style.color='#f85149';
+      st.textContent='✗ '+(d.error||'Sync failed');
+    }
+  }).catch(function(e){
+    if (st) { st.style.color='#f85149'; st.textContent='✗ '+e.message; }
+  });
+}
+
+function clearSchedules() {
+  if (!confirm('Clear all scheduled trades?')) return;
+  localStorage.removeItem('apex_auto_schedules');
+  renderScheduleList();
+  var st = document.getElementById('syncStatus');
+  if (st) st.textContent='Schedule cleared';
 }
 </script>
 </body>
