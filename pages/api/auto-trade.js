@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   // Fetch config JSON from the Vercel deployment public folder
   let config;
   try {
-    const configRes = await fetch('https://apex-trader-sandbox.vercel.app/auto-trade-config.json');
+    const configRes = await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json');
     if (!configRes.ok) throw new Error('Config not found — sync from the SCENARIOS tab first');
     config = await configRes.json();
   } catch (e) {
