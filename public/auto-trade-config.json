@@ -1,13 +1,13 @@
 {
-  "updated": "2026-03-27T01:18:37.202Z",
+  "updated": "2026-03-27T01:35:09.109Z",
   "count": 1,
   "schedules": [
     {
       "symbol": "SPY",
       "scenario": "scenarioA",
       "side": "buy",
-      "bet": 700,
-      "added": "2026-03-27T01:18:36.878Z"
+      "bet": 100,
+      "added": "2026-03-27T01:35:08.612Z"
     }
   ]
 }
