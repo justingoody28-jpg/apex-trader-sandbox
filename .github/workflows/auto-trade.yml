@@ -1,1 +1,14 @@
+name: Auto-Trade Cron
+on:
+  schedule:
+    - cron: '29 13 * * 1-5'
+  workflow_dispatch:
 
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger auto-trade endpoint
+        run: |
+          echo "Firing auto-trade at $(date)"
+          curl -f -s https://apex-trader-sandbox.vercel.app/api/auto-trade
