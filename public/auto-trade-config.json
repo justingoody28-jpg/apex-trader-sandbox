@@ -1,321 +1,196 @@
 {
-  "updated": "2026-03-27T02:41:11.160Z",
-  "count": 45,
-  "schedules": [
+  "tickers": [
     {
       "symbol": "AGEN",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.974Z"
+      "bet": 500
     },
     {
       "symbol": "GFAI",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "IONQ",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "AMD",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "NVCR",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "HOOD",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "GLOB",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "EXLS",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "LPSN",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "BRZE",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "ASAN",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "PRGO",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "NTRA",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "RRGB",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "JACK",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "HCSG",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "TROX",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "GPMT",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "CRDF",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "XNCR",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "ACVA",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "PAYO",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "ARQQ",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "QUBT",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "SDGR",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "CDNA",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "GOSS",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "TELA",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "OCGN",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "SRPT",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "HRTX",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "GPOR",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "BORR",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "PUMP",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "XPOF",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "PLBY",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "CURV",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "HIMS",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "BARK",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "KRUS",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "FWRG",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "OPAD",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "AMBR",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "NINE",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     },
     {
       "symbol": "LAZR",
-      "scenario": "scenarioE",
-      "side": "sell",
-      "bet": 500,
-      "added": "2026-03-27T02:41:05.977Z"
+      "bet": 500
     }
-  ]
+  ],
+  "scenarios": {
+    "E": true,
+    "G": true,
+    "H": true
+  },
+  "thresholds": {
+    "eGap": 10,
+    "gGap": 8,
+    "hGap": 10
+  },
+  "defaultBet": 500,
+  "_note": "E=gap short >=eGap%, G=long fade gapDown<=-gGap% RVOL>=3x, H=panic buy gapDown<=-hGap% RVOL>=4x"
 }
