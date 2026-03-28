@@ -704,7 +704,7 @@ function exportOne(){
 
 function exportAll(){
   var c='EDGE SCENARIO BATCH -- ALL 37 TICKERS\nRange,'+document.getElementById('s0').value+' to '+document.getElementById('s1').value+'\nGap Fade Min,'+document.getElementById('gapFade').value+'%\nGenerated,'+new Date().toLocaleString()+'\n\n';
-  c+='Ticker,Group,A WR%,A PF,A Return,A Signals,B WR%,B PF,B Return,B Signals,C WR%,C PF,C Return,C Signals,D WR%,D PF,D Return,D Signals,E Signals,E WR%,E PF,E Return,F Signals,F WR%,F PF,F Return,Error\n';
+  c+='Ticker,Group,A WR%,A PF,A Return,A Signals,B WR%,B PF,B Return,B Signals,C WR%,C PF,C Return,C Signals,D WR%,D PF,D Return,D Signals,E Signals,E WR%,E PF,E Return,F Signals,F WR%,F PF,F Return,G Signals,G WR%,G PF,G Return,H Signals,H WR%,H PF,H Return,Error\n';
   batchResults.forEach(function(r){
     function fs(s){return s&&s.n?s.wr.toFixed(1)+','+s.pf.toFixed(2)+','+s.ret.toFixed(2)+','+s.n:',,,';}
     c+=r.tk+','+r.grp+','+fs(r.a)+','+fs(r.b)+','+fs(r.c)+','+fs(r.d)+','+(r.e?r.e.n:0)+','+(r.e&&r.e.n?r.e.wr.toFixed(1):'')+','+(r.e&&r.e.n?r.e.pf.toFixed(2):'')+','+(r.e&&r.e.n?r.e.ret.toFixed(2):'')+','+(r.f?r.f.n:0)+','+(r.f&&r.f.n?r.f.wr.toFixed(1):'')+','+(r.f&&r.f.n?r.f.pf.toFixed(2):'')+','+(r.f&&r.f.n?r.f.ret.toFixed(2):'')+','+(r.error||'')+'\n';
