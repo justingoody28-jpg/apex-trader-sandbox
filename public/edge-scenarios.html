@@ -558,8 +558,8 @@ function rc(r){return r==='WIN'?'w':r==='LOSS'?'l':'n';}
 function fmt(p){return(p>=0?'+':'')+parseFloat(p).toFixed(2)+'%';}
 
 function rebuildLogHeaders(){
-  var all=['A','B','C','D','E','F'];
-  var ids=['a','b','c','d','e','f'];
+  var all=['A','B','C','D','E','F','G','H'];
+  var ids=['a','b','c','d','e','f','g','h'];
   var thead=document.querySelector('#tradeLogWrap thead tr');
   while(thead.children.length>3)thead.removeChild(thead.lastChild);
   ids.forEach(function(id,i){
@@ -574,7 +574,7 @@ function rebuildLogHeaders(){
 function renderLog(){
   var s=singleRows.slice().sort(function(a,b){var av=a[sCol]||'',bv=b[sCol]||'';return(av>bv?1:av<bv?-1:0)*sDir;});
   document.getElementById('tbody').innerHTML=s.map(function(r){
-    return '<tr class="'+(r.eActive?'fade-row':'')+'">'+'<td>'+r.date+'</td><td>'+(r.gap>=0?'+':'')+r.gap+'%</td><td>'+(r.rvol!=null?r.rvol+'x':'--')+'</td>'+'<td class="'+rc(r.ar)+'">'+r.ar+'</td><td class="'+rc(r.ar)+'">'+fmt(r.ap)+'</td>'+'<td class="'+rc(r.br)+'">'+r.br+'</td><td class="'+rc(r.br)+'">'+fmt(r.bp)+'</td>'+'<td class="'+rc(r.cr)+'">'+r.cr+'</td><td class="'+rc(r.cr)+'">'+fmt(r.cp)+'</td>'+'<td class="'+rc(r.dr)+'">'+r.dr+'</td><td class="'+rc(r.dr)+'">'+fmt(r.dp)+'</td>'+'<td class="'+(r.eActive?rc(r.er):'n')+'">'+(r.eActive?r.er:'--')+'</td>'+'<td class="'+(r.eActive?rc(r.er):'n')+'">'+(r.eActive?fmt(r.ep2):'')+'</td>'+'</tr>';
+    return '<tr class="'+(r.eActive?'fade-row':'')+'">'+'<td>'+r.date+'</td><td>'+(r.gap>=0?'+':'')+r.gap+'%</td><td>'+(r.rvol!=null?r.rvol+'x':'--')+'</td>'+'<td class="'+rc(r.ar)+'">'+r.ar+'</td><td class="'+rc(r.ar)+'">'+fmt(r.ap)+'</td>'+'<td class="'+rc(r.br)+'">'+r.br+'</td><td class="'+rc(r.br)+'">'+fmt(r.bp)+'</td>'+'<td class="'+rc(r.cr)+'">'+r.cr+'</td><td class="'+rc(r.cr)+'">'+fmt(r.cp)+'</td>'+'<td class="'+rc(r.dr)+'">'+r.dr+'</td><td class="'+rc(r.dr)+'">'+fmt(r.dp)+'</td>'+'<td class="'+(r.eActive?rc(r.er):'n')+'">'+(r.eActive?r.er:'--')+'</td>'+'<td class="'+(r.eActive?rc(r.er):'n')+'">'+(r.eActive?fmt(r.ep2):'')+'</td>'+'<td class="'+(r.fActive?rc(r.fr):'n')+'">'+(r.fActive?r.fr:'--')+'</td>'+'<td class="'+(r.fActive?rc(r.fr):'n')+'">'+(r.fActive?fmt(r.fp2):'')+'</td>'+'<td class="'+(r.gActive?rc(r.gr):'n')+'">'+(r.gActive?r.gr:'--')+'</td>'+'<td class="'+(r.gActive?rc(r.gr):'n')+'">'+(r.gActive?fmt(r.gp2):'')+'</td>'+'<td class="'+(r.hActive?rc(r.hr):'n')+'">'+(r.hActive?r.hr:'--')+'</td>'+'<td class="'+(r.hActive?rc(r.hr):'n')+'">'+(r.hActive?fmt(r.hp2):'')+'</td>'+'</tr>';
   }).join('');
 }
 function srt(c){sCol===c?sDir*=-1:(sCol=c,sDir=1);renderLog();}
@@ -609,6 +609,7 @@ async function runOne(){
   Object.keys(cardMap).forEach(function(id){var b=document.getElementById(cardMap[id]);if(b)b.style.display=isOn(id)?'':'none';});
   document.getElementById('plab').textContent='Fetching '+tk+'...';
   document.getElementById('bar').style.width='30%';
+  window.currentTicker=tk;
   lg('Running '+tk+'...','inf');
   try{
     var eWinP=+document.getElementById('eWin').value,eStopP=+document.getElementById('eStop').value;
@@ -640,7 +641,7 @@ async function runOne(){
       renderLog();
       document.getElementById('tradeLogWrap').style.display='block';
       document.getElementById('expOneBtn').disabled=false;
-        ['A','B','C','D','E','F'].forEach(function(s){var w=document.getElementById('execWrap'+s);if(w)w.style.display=isOn(s.toLowerCase())?'block':'none';});
+        ['A','B','C','D','E','F','G','H'].forEach(function(s){var w=document.getElementById('execWrap'+s);if(w)w.style.display=isOn(s.toLowerCase())?'block':'none';});
     injectScheduleBtns();
       lg(tk+' | A WR'+res.a.wr.toFixed(0)+'% PF'+res.a.pf.toFixed(2)+' | D WR'+res.d.wr.toFixed(0)+'% PF'+res.d.pf.toFixed(2)+' | E sigs:'+res.e.n+' | F sigs:'+res.f.n,(res.a.pf>=1||res.d.pf>=1||res.e.pf>=1||res.f.pf>=1)?'ok':'neu');
     }
@@ -673,7 +674,7 @@ async function runAll(){
     var row={tk:tk,grp:grp,a:res?res.a:null,b:res?res.b:null,c:res?res.c:null,d:res?res.d:null,e:res?res.e:null,f:res?res.f:null,g:res?res.g:null,h:res?res.h:null,error:res?null:errMsg,a_wr:res?res.a.wr:-999,a_pf:res?res.a.pf:-999,a_ret:res?res.a.ret:-999,b_wr:res?res.b.wr:-999,b_pf:res?res.b.pf:-999,b_ret:res?res.b.ret:-999,c_wr:res?res.c.wr:-999,c_pf:res?res.c.pf:-999,c_ret:res?res.c.ret:-999,d_wr:res?res.d.wr:-999,d_pf:res?res.d.pf:-999,d_ret:res?res.d.ret:-999,e_n:res?res.e.n:0,e_wr:res?res.e.wr:-999,e_pf:res?res.e.pf:-999,f_n:res?res.f.n:0,f_wr:res?res.f.wr:-999,f_pf:res?res.f.pf:-999,g_n:res?res.g.n:0,g_wr:res?res.g.wr:-999,g_pf:res?res.g.pf:-999,h_n:res?res.h.n:0,h_wr:res?res.h.wr:-999,h_pf:res?res.h.pf:-999};
     batchResults.push(row);
     renderBatch();
-    if(res)lg(tk+'['+grp+'] A:WR'+res.a.wr.toFixed(0)+'%/PF'+res.a.pf.toFixed(2)+' | D:WR'+res.d.wr.toFixed(0)+'%/PF'+res.d.pf.toFixed(2)+' | E:'+res.e.n+' | F:'+res.f.n+' sigs',(res.d.pf>=1||res.e.pf>=1||res.f.pf>=1)?'ok':'neu');
+    if(res)lg(tk+'['+grp+'] E:'+res.e.n+' F:'+res.f.n+' G:'+res.g.n+' H:'+res.h.n+' sigs',(res.d.pf>=1||res.e.pf>=1||res.f.pf>=1||res.g.pf>=1||res.h.pf>=1)?'ok':'neu');
     if(i<tickers.length-1&&running)await sleep(delayMs);
   }
   document.getElementById('bar').style.width='100%';
@@ -691,7 +692,9 @@ function exportOne(){
   c+='SCENARIO,Signals,WR%,PF,Return,Breakeven WR\n';
   var eBEexp=(+document.getElementById('eStop').value/((+document.getElementById('eWin').value)+(+document.getElementById('eStop').value))*100).toFixed(1);
   var fBEexp=(+document.getElementById('fStop').value/((+document.getElementById('fWin').value)+(+document.getElementById('fStop').value))*100).toFixed(1);
-  [['a','A Long +2/-0.5',20],['b','B Long +3/-0.5',14.3],['c','C Long +4/-0.5',11.1],['d','D Short down2/up0.5',20],['e','E Gap Fade Short',eBEexp],['f','F Gap Fade Long',fBEexp]].forEach(function(x){
+  var gBEexp=(+document.getElementById('gStop').value/((+document.getElementById('gWin').value)+(+document.getElementById('gStop').value))*100).toFixed(1);
+  var hBEexp=(+document.getElementById('hStop').value/((+document.getElementById('hWin').value)+(+document.getElementById('hStop').value))*100).toFixed(1);
+  [['a','A Long +2/-0.5',20],['b','B Long +3/-0.5',14.3],['c','C Long +4/-0.5',11.1],['d','D Short down2/up0.5',20],['e','E Gap Fade Short',eBEexp],['f','F Gap Fade Long',fBEexp],['g','G Honed Fade Long',gBEexp],['h','H Panic Reversal',hBEexp]].forEach(function(x){
     c+=x[1]+','+document.getElementById(x[0]+'_n').textContent+','+document.getElementById(x[0]+'_wr').textContent+','+document.getElementById(x[0]+'_pf').textContent+','+document.getElementById(x[0]+'_ret').textContent+','+x[2]+'%\n';
   });
   c+='\nDAILY LOG\nDate,Gap%,RVOL,A,A P&L,B,B P&L,C,C P&L,D,D P&L,E Active,E,E P&L\n';
