@@ -1,18 +1,21 @@
-// pages/api/auto-trade-c.js — 9:29 AM SIP feed variant
-// SIP feed covers all exchanges including pre-market
-// Entry: gap >= +10% vs actual open. RVOL logged only.
-// Exit: bracket 2% take profit / 2% stop loss
+// pages/api/auto-trade-c.js
+// Variant C: Tradier for BOTH price data AND execution
+// Sandbox: sandbox.tradier.com (swap to api.tradier.com for live)
+// Cron: 9:29 AM EDT weekdays via cron-job.org "APEX Auto-Trade C"
+// Strategy: Scenario E GAP FADE SHORT — gap>=+10%, OTOCO bracket 2% TP / 2% SL
+// Required env vars: TRADIER_TOKEN, TRADIER_ACCOUNT_ID
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const ALPACA_ID = process.env.ALPACA_ID, ALPACA_SECRET = process.env.ALPACA_SECRET;
-  if (!ALPACA_ID || !ALPACA_SECRET) return res.status(500).json({ error: 'Missing env vars' });
-  const H = { 'APCA-API-KEY-ID': ALPACA_ID, 'APCA-API-SECRET-KEY': ALPACA_SECRET, 'Content-Type': 'application/json' };
+  const TRADIER_TOKEN = process.env.TRADIER_TOKEN, TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
+  if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) return res.status(500).json({ error: 'Missing env vars: TRADIER_TOKEN, TRADIER_ACCOUNT_ID' });
+  const H = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
+  const BASE = 'https://sandbox.tradier.com/v1';
 
   let config;
   try {
     const r = await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json');
-    if (!r.ok) throw new Error('Config not found');
+    if (!r.ok) throw new Error('Config fetch failed');
     config = await r.json();
   } catch (e) { return res.status(500).json({ error: e.message }); }
 
@@ -20,38 +23,51 @@ export default async function handler(req, res) {
   if (!schedules.length) return res.status(200).json({ message: 'No schedules', trades: [] });
 
   const symbols = [...new Set(schedules.map(s => s.symbol.toUpperCase()))];
-  let snaps = {};
-  try { const r = await fetch(`https://data.alpaca.markets/v2/stocks/snapshots?symbols=${symbols.join(',')}&feed=sip`, { headers: H }); if (r.ok) snaps = await r.json(); } catch (_) {}
+  let quoteMap = {};
+  try {
+    const r = await fetch(`${BASE}/markets/quotes?symbols=${symbols.join(',')}&greeks=false`, { headers: H });
+    if (r.ok) {
+      const data = await r.json();
+      const raw = data.quotes && data.quotes.quote;
+      if (raw) { const arr = Array.isArray(raw) ? raw : [raw]; arr.forEach(q => { quoteMap[q.symbol] = q; }); }
+    }
+  } catch(_) {}
 
   const results = [];
   for (const sched of schedules) {
-    const sym = sched.symbol.toUpperCase(), bet = sched.bet, snap = snaps[sym];
-    if (!snap) { results.push({ symbol: sym, status: 'skipped', reason: 'No snapshot data' }); continue; }
-    const price = snap.latestTrade && snap.latestTrade.p, prevClose = snap.prevDailyBar && snap.prevDailyBar.c;
-    if (!price || !prevClose || price <= 0 || prevClose <= 0) { results.push({ symbol: sym, status: 'skipped', reason: 'Missing price/prevClose' }); continue; }
+    const sym = sched.symbol.toUpperCase(), bet = sched.bet, q = quoteMap[sym];
+    if (!q) { results.push({ symbol: sym, status: 'skipped', reason: 'No quote from Tradier' }); continue; }
+    const price = q.last, prevClose = q.prevclose;
+    if (!price || !prevClose || price <= 0 || prevClose <= 0) { results.push({ symbol: sym, status: 'skipped', reason: 'Missing price/prevclose' }); continue; }
     const gap = (price - prevClose) / prevClose * 100;
-
-    let rvol = null;
-    try {
-      const end = new Date().toISOString().split('T')[0];
-      const start = new Date(Date.now() - 35*24*60*60*1000).toISOString().split('T')[0];
-      const br = await fetch(`https://data.alpaca.markets/v2/stocks/${sym}/bars?timeframe=1Day&start=${start}&end=${end}&limit=25&feed=sip`, { headers: H });
-      if (br.ok) { const bd = await br.json(); const bars = bd.bars||[]; if (bars.length) { const avg = bars.reduce((s,b)=>s+b.v,0)/bars.length; rvol = avg>0 ? +((((snap.dailyBar&&snap.dailyBar.v)||0)/avg)).toFixed(2) : 0; } }
-    } catch (_) {}
-
+    const avgVol = q.average_volume || 0, todayVol = q.volume || 0;
+    const rvol = avgVol > 0 ? +(todayVol / avgVol).toFixed(2) : null;
     if (gap < 10) { results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% below +10%`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
     const qty = Math.floor(bet / price);
-    if (qty < 1) { results.push({ symbol: sym, status: 'skipped', reason: `Bet too small`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
-    const tp = +(price*0.98).toFixed(2), sl = +(price*1.02).toFixed(2);
+    if (qty < 1) { results.push({ symbol: sym, status: 'skipped', reason: 'Bet too small', gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
+    const tp = +(price * 0.98).toFixed(2), sl = +(price * 1.02).toFixed(2);
     try {
-      const or = await fetch('https://paper-api.alpaca.markets/v2/orders', {
-        method:'POST', headers: H,
-        body: JSON.stringify({ symbol:sym, side:'sell', type:'market', time_in_force:'day', qty:String(qty), order_class:'bracket', take_profit:{ limit_price:String(tp) }, stop_loss:{ stop_price:String(sl) } })
+      const params = new URLSearchParams({
+        'class': 'otoco', 'duration': 'day',
+        'symbol[0]': sym, 'side[0]': 'sell_short', 'quantity[0]': String(qty), 'type[0]': 'market',
+        'symbol[1]': sym, 'side[1]': 'buy_to_cover', 'quantity[1]': String(qty), 'type[1]': 'limit', 'price[1]': String(tp),
+        'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qty), 'type[2]': 'stop', 'stop[2]': String(sl),
       });
-      const o = await or.json();
-      if (!or.ok) results.push({ symbol:sym, status:'error', reason:o.message, gap:+gap.toFixed(2), rvol_logged:rvol });
-      else results.push({ symbol:sym, status:'traded', variant:'C-SIP-9:29', side:'sell', qty, entryPrice:+price.toFixed(2), takeProfitPrice:tp, stopLossPrice:sl, gap:+gap.toFixed(2), rvol_logged:rvol, orderId:o.id });
-    } catch(e) { results.push({ symbol:sym, status:'error', reason:e.message }); }
+      const or = await fetch(`${BASE}/accounts/${TRADIER_ACCOUNT_ID}/orders`, {
+        method: 'POST', headers: { ...H, 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString()
+      });
+      const od = await or.json();
+      if (!or.ok || (od.order && od.order.status === 'error')) {
+        results.push({ symbol: sym, status: 'error', reason: od.order?.partner_error_description || od.fault?.faultstring || `Tradier ${or.status}`, gap: +gap.toFixed(2), rvol_logged: rvol });
+      } else {
+        results.push({ symbol: sym, status: 'traded', scenario: 'E', variant: 'C-Tradier-sandbox', side: 'sell_short', qty, entryPrice: +price.toFixed(2), takeProfitPrice: tp, stopLossPrice: sl, gap: +gap.toFixed(2), rvol_logged: rvol, orderId: od.order?.id, orderStatus: od.order?.status });
+      }
+    } catch(e) { results.push({ symbol: sym, status: 'error', reason: e.message }); }
   }
-  return res.status(200).json({ timestamp: new Date().toISOString(), variant: 'C-SIP-9:29', summary:{ traded:results.filter(r=>r.status==='traded').length, skipped:results.filter(r=>r.status==='skipped').length, errors:results.filter(r=>r.status==='error').length }, trades:results });
+
+  return res.status(200).json({
+    timestamp: new Date().toISOString(), variant: 'C-Tradier-sandbox',
+    summary: { traded: results.filter(r=>r.status==='traded').length, skipped: results.filter(r=>r.status==='skipped').length, errors: results.filter(r=>r.status==='error').length },
+    trades: results
+  });
 }
