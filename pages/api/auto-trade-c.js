@@ -3,6 +3,7 @@
 // Sandbox: sandbox.tradier.com (swap to api.tradier.com for live)
 // Cron: 9:29 AM EDT weekdays via cron-job.org "APEX Auto-Trade C"
 // Strategy: Scenario E GAP FADE SHORT — gap>=+10%, OTOCO bracket 2% TP / 2% SL
+// Config: public/auto-trade-config.json — reads config.tickers + config.scenarios.E
 // Required env vars: TRADIER_TOKEN, TRADIER_ACCOUNT_ID
 
 export default async function handler(req, res) {
@@ -19,10 +20,17 @@ export default async function handler(req, res) {
     config = await r.json();
   } catch (e) { return res.status(500).json({ error: e.message }); }
 
-  const schedules = (config.schedules || []).filter(s => s.symbol && s.bet > 0);
-  if (!schedules.length) return res.status(200).json({ message: 'No schedules', trades: [] });
+  // Config uses config.tickers array + config.scenarios.E flag
+  if (!config.scenarios || !config.scenarios.E) {
+    return res.status(200).json({ message: 'Scenario E disabled in config', trades: [] });
+  }
 
-  const symbols = [...new Set(schedules.map(s => s.symbol.toUpperCase()))];
+  const tickers = (config.tickers || []).filter(t => t.symbol && t.bet > 0);
+  if (!tickers.length) return res.status(200).json({ message: 'No tickers configured', trades: [] });
+
+  const gapThreshold = (config.thresholds && config.thresholds.eGap) || 10;
+
+  const symbols = [...new Set(tickers.map(t => t.symbol.toUpperCase()))];
   let quoteMap = {};
   try {
     const r = await fetch(`${BASE}/markets/quotes?symbols=${symbols.join(',')}&greeks=false`, { headers: H });
@@ -34,15 +42,15 @@ export default async function handler(req, res) {
   } catch(_) {}
 
   const results = [];
-  for (const sched of schedules) {
-    const sym = sched.symbol.toUpperCase(), bet = sched.bet, q = quoteMap[sym];
+  for (const ticker of tickers) {
+    const sym = ticker.symbol.toUpperCase(), bet = ticker.bet, q = quoteMap[sym];
     if (!q) { results.push({ symbol: sym, status: 'skipped', reason: 'No quote from Tradier' }); continue; }
     const price = q.last, prevClose = q.prevclose;
     if (!price || !prevClose || price <= 0 || prevClose <= 0) { results.push({ symbol: sym, status: 'skipped', reason: 'Missing price/prevclose' }); continue; }
     const gap = (price - prevClose) / prevClose * 100;
     const avgVol = q.average_volume || 0, todayVol = q.volume || 0;
     const rvol = avgVol > 0 ? +(todayVol / avgVol).toFixed(2) : null;
-    if (gap < 10) { results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% below +10%`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
+    if (gap < gapThreshold) { results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% below +${gapThreshold}% threshold`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
     const qty = Math.floor(bet / price);
     if (qty < 1) { results.push({ symbol: sym, status: 'skipped', reason: 'Bet too small', gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
     const tp = +(price * 0.98).toFixed(2), sl = +(price * 1.02).toFixed(2);
