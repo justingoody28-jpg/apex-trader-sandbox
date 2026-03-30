@@ -1,14 +1,21 @@
-// pages/api/edgar-monitor.js — SEC EDGAR Dilution Risk Scanner v2
+// pages/api/edgar-monitor.js — SEC EDGAR Dilution Risk Scanner v3
 // Uses data.sec.gov submissions API for exact ticker matching (free, no key needed)
 // Scans all tickers in your config for S-3, 424B, and 8-K filings in the last 5 days
 //
-// Filing types flagged:
-//   424B1-5 -- HIGH: prospectus supplement, shares being sold RIGHT NOW
-//   S-3/S-3ASR -- MEDIUM: shelf registration, future dilution authorized
-//   8-K     -- HIGH if description contains "at-the-market" or offering
+// v3: Added CIK override table for tickers that map incorrectly in company_tickers.json
 
 const DILUTION_FORMS = new Set(['S-3','S-3ASR','424B1','424B2','424B3','424B4','424B5']);
 const ATM_KEYWORDS = ['at-the-market', 'atm program', 'equity offering', 'shelf offering', 'registered direct'];
+
+// Manual CIK overrides for tickers that don't resolve correctly from company_tickers.json
+// CIK is zero-padded to 10 digits
+const CIK_OVERRIDES = {
+  'RCKT': '0001272830', // Rocket Pharmaceuticals -- confirmed CIK
+  'SAVA': '0001372514', // Cassava Sciences
+  'MNMD': '0001580149', // Mind Medicine (MindMed)
+  'LAZR': '0001750153', // Luminar Technologies
+  'FAT':  '0001701516', // FAT Brands
+};
 
 function daysBetween(dateStr) {
   return (Date.now() - new Date(dateStr).getTime()) / 86400000;
@@ -88,8 +95,8 @@ export default async function handler(req, res) {
 
   if (!tickers.length) return res.status(200).json({ message: 'No tickers', flags: [] });
 
-  // Load the CIK map once -- one fetch for all tickers
-  let cikMap = {};
+  // Load CIK map -- one fetch covers all tickers, overrides take priority
+  let cikMap = { ...CIK_OVERRIDES };
   try {
     const r = await fetch('https://www.sec.gov/files/company_tickers.json', {
       headers: { 'User-Agent': 'APEX-Trader contact@apextrader.io' }
@@ -97,7 +104,10 @@ export default async function handler(req, res) {
     if (r.ok) {
       const data = await r.json();
       Object.values(data).forEach(c => {
-        cikMap[c.ticker.toUpperCase()] = String(c.cik_str).padStart(10, '0');
+        const sym = c.ticker.toUpperCase();
+        if (!CIK_OVERRIDES[sym]) {
+          cikMap[sym] = String(c.cik_str).padStart(10, '0');
+        }
       });
     }
   } catch (_) {}
@@ -128,7 +138,7 @@ export default async function handler(req, res) {
     timestamp:    new Date().toISOString(),
     lookbackDays,
     summary: {
-      tickersScanned: tickers.length,
+      tickersScanned:  tickers.length,
       tickersNotFound: notFound.length,
       totalFlags:  flags.length,
       highRisk:    highRisk.length,
