@@ -1,7 +1,7 @@
 {
   "tickers": [
     {
-      "symbol": "AGEN",
+      "symbol": "MRNA",
       "bet": 500
     },
     {
@@ -9,11 +9,15 @@
       "bet": 500
     },
     {
-      "symbol": "IONQ",
+      "symbol": "FCEL",
       "bet": 500
     },
     {
-      "symbol": "AMD",
+      "symbol": "TSLA",
+      "bet": 500
+    },
+    {
+      "symbol": "COIN",
       "bet": 500
     },
     {
@@ -25,11 +29,7 @@
       "bet": 500
     },
     {
-      "symbol": "GLOB",
-      "bet": 500
-    },
-    {
-      "symbol": "EXLS",
+      "symbol": "ATEN",
       "bet": 500
     },
     {
@@ -37,19 +37,47 @@
       "bet": 500
     },
     {
-      "symbol": "BRZE",
+      "symbol": "HALO",
       "bet": 500
     },
     {
-      "symbol": "ASAN",
+      "symbol": "FRPT",
       "bet": 500
     },
     {
-      "symbol": "PRGO",
+      "symbol": "SG",
       "bet": 500
     },
     {
-      "symbol": "NTRA",
+      "symbol": "ASTE",
+      "bet": 500
+    },
+    {
+      "symbol": "APOG",
+      "bet": 500
+    },
+    {
+      "symbol": "ARCB",
+      "bet": 500
+    },
+    {
+      "symbol": "MATX",
+      "bet": 500
+    },
+    {
+      "symbol": "AGEN",
+      "bet": 500
+    },
+    {
+      "symbol": "RCKT",
+      "bet": 500
+    },
+    {
+      "symbol": "FAT",
+      "bet": 500
+    },
+    {
+      "symbol": "ATER",
       "bet": 500
     },
     {
@@ -57,95 +85,55 @@
       "bet": 500
     },
     {
-      "symbol": "JACK",
+      "symbol": "LAZR",
       "bet": 500
     },
     {
-      "symbol": "HCSG",
+      "symbol": "WOLF",
       "bet": 500
     },
     {
-      "symbol": "TROX",
+      "symbol": "RIOT",
       "bet": 500
     },
     {
-      "symbol": "GPMT",
+      "symbol": "MARA",
       "bet": 500
     },
     {
-      "symbol": "CRDF",
+      "symbol": "SNDX",
       "bet": 500
     },
     {
-      "symbol": "XNCR",
+      "symbol": "MNMD",
       "bet": 500
     },
     {
-      "symbol": "ACVA",
+      "symbol": "RXRX",
       "bet": 500
     },
     {
-      "symbol": "PAYO",
+      "symbol": "BBIO",
       "bet": 500
     },
     {
-      "symbol": "ARQQ",
+      "symbol": "ARDX",
       "bet": 500
     },
     {
-      "symbol": "QUBT",
+      "symbol": "DBVT",
       "bet": 500
     },
     {
-      "symbol": "SDGR",
+      "symbol": "RCAT",
       "bet": 500
     },
     {
-      "symbol": "CDNA",
+      "symbol": "ACMR",
       "bet": 500
     },
     {
-      "symbol": "GOSS",
-      "bet": 500
-    },
-    {
-      "symbol": "TELA",
-      "bet": 500
-    },
-    {
-      "symbol": "OCGN",
-      "bet": 500
-    },
-    {
-      "symbol": "SRPT",
-      "bet": 500
-    },
-    {
-      "symbol": "HRTX",
-      "bet": 500
-    },
-    {
-      "symbol": "GPOR",
-      "bet": 500
-    },
-    {
-      "symbol": "BORR",
-      "bet": 500
-    },
-    {
-      "symbol": "PUMP",
-      "bet": 500
-    },
-    {
-      "symbol": "XPOF",
-      "bet": 500
-    },
-    {
-      "symbol": "PLBY",
-      "bet": 500
-    },
-    {
-      "symbol": "CURV",
+      "symbol": "SMCI",
       "bet": 500
     },
     {
@@ -153,44 +141,44 @@
       "bet": 500
     },
     {
-      "symbol": "BARK",
+      "symbol": "SAVA",
       "bet": 500
     },
     {
-      "symbol": "KRUS",
+      "symbol": "UPST",
       "bet": 500
     },
     {
-      "symbol": "FWRG",
+      "symbol": "AFRM",
       "bet": 500
     },
     {
-      "symbol": "OPAD",
+      "symbol": "OPEN",
       "bet": 500
     },
     {
-      "symbol": "AMBR",
+      "symbol": "CLOV",
       "bet": 500
     },
     {
-      "symbol": "NINE",
+      "symbol": "MLGO",
       "bet": 500
     },
     {
-      "symbol": "LAZR",
+      "symbol": "RGTI",
       "bet": 500
     }
   ],
   "scenarios": {
     "E": true,
-    "G": true,
-    "H": true
+    "G": false,
+    "H": false
   },
   "thresholds": {
-    "eGap": 10,
-    "gGap": 8,
-    "hGap": 10
+    "eGap": 10
   },
   "defaultBet": 500,
-  "_note": "E=gap short >=eGap%, G=long fade gapDown<=-gGap% RVOL>=3x, H=panic buy gapDown<=-hGap% RVOL>=4x"
+  "count": 42,
+  "updated": "2026-03-30T00:00:50.793Z",
+  "_note": "Validated tickers only — all had qualifying E signals + PF>=1 in 6mo backtest"
 }
