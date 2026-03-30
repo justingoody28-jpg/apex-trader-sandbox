@@ -1,8 +1,8 @@
-// pages/api/auto-trade-gh.js â Scenarios G (Honed Fade Long) + H (Panic Reversal)
+// pages/api/auto-trade-gh.js Ã¢ÂÂ Scenarios G (Honed Fade Long) + H (Panic Reversal)
 // Cron: 9:29 AM EDT weekdays
 // Data + Execution: Tradier consolidated feed + OTOCO bracket orders
-// G: Gap <= -8%, RVOL >= 3x â buy long, TP +1.5%, SL -2.0%
-// H: Gap <= -10%, RVOL >= 4x â buy long, TP +1.5%, SL -2.5% (H takes priority)
+// G: Gap <= -8%, RVOL >= 3x Ã¢ÂÂ buy long, TP +1.5%, SL -2.0%
+// H: Gap <= -10%, RVOL >= 4x Ã¢ÂÂ buy long, TP +1.5%, SL -2.5% (H takes priority)
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
   for (const ticker of tickers) {
     const sym = ticker.symbol.toUpperCase(), bet = ticker.bet, q = quoteMap[sym];
     if (!q) { results.push({ symbol: sym, status: 'skipped', reason: 'No quote from Tradier' }); continue; }
-    const price = q.last, prevClose = q.prevclose;
+    const price = (q.bid && q.bid > 0) ? q.bid : q.last, // bid = live pre-market price prevClose = q.prevclose;
     if (!price || !prevClose || price <= 0 || prevClose <= 0) { results.push({ symbol: sym, status: 'skipped', reason: 'Missing price/prevclose' }); continue; }
     const gap = (price - prevClose) / prevClose * 100;
     const avgVol = q.average_volume || 0, todayVol = q.volume || 0;
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       scenario = { name: 'G', tpPct: 1.5, slPct: 2.0 };
     }
 
-    if (!scenario) { results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% RVOL ${rvol||'?'}x â no G/H signal`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
+    if (!scenario) { results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% RVOL ${rvol||'?'}x Ã¢ÂÂ no G/H signal`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
 
     const qty = Math.floor(bet / price);
     if (qty < 1) { results.push({ symbol: sym, status: 'skipped', reason: 'Bet too small', gap: +gap.toFixed(2), scenario: scenario.name, rvol_logged: rvol }); continue; }
