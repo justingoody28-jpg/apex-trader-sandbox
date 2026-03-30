@@ -1,13 +1,13 @@
-// pages/api/auto-trade-c.js â Scenario E GAP FADE SHORT, Tiered Exits
+// pages/api/auto-trade-c.js Ã¢ÂÂ Scenario E GAP FADE SHORT, Tiered Exits
 // Cron: 9:29 AM EDT weekdays (cron-job.org "APEX Auto-Trade C")
-// Data:      Tradier consolidated feed â real pre-market quotes, FREE
+// Data:      Tradier consolidated feed Ã¢ÂÂ real pre-market quotes, FREE
 // Execution: Tradier OTOCO bracket orders (entry + TP + SL in one shot)
 //
 // TIERED EXIT LOGIC (based on gap size at 9:29 AM):
-//   Gap 10.0-10.99% â TP 2.0% / SL 2.0%
-//   Gap 11.0-12.99% â TP 2.5% / SL 2.5%
-//   Gap 13.0-14.99% â TP 3.0% / SL 3.0%
-//   Gap 15.0%+      â TP 5.0% / SL 5.0%
+//   Gap 10.0-10.99% Ã¢ÂÂ TP 2.0% / SL 2.0%
+//   Gap 11.0-12.99% Ã¢ÂÂ TP 2.5% / SL 2.5%
+//   Gap 13.0-14.99% Ã¢ÂÂ TP 3.0% / SL 3.0%
+//   Gap 15.0%+      Ã¢ÂÂ TP 5.0% / SL 5.0%
 //
 // Required env vars: TRADIER_TOKEN, TRADIER_ACCOUNT_ID
 
