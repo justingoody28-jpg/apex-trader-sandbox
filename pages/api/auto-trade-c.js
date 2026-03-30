@@ -8,8 +8,8 @@
 //   Gap 13.0-14.99% -> TP 3.0% / SL 3.0%
 //   Gap 15.0%+      -> TP 5.0% / SL 5.0%
 //
-// NOTE: Uses q.bid for pre-market price (updates live).
-//       q.last only updates when a trade prints — stays at prev close pre-market.
+// Uses q.bid for pre-market price (updates live).
+// q.last only updates when a trade prints, stays at prev close pre-market.
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -53,9 +53,9 @@ export default async function handler(req, res) {
     const sym = ticker.symbol.toUpperCase(), bet = ticker.bet, q = quoteMap[sym];
     if (!q) { results.push({ symbol: sym, status: 'skipped', reason: 'No quote from Tradier' }); continue; }
 
-    // bid updates live in pre-market. last only updates on actual trade print.
-    const bidPrice = q.bid && q.bid > 0 ? q.bid : null;
-    const lastPrice = q.last && q.last > 0 ? q.last : null;
+    // bid updates live pre-market. last only updates on actual trade print.
+    const bidPrice = (q.bid && q.bid > 0) ? q.bid : null;
+    const lastPrice = (q.last && q.last > 0) ? q.last : null;
     const price = bidPrice || lastPrice;
     const prevClose = q.prevclose;
 
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
 
     const gap = (price - prevClose) / prevClose * 100;
     const tier = getTier(gap);
-    const rvol = q.average_volume > 0 ? +(q.volume / q.average_volume).toFixed(2) : null;
+    const rvol = (q.average_volume > 0) ? +(q.volume / q.average_volume).toFixed(2) : null;
 
     if (!tier) {
       results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% below +10% threshold`, gap: +gap.toFixed(2), rvol_logged: rvol, priceSource: bidPrice ? 'bid' : 'last' });
@@ -83,26 +83,26 @@ export default async function handler(req, res) {
 
     try {
       const params = new URLSearchParams({
-        'class':'otoco','duration':'day',
-        'symbol[0]':sym,'side[0]':'sell_short','quantity[0]':String(qty),'type[0]':'market',
-        'symbol[1]':sym,'side[1]':'buy_to_cover','quantity[1]':String(qty),'type[1]':'limit','price[1]':String(tp),
-        'symbol[2]':sym,'side[2]':'buy_to_cover','quantity[2]':String(qty),'type[2]':'stop','stop[2]':String(sl),
+        'class': 'otoco', 'duration': 'day',
+        'symbol[0]': sym, 'side[0]': 'sell_short', 'quantity[0]': String(qty), 'type[0]': 'market',
+        'symbol[1]': sym, 'side[1]': 'buy_to_cover', 'quantity[1]': String(qty), 'type[1]': 'limit', 'price[1]': String(tp),
+        'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qty), 'type[2]': 'stop', 'stop[2]': String(sl),
       });
       const or = await fetch(`${BASE}/accounts/${TRADIER_ACCOUNT_ID}/orders`, {
-        method:'POST', headers:{...H,'Content-Type':'application/x-www-form-urlencoded'}, body:params.toString()
+        method: 'POST', headers: { ...H, 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString()
       });
       const od = await or.json();
       if (!or.ok || (od.order && od.order.status === 'error')) {
-        results.push({ symbol:sym, status:'error', reason:od.order?.partner_error_description||od.fault?.faultstring||`Tradier ${or.status}`, gap:+gap.toFixed(2), tier:tier.tier, rvol_logged:rvol });
+        results.push({ symbol: sym, status: 'error', reason: od.order?.partner_error_description || od.fault?.faultstring || `Tradier ${or.status}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
       } else {
-        results.push({ symbol:sym, status:'traded', scenario:'E', variant:'C-Tradier-tiered', side:'sell_short', qty, entryPrice:+price.toFixed(2), priceSource: bidPrice?'bid':'last', tier:tier.tier, tpPct:tier.tpPct, slPct:tier.slPct, takeProfitPrice:tp, stopLossPrice:sl, gap:+gap.toFixed(2), rvol_logged:rvol, orderId:od.order?.id, orderStatus:od.order?.status });
+        results.push({ symbol: sym, status: 'traded', scenario: 'E', variant: 'C-Tradier-tiered', side: 'sell_short', qty, entryPrice: +price.toFixed(2), priceSource: bidPrice ? 'bid' : 'last', tier: tier.tier, tpPct: tier.tpPct, slPct: tier.slPct, takeProfitPrice: tp, stopLossPrice: sl, gap: +gap.toFixed(2), rvol_logged: rvol, orderId: od.order?.id, orderStatus: od.order?.status });
       }
-    } catch(e) { results.push({ symbol:sym, status:'error', reason:e.message }); }
+    } catch(e) { results.push({ symbol: sym, status: 'error', reason: e.message }); }
   }
 
   return res.status(200).json({
     timestamp: new Date().toISOString(), variant: 'C-Tradier-tiered-9:29',
-    summary: { traded:results.filter(r=>r.status==='traded').length, skipped:results.filter(r=>r.status==='skipped').length, errors:results.filter(r=>r.status==='error').length },
+    summary: { traded: results.filter(r => r.status === 'traded').length, skipped: results.filter(r => r.status === 'skipped').length, errors: results.filter(r => r.status === 'error').length },
     trades: results
   });
 }
