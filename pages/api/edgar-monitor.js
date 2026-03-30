@@ -1,4 +1,4 @@
-// pages/api/edgar-monitor.js — SEC EDGAR Dilution Risk Scanner v3
+// pages/api/edgar-monitor.js â SEC EDGAR Dilution Risk Scanner v3
 // Uses data.sec.gov submissions API for exact ticker matching (free, no key needed)
 // Scans all tickers in your config for S-3, 424B, and 8-K filings in the last 5 days
 //
@@ -10,7 +10,7 @@ const ATM_KEYWORDS = ['at-the-market', 'atm program', 'equity offering', 'shelf 
 // Manual CIK overrides for tickers that don't resolve correctly from company_tickers.json
 // CIK is zero-padded to 10 digits
 const CIK_OVERRIDES = {
-  'RCKT': '0001272830', // Rocket Pharmaceuticals -- confirmed CIK
+  'RCKT': '0001281895', // Rocket Pharmaceuticals -- confirmed CIK
   'SAVA': '0001372514', // Cassava Sciences
   'MNMD': '0001580149', // Mind Medicine (MindMed)
   'LAZR': '0001750153', // Luminar Technologies
