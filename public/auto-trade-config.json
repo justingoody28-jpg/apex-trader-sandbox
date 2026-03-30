@@ -89,10 +89,6 @@
       "bet": 500
     },
     {
-      "symbol": "WOLF",
-      "bet": 500
-    },
-    {
       "symbol": "RIOT",
       "bet": 500
     },
@@ -176,13 +172,13 @@
   },
   "thresholds": {
     "eGap": 10,
-    "gGap": 8,
+    "gGap": 10,
     "hGap": 10,
-    "gRvol": 3,
+    "gRvol": 5,
     "hRvol": 4
   },
   "defaultBet": 500,
-  "count": 42,
-  "updated": "2026-03-30T00:20:19.648Z",
-  "_note": "Validated tickers — E tiered exits, G/H panic reversal long plays"
+  "count": 41,
+  "updated": "2026-03-30T12:50:52.575Z",
+  "_note": "E tiered, G: gap≤-10% RVOL≥5x TP1.5/SL1.5, H: gap≤-10% RVOL≥4x TP1.5/SL2.5 (baseline), WOLF excluded from G/H"
 }
