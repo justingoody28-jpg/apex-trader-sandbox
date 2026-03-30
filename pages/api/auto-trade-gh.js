@@ -1,15 +1,15 @@
-// pages/api/auto-trade-gh.js — Scenarios G (Honed Fade Long) + H (Panic Reversal)
+// pages/api/auto-trade-gh.js â Scenarios G (Honed Fade Long) + H (Panic Reversal)
 // Cron: 9:29 AM EDT weekdays
 // Data + Execution: Tradier consolidated feed + OTOCO bracket orders
-// G: Gap <= -8%, RVOL >= 3x → buy long, TP +1.5%, SL -2.0%
-// H: Gap <= -10%, RVOL >= 4x → buy long, TP +1.5%, SL -2.5% (H takes priority)
+// G: Gap <= -8%, RVOL >= 3x â buy long, TP +1.5%, SL -2.0%
+// H: Gap <= -10%, RVOL >= 4x â buy long, TP +1.5%, SL -2.5% (H takes priority)
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN, TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
   if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) return res.status(500).json({ error: 'Missing env vars' });
   const H = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
-  const BASE = 'https://sandbox.tradier.com/v1';
+  const BASE = 'https://api.tradier.com/v1';
 
   let config;
   try { const r = await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json'); if (!r.ok) throw new Error('Config fetch failed'); config = await r.json(); }
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       scenario = { name: 'G', tpPct: 1.5, slPct: 2.0 };
     }
 
-    if (!scenario) { results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% RVOL ${rvol||'?'}x — no G/H signal`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
+    if (!scenario) { results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% RVOL ${rvol||'?'}x â no G/H signal`, gap: +gap.toFixed(2), rvol_logged: rvol }); continue; }
 
     const qty = Math.floor(bet / price);
     if (qty < 1) { results.push({ symbol: sym, status: 'skipped', reason: 'Bet too small', gap: +gap.toFixed(2), scenario: scenario.name, rvol_logged: rvol }); continue; }
