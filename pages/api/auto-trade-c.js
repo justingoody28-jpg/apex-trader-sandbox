@@ -1,13 +1,13 @@
-// pages/api/auto-trade-c.js — Scenario E GAP FADE SHORT, Tiered Exits
+// pages/api/auto-trade-c.js â Scenario E GAP FADE SHORT, Tiered Exits
 // Cron: 9:29 AM EDT weekdays (cron-job.org "APEX Auto-Trade C")
-// Data:      Tradier consolidated feed — real pre-market quotes, FREE
+// Data:      Tradier consolidated feed â real pre-market quotes, FREE
 // Execution: Tradier OTOCO bracket orders (entry + TP + SL in one shot)
 //
 // TIERED EXIT LOGIC (based on gap size at 9:29 AM):
-//   Gap 10.0-10.99% → TP 2.0% / SL 2.0%
-//   Gap 11.0-12.99% → TP 2.5% / SL 2.5%
-//   Gap 13.0-14.99% → TP 3.0% / SL 3.0%
-//   Gap 15.0%+      → TP 5.0% / SL 5.0%
+//   Gap 10.0-10.99% â TP 2.0% / SL 2.0%
+//   Gap 11.0-12.99% â TP 2.5% / SL 2.5%
+//   Gap 13.0-14.99% â TP 3.0% / SL 3.0%
+//   Gap 15.0%+      â TP 5.0% / SL 5.0%
 //
 // Required env vars: TRADIER_TOKEN, TRADIER_ACCOUNT_ID
 
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN, TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
   if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) return res.status(500).json({ error: 'Missing env vars: TRADIER_TOKEN, TRADIER_ACCOUNT_ID' });
   const H = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
-  const BASE = 'https://sandbox.tradier.com/v1';
+  const BASE = 'https://api.tradier.com/v1';
 
   function getTier(gap) {
     if (gap >= 15) return { tier: 3, tpPct: 5.0, slPct: 5.0 };
