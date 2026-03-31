@@ -70,9 +70,11 @@ function scoreCatalyst(earns, analysts, dateStr) {
   return s;
 }
 
-function evalTrade(bar, dir, tp, sl) {
-  const{o,h,l}=bar; if(!o||o===0) return 'unknown';
-  const up=(h-o)/o, down=(o-l)/o;
+function evalTrade(bar, dir, tp, sl, entry) {
+  // entry = pre-market price if available, else daily open
+  const e = entry || bar.o;
+  const{h,l}=bar; if(!e||e===0) return 'unknown';
+  const up=(h-e)/e, down=(e-l)/e;
   const hitW=dir==='long'?up>=tp:down>=tp;
   const hitS=dir==='long'?down>=sl:up>=sl;
   if(hitW&&!hitS) return 'win'; if(hitS&&!hitW) return 'loss';
@@ -189,8 +191,9 @@ export default function BacktestPage() {
         let n=0;
         for(let di=25;di<bars.length;di++){
           const bar=bars[di], prev=bars[di-1];
-          if(!bar.o||!prev.c||prev.c===0) continue;
-          const gap=(bar.o-prev.c)/prev.c;
+          const entry=bar.pmPrice||bar.o; // pre-market price at ~9:29 AM, else daily open
+          if(!entry||!prev.c||prev.c===0) continue;
+          const gap=(entry-prev.c)/prev.c;
           const avgVol=vols.slice(Math.max(0,di-20),di).reduce((a,b)=>a+b,0)/Math.min(20,di);
           const rvol=avgVol>0?(bar.v||0)/avgVol:1;
 
@@ -208,7 +211,7 @@ export default function BacktestPage() {
 
           for(const sc of qualifying){
             const{dir,tp,sl}=SCENARIOS[sc];
-            allTrades.push({...base,scenario:sc,dir,outcome:evalTrade(bar,dir,tp,sl)});
+            allTrades.push({...base,scenario:sc,dir,outcome:evalTrade(bar,dir,tp,sl,entry)});
           }
           n++;
         }
