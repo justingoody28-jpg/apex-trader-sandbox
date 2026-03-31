@@ -1,4 +1,4 @@
-// pages/api/auto-trade-c.js ÃÂ¢ÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
+// pages/api/auto-trade-c.js ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
 // Cron: 9:29 AM EDT weekdays (cron-job.org "APEX Auto-Trade C")
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
   const tickers = (config.tickers || []).filter(t => t.symbol && t.bet > 0);
   if (!tickers.length) return res.status(200).json({ message: 'No tickers', trades: [] });
 
-  const symbols = [...new Set(tickers.map(t => t.symbol.toUpperCase()))];
+  const symbols = [...new Set([...tickers.map(t => t.symbol.toUpperCase()), 'SPY'])];
   let quoteMap = {};
   try {
     const r = await fetch(`${BASE}/markets/quotes?symbols=${symbols.join(',')}&greeks=false`, { headers: H });
@@ -49,6 +49,12 @@ export default async function handler(req, res) {
   } catch(_) {}
 
   const results = [];
+
+  // SPY gap filter: if SPY is gapping up >0.5%, skip D shorts (gap-ups likely to hold)
+  const spyQ = quoteMap['SPY'];
+  const spyGap = spyQ && spyQ.prevclose > 0 ? ((spyQ.bid || spyQ.last) - spyQ.prevclose) / spyQ.prevclose * 100 : 0;
+  const skipD = spyGap > 0.5;
+
   for (const ticker of tickers) {
     const sym = ticker.symbol.toUpperCase(), bet = ticker.bet, q = quoteMap[sym];
     if (!q) { results.push({ symbol: sym, status: 'skipped', reason: 'No quote from Tradier' }); continue; }
@@ -69,7 +75,7 @@ export default async function handler(req, res) {
 
 
     // Scenario D: Short gap-up >=2% | TP -2% / SL +0.5%
-    if (gap >= 2) {
+    if (gap >= 2 && !skipD) {
       const tpD = +(price * 0.98).toFixed(2);
       const slD = +(price * 1.005).toFixed(2);
       const qtyD = Math.max(1, Math.floor(bet / price));
