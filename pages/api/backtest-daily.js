@@ -17,7 +17,7 @@ export default async function handler(req, res) {
         `?adjusted=true&sort=asc&limit=500&apiKey=${key}`
       ),
       fetch(
-        `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/5/minute/${from}/${to}` +
+        `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/1/minute/${from}/${to}` +
         `?adjusted=true&sort=asc&limit=50000&extended_hours=true&apiKey=${key}`
       ),
     ]);
@@ -28,7 +28,17 @@ export default async function handler(req, res) {
     const [dailyData, pmData] = await Promise.all([dailyRes.json(), pmRes.json()]);
 
     const dailyBars = dailyData.results || [];
-    const pmBars    = pmData.results    || [];
+    const allPmBars = [...(pmData.results || [])];
+
+    // Paginate: 1-min extended for full year needs ~5 pages
+    let nextUrl = pmData.next_url || null;
+    while (nextUrl) {
+      const pr = await fetch(`${nextUrl}&apiKey=${key}`);
+      if (!pr.ok) break;
+      const nd = await pr.json();
+      if (nd.results) allPmBars.push(...nd.results);
+      nextUrl = nd.next_url || null;
+    }
 
     // Build pre-market price map: date string -> close of 9:25-9:30 AM bar
     // The 9:25 AM bar starts at:
@@ -36,13 +46,13 @@ export default async function handler(req, res) {
     //   EST (Nov-Mar approx): 14:25 UTC
     // Check both to avoid DST edge-case errors around transition weeks
     const pmMap = {};
-    for (const bar of pmBars) {
+    for (const bar of allPmBars) {
       const dt = new Date(bar.t);
       const utcH = dt.getUTCHours();
       const utcM = dt.getUTCMinutes();
-      if (utcM === 25 && (utcH === 13 || utcH === 14)) {
+      if (utcM === 29 && (utcH === 13 || utcH === 14)) {
         const dateStr = dt.toISOString().slice(0, 10);
-        pmMap[dateStr] = bar.c; // close of 9:25-9:30 bar = last pre-market print
+        pmMap[dateStr] = bar.c; // close of 9:29 1-min bar = last pre-market print
       }
     }
 
