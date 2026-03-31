@@ -394,7 +394,7 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
   <div class="exec-wrap" id="execWrapH"><button class="exec-btn exec-long" id="execBtnH" onclick="execTrade('H','buy',+document.getElementById('hStop').value)">&#x25B6; Execute H &#x2014; PANIC BUY</button><div class="trade-result" id="execResultH"></div></div>
   </div>
 </div>
-<div class="tbl-wrap" id="tradeLogWrap" style="display:none">
+<div id="eTierSection" style="display:none"><div class="stitle">E Tier Breakdown (fires with E checkbox)</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;"><div class="sbox" id="boxE1"><h3>E1: Gap 10-11%<br>Short &#x2193;2% / &#x2191;2% | BE 50%</h3><div class="sr"><span class="sl">Signals</span><span class="sv n" id="e1_n">--</span></div><div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e1_wr">--</span></div><div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e1_pf">--</span></div><div class="sr"><span class="sl">Total Return</span><span class="sv" id="e1_ret">--</span></div></div><div class="sbox" id="boxE2"><h3>E2: Gap 11-13%<br>Short &#x2193;2.5% / &#x2191;2.5% | BE 50%</h3><div class="sr"><span class="sl">Signals</span><span class="sv n" id="e2_n">--</span></div><div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e2_wr">--</span></div><div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e2_pf">--</span></div><div class="sr"><span class="sl">Total Return</span><span class="sv" id="e2_ret">--</span></div></div><div class="sbox" id="boxE3"><h3>E3: Gap 13-15%<br>Short &#x2193;3% / &#x2191;3% | BE 50%</h3><div class="sr"><span class="sl">Signals</span><span class="sv n" id="e3_n">--</span></div><div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e3_wr">--</span></div><div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e3_pf">--</span></div><div class="sr"><span class="sl">Total Return</span><span class="sv" id="e3_ret">--</span></div></div><div class="sbox" id="boxE4"><h3>E4: Gap 15%+<br>Short &#x2193;5% / &#x2191;5% | BE 50%</h3><div class="sr"><span class="sl">Signals</span><span class="sv n" id="e4_n">--</span></div><div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e4_wr">--</span></div><div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e4_pf">--</span></div><div class="sr"><span class="sl">Total Return</span><span class="sv" id="e4_ret">--</span></div></div></div></div><div class="tbl-wrap" id="tradeLogWrap" style="display:none">
   <table><thead><tr>
     <th onclick="srt('date')">Date</th><th onclick="srt('gap')">Gap%</th><th onclick="srt('rvol')">RVOL</th>
     <th>A</th><th>A P&amp;L</th><th>B</th><th>B P&amp;L</th><th>C</th><th>C P&amp;L</th>
@@ -498,7 +498,7 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
   if(!bars.length)return null;
   var avgVol=await fetchAvgVol(tk);
   var dmap=byDate(bars),tdays=tradingDays(from,to),prevC=null;
-  var trades={a:[],b:[],c:[],d:[],e:[],f:[],g:[],h:[]},dayRows=[];
+  var trades={a:[],b:[],c:[],d:[],e:[],f:[],g:[],h:[],e1:[],e2:[],e3:[],e4:[]},dayRows=[];
   for(var j=0;j<tdays.length;j++){
     var date=tdays[j],db=dmap[date]||[];
     if(!db.length)continue;
@@ -518,7 +518,7 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
     var rC=runC?evalLong(intra,ep,4,0.5):null;
     var rD=runD?evalShort(intra,ep,2,0.5):null;
     var rvol_val=rvol||0;
-    var eActive=gap>=gfm,rE=(runE&&eActive)?evalShort(intra,ep,eWinP,eStopP):null;
+    var eActive=gap>=gfm,rE=(runE&&eActive)?evalShort(intra,ep,eWinP,eStopP):null;var rE1=(runE&&gap>=10&&gap<11)?evalShort(intra,ep,2,2):null;var rE2=(runE&&gap>=11&&gap<13)?evalShort(intra,ep,2.5,2.5):null;var rE3=(runE&&gap>=13&&gap<15)?evalShort(intra,ep,3,3):null;var rE4=(runE&&gap>=15)?evalShort(intra,ep,5,5):null;
     var fActive=gapDown<=-gfmF,rF=(runF&&fActive)?evalLong(intra,ep,fWinP,fStopP):null;
     var gActive=gapDown<=-gfmG&&rvol_val>=3;
     var gEntry=gActive?getFirstGreenCandle(intra):null;
@@ -529,7 +529,7 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
     var hIntra=hEntry?intra.filter(function(b){return etH(b.t)>etH(hEntry.t);}):[];
     var rH=(runH&&hActive&&hEntry&&hIntra.length)?evalLong(hIntra,hEntry.c,hWinP,hStopP):null;
     if(rA)trades.a.push(rA);if(rB)trades.b.push(rB);if(rC)trades.c.push(rC);if(rD)trades.d.push(rD);
-    if(rE)trades.e.push(rE);if(rF)trades.f.push(rF);if(rG)trades.g.push(rG);if(rH)trades.h.push(rH);
+    if(rE)trades.e.push(rE);if(rE1)trades.e1.push(rE1);if(rE2)trades.e2.push(rE2);if(rE3)trades.e3.push(rE3);if(rE4)trades.e4.push(rE4);if(rF)trades.f.push(rF);if(rG)trades.g.push(rG);if(rH)trades.h.push(rH);
     dayRows.push({date:date,gap:parseFloat(gap.toFixed(2)),rvol:rvol,
       ar:rA?rA.r:'--',ap:rA?rA.p:0,br:rB?rB.r:'--',bp:rB?rB.p:0,
       cr:rC?rC.r:'--',cp:rC?rC.p:0,dr:rD?rD.r:'--',dp:rD?rD.p:0,
@@ -538,7 +538,7 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
       gActive:gActive&&runG,gr:rG?rG.r:'',gp2:rG?rG.p:0,
       hActive:hActive&&runH,hr:rH?rH.r:'',hp2:rH?rH.p:0,gapDown:parseFloat(gapDown.toFixed(2))});
   }
-  return{a:calcStats(trades.a),b:calcStats(trades.b),c:calcStats(trades.c),d:calcStats(trades.d),e:calcStats(trades.e),f:calcStats(trades.f),g:calcStats(trades.g),h:calcStats(trades.h),dayRows:dayRows};
+  return{a:calcStats(trades.a),b:calcStats(trades.b),c:calcStats(trades.c),d:calcStats(trades.d),e:calcStats(trades.e),f:calcStats(trades.f),g:calcStats(trades.g),h:calcStats(trades.h),e1:calcStats(trades.e1),e2:calcStats(trades.e2),e3:calcStats(trades.e3),e4:calcStats(trades.e4),dayRows:dayRows};
 }
 
 var running=false,singleRows=[],batchResults=[],sCol='date',sDir=1,bCol='a_wr',bDir=-1;
@@ -635,7 +635,7 @@ async function runOne(){
       var gBE2=gStopP/(gWinP+gStopP)*100,hBE2=hStopP/(hWinP+hStopP)*100;
       setCard('a',res.a,20,'boxA');setCard('b',res.b,14.3,'boxB');
       setCard('c',res.c,11.1,'boxC');setCard('d',res.d,20,'boxD');
-      setCard('e',res.e,eBE2,'boxE');setCard('f',res.f,fBE2,'boxF');
+      setCard('e',res.e,eBE2,'boxE');setCard('e1',res.e1,50,'boxE1');setCard('e2',res.e2,50,'boxE2');setCard('e3',res.e3,50,'boxE3');setCard('e4',res.e4,50,'boxE4');document.getElementById('eTierSection').style.display=(res.e1.n||res.e2.n||res.e3.n||res.e4.n)?'':'none';setCard('f',res.f,fBE2,'boxF');
       setCard('g',res.g,gBE2,'boxG');setCard('h',res.h,hBE2,'boxH');
       rebuildLogHeaders();
       renderLog();
