@@ -1,12 +1,12 @@
-// pages/api/auto-trade-c.js ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
+// pages/api/auto-trade-c.js ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
 // Cron: 9:29 AM EDT weekdays (cron-job.org "APEX Auto-Trade C")
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
 // TIERED EXIT LOGIC:
-//   Gap 10.0-10.99% -> TP 2.0% / SL 2.0%
-//   Gap 11.0-12.99% -> TP 2.5% / SL 2.5%
-//   Gap 13.0-14.99% -> TP 3.0% / SL 3.0%
-//   Gap 15.0%+      -> TP 5.0% / SL 5.0%
+//   Gap 10.0-10.99% -> TP 2.0% / SL 1.0%
+//   Gap 11.0-12.99% -> TP 2.5% / SL 1.5%
+//   Gap 13.0-14.99% -> TP 3.0% / SL 1.5%
+//   Gap 15.0%+      -> TP 5.0% / SL 3.0%
 //
 // Uses q.bid for pre-market price (updates live).
 // q.last only updates when a trade prints, stays at prev close pre-market.
@@ -19,10 +19,10 @@ export default async function handler(req, res) {
   const BASE = 'https://api.tradier.com/v1';
 
   function getTier(gap) {
-    if (gap >= 15) return { tier: 3, tpPct: 5.0, slPct: 5.0 };
-    if (gap >= 13) return { tier: 2, tpPct: 3.0, slPct: 3.0 };
-    if (gap >= 11) return { tier: 1, tpPct: 2.5, slPct: 2.5 };
-    if (gap >= 10) return { tier: 0, tpPct: 2.0, slPct: 2.0 };
+    if (gap >= 15) return { tier: 3, tpPct: 5.0, slPct: 3.0 };
+    if (gap >= 13) return { tier: 2, tpPct: 3.0, slPct: 1.5 };
+    if (gap >= 11) return { tier: 1, tpPct: 2.5, slPct: 1.5 };
+    if (gap >= 10) return { tier: 0, tpPct: 2.0, slPct: 1.0 };
     return null;
   }
 
