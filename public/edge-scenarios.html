@@ -35,7 +35,7 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
 .log .err { color:#f85149; display:block; }
 .log .inf { color:#58a6ff; display:block; }
 .log .neu { color:#8b949e; display:block; }
-.sc-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; margin-bottom:12px; }
+.sc-grid { display:grid; grid-template-columns:repeat(11,1fr); gap:8px; margin-bottom:12px; }
 .sbox { background:#161b22; border:1px solid #30363d; border-radius:7px; padding:10px; }
 .sbox h3 { font-size:10px; color:#8b949e; margin-bottom:8px; border-bottom:1px solid #30363d; padding-bottom:5px; line-height:1.4; }
 .sbox.win { border-color:#3fb950; }
@@ -210,10 +210,19 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
   </div>
   <div><label>Start</label><input type="date" id="s0" value="2025-09-25"></div>
   <div><label>End</label><input type="date" id="s1" value="2026-03-25"></div>
-  <div><label>E Gap Min% (up)</label><input type="number" id="gapFade" value="10" min="1" max="30"></div>
+  <div><label>E1 Gap Min%</label><input type="number" id="gapFade" value="10" min="1" max="30"></div>
   <div><label>F Gap Min% (down)</label><input type="number" id="gapFadeF" value="5" min="1" max="30"></div>
-  <div><label>E Win%</label><input type="number" id="eWin" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
-  <div><label>E Stop%</label><input type="number" id="eStop" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E1 Win%</label><input type="number" id="eWin" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E1 Stop%</label><input type="number" id="eStop" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E2 Gap Min%</label><input type="number" id="e2Gap" value="11" min="1" max="30"></div>
+  <div><label>E2 Win%</label><input type="number" id="e2Win" value="2.5" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E2 Stop%</label><input type="number" id="e2Stop" value="2.5" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E3 Gap Min%</label><input type="number" id="e3Gap" value="13" min="1" max="30"></div>
+  <div><label>E3 Win%</label><input type="number" id="e3Win" value="3" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E3 Stop%</label><input type="number" id="e3Stop" value="3" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E4 Gap Min%</label><input type="number" id="e4Gap" value="15" min="1" max="30"></div>
+  <div><label>E4 Win%</label><input type="number" id="e4Win" value="5" min="0.5" max="20" step="0.5" style="width:65px"></div>
+  <div><label>E4 Stop%</label><input type="number" id="e4Stop" value="5" min="0.5" max="20" step="0.5" style="width:65px"></div>
   <div><label>F Win%</label><input type="number" id="fWin" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
   <div><label>F Stop%</label><input type="number" id="fStop" value="2" min="0.5" max="20" step="0.5" style="width:65px"></div>
   <div><label>G Gap Min% (down)</label><input type="number" id="gapFadeG" value="8" min="1" max="30"></div>
@@ -247,7 +256,10 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
   <label class="cb-pill on-green" id="pill_b"><input type="checkbox" id="cb_b" checked onchange="updatePills()"> B &mdash; Long +3/-0.5</label>
   <label class="cb-pill on-purple" id="pill_c"><input type="checkbox" id="cb_c" checked onchange="updatePills()"> C &mdash; Long +4/-0.5</label>
   <label class="cb-pill on-red" id="pill_d"><input type="checkbox" id="cb_d" checked onchange="updatePills()"> D &mdash; Short mirror</label>
-  <label class="cb-pill on-orange" id="pill_e"><input type="checkbox" id="cb_e" checked onchange="updatePills()"> E &mdash; Gap Fade Short</label>
+  <label class="cb-pill on-orange" id="pill_e"><input type="checkbox" id="cb_e" checked onchange="updatePills()"> E1 &mdash; Gap Fade</label>
+  <label class="cb-pill on-orange" id="pill_e2"><input type="checkbox" id="cb_e2" checked onchange="updatePills()"> E2 &mdash; Gap Fade</label>
+  <label class="cb-pill on-orange" id="pill_e3"><input type="checkbox" id="cb_e3" checked onchange="updatePills()"> E3 &mdash; Gap Fade</label>
+  <label class="cb-pill on-orange" id="pill_e4"><input type="checkbox" id="cb_e4" checked onchange="updatePills()"> E4 &mdash; Gap Fade</label>
   <label class="cb-pill on-teal" id="pill_f"><input type="checkbox" id="cb_f" checked onchange="updatePills()"> F &mdash; Gap Fade Long</label>
   <label class="cb-pill on-cyan" id="pill_g"><input type="checkbox" id="cb_g" checked onchange="updatePills()"> G &mdash; Honed Fade Long</label>
   <label class="cb-pill on-yellow" id="pill_h"><input type="checkbox" id="cb_h" checked onchange="updatePills()"> H &mdash; Panic Reversal</label>
@@ -365,13 +377,16 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="d_ret">--</span></div>
   <div class="exec-wrap" id="execWrapD"><button class="exec-btn exec-short" id="execBtnD" onclick="execTrade('D','sell',0.5)">&#x25BC; Execute D &#x2014; SHORT</button><div class="trade-result" id="execResultD"></div></div>
   </div>
-  <div class="sbox" id="boxE"><h3 id="eCardTitle">E: GAP FADE SHORT<br>Gap &gt;+10% &#x00B7; down 2% / up 2%</h3>
+  <div class="sbox" id="boxE"><h3 id="eCardTitle">E1: GAP FADE SHORT<br>Gap &gt;+10% &#x00B7; down 2% / up 2%</h3>
     <div class="sr"><span class="sl">Signals (filtered)</span><span class="sv n" id="e_n">--</span></div>
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e_wr">--</span></div>
     <div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e_pf">--</span></div>
     <div class="sr"><span class="sl">Total Return</span><span class="sv" id="e_ret">--</span></div>
   <div class="exec-wrap" id="execWrapE"><button class="exec-btn exec-short" id="execBtnE" onclick="execTrade('E','sell',+document.getElementById('eStop').value)">&#x25BC; Execute E &#x2014; SHORT FADE</button><div class="trade-result" id="execResultE"></div></div>
   </div>
+  <div class="sbox" id="boxE2"><h3 id="e2CardTitle">E2: GAP FADE SHORT<br>Gap &gt;+11% &middot; 2.5%/2.5%</h3><div class="sr"><span class="sl">Signals</span><span class="sv n" id="e2_n">--</span></div><div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e2_wr">--</span></div><div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e2_pf">--</span></div><div class="sr"><span class="sl">Total Return</span><span class="sv" id="e2_ret">--</span></div></div>
+  <div class="sbox" id="boxE3"><h3 id="e3CardTitle">E3: GAP FADE SHORT<br>Gap &gt;+13% &middot; 3%/3%</h3><div class="sr"><span class="sl">Signals</span><span class="sv n" id="e3_n">--</span></div><div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e3_wr">--</span></div><div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e3_pf">--</span></div><div class="sr"><span class="sl">Total Return</span><span class="sv" id="e3_ret">--</span></div></div>
+  <div class="sbox" id="boxE4"><h3 id="e4CardTitle">E4: GAP FADE SHORT<br>Gap &gt;+15% &middot; 5%/5%</h3><div class="sr"><span class="sl">Signals</span><span class="sv n" id="e4_n">--</span></div><div class="sr"><span class="sl">Win Rate</span><span class="sv" id="e4_wr">--</span></div><div class="sr"><span class="sl">Prof. Factor</span><span class="sv" id="e4_pf">--</span></div><div class="sr"><span class="sl">Total Return</span><span class="sv" id="e4_ret">--</span></div></div>
   <div class="sbox" id="boxF"><h3 id="fCardTitle">F: GAP FADE LONG<br>PM min gap &lt;-5% &#x00B7; up 2% / down 2%</h3>
     <div class="sr"><span class="sl">Signals (filtered)</span><span class="sv n" id="f_n">--</span></div>
     <div class="sr"><span class="sl">Win Rate</span><span class="sv" id="f_wr">--</span></div>
@@ -412,7 +427,7 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
       <th onclick="bsrt('b_wr')">B WR%</th><th onclick="bsrt('b_pf')">B PF</th><th onclick="bsrt('b_ret')">B Ret%</th>
       <th onclick="bsrt('c_wr')">C WR%</th><th onclick="bsrt('c_pf')">C PF</th><th onclick="bsrt('c_ret')">C Ret%</th>
       <th onclick="bsrt('d_wr')">D WR%</th><th onclick="bsrt('d_pf')">D PF</th><th onclick="bsrt('d_ret')">D Ret%</th>
-      <th onclick="bsrt('e_n')">E Sigs</th><th onclick="bsrt('e_wr')">E WR%</th><th onclick="bsrt('e_pf')">E PF</th>
+      <th onclick="bsrt('e_n')">E1 Sigs</th><th onclick="bsrt('e_wr')">E1 WR%</th><th onclick="bsrt('e_pf')">E1 PF</th><th onclick="bsrt('e2_n')">E2 Sigs</th><th onclick="bsrt('e2_wr')">E2 WR%</th><th onclick="bsrt('e2_pf')">E2 PF</th><th onclick="bsrt('e3_n')">E3 Sigs</th><th onclick="bsrt('e3_wr')">E3 WR%</th><th onclick="bsrt('e3_pf')">E3 PF</th><th onclick="bsrt('e4_n')">E4 Sigs</th><th onclick="bsrt('e4_wr')">E4 WR%</th><th onclick="bsrt('e4_pf')">E4 PF</th>
       <th onclick="bsrt('f_n')">F Sigs</th><th onclick="bsrt('f_wr')">F WR%</th><th onclick="bsrt('f_pf')">F PF</th>
       <th onclick="bsrt('g_n')">G Sigs</th><th onclick="bsrt('g_wr')">G WR%</th><th onclick="bsrt('g_pf')">G PF</th>
       <th onclick="bsrt('h_n')">H Sigs</th><th onclick="bsrt('h_wr')">H WR%</th><th onclick="bsrt('h_pf')">H PF</th>
@@ -492,7 +507,7 @@ function calcStats(trades){
   return{n:trades.length,w:ws.length,l:ls.length,t:ts.length,wr:ws.length/trades.length*100,pf:pf,ret:trades.reduce(function(s,t){return s+t.p;},0)};
 }
 
-async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,runC,runD,runE,runF,gfmF,runG,gWinP,gStopP,gfmG,runH,hWinP,hStopP,gfmH){
+async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,runC,runD,runE,runF,gfmF,runG,gWinP,gStopP,gfmG,runH,hWinP,hStopP,gfmH,runE2,e2GapV,e2WinP,e2StopP,runE3,e3GapV,e3WinP,e3StopP,runE4,e4GapV,e4WinP,e4StopP){
   gfmF=gfmF||gfm; gfmG=gfmG||8; gfmH=gfmH||10;
   var bars=await fetchBars(tk,from,to);
   if(!bars.length)return null;
@@ -518,7 +533,10 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
     var rC=runC?evalLong(intra,ep,4,0.5):null;
     var rD=runD?evalShort(intra,ep,2,0.5):null;
     var rvol_val=rvol||0;
-    var eActive=gap>=gfm,rE=(runE&&eActive)?evalShort(intra,ep,eWinP,eStopP):null;var rE1=(runE&&gap>=10&&gap<11)?evalShort(intra,ep,2,2):null;var rE2=(runE&&gap>=11&&gap<13)?evalShort(intra,ep,2.5,2.5):null;var rE3=(runE&&gap>=13&&gap<15)?evalShort(intra,ep,3,3):null;var rE4=(runE&&gap>=15)?evalShort(intra,ep,5,5):null;
+    var eActive=gap>=gfm,rE=(runE&&eActive)?evalShort(intra,ep,eWinP,eStopP):null;
+    var e2Active=gap>=(e2GapV||11),rE2=(runE2&&e2Active)?evalShort(intra,ep,e2WinP,e2StopP):null;
+    var e3Active=gap>=(e3GapV||13),rE3=(runE3&&e3Active)?evalShort(intra,ep,e3WinP,e3StopP):null;
+    var e4Active=gap>=(e4GapV||15),rE4=(runE4&&e4Active)?evalShort(intra,ep,e4WinP,e4StopP):null;var rE1=(runE&&gap>=10&&gap<11)?evalShort(intra,ep,2,2):null;var rE2=(runE&&gap>=11&&gap<13)?evalShort(intra,ep,2.5,2.5):null;var rE3=(runE&&gap>=13&&gap<15)?evalShort(intra,ep,3,3):null;var rE4=(runE&&gap>=15)?evalShort(intra,ep,5,5):null;
     var fActive=gapDown<=-gfmF,rF=(runF&&fActive)?evalLong(intra,ep,fWinP,fStopP):null;
     var gActive=gapDown<=-gfmG&&rvol_val>=3;
     var gEntry=gActive?getFirstGreenCandle(intra):null;
@@ -538,7 +556,7 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
       gActive:gActive&&runG,gr:rG?rG.r:'',gp2:rG?rG.p:0,
       hActive:hActive&&runH,hr:rH?rH.r:'',hp2:rH?rH.p:0,gapDown:parseFloat(gapDown.toFixed(2))});
   }
-  return{a:calcStats(trades.a),b:calcStats(trades.b),c:calcStats(trades.c),d:calcStats(trades.d),e:calcStats(trades.e),f:calcStats(trades.f),g:calcStats(trades.g),h:calcStats(trades.h),e1:calcStats(trades.e1),e2:calcStats(trades.e2),e3:calcStats(trades.e3),e4:calcStats(trades.e4),dayRows:dayRows};
+  return{a:calcStats(trades.a),b:calcStats(trades.b),c:calcStats(trades.c),d:calcStats(trades.d),e:calcStats(trades.e),e2:calcStats(trades.e2),e3:calcStats(trades.e3),e4:calcStats(trades.e4),f:calcStats(trades.f),g:calcStats(trades.g),h:calcStats(trades.h),e1:calcStats(trades.e1),e2:calcStats(trades.e2),e3:calcStats(trades.e3),e4:calcStats(trades.e4),dayRows:dayRows};
 }
 
 var running=false,singleRows=[],batchResults=[],sCol='date',sDir=1,bCol='a_wr',bDir=-1;
@@ -587,7 +605,7 @@ function cRet(v){if(!v||!v.n)return'--';var c=v.ret>=0?'#3fb950':'#f85149';retur
 function renderBatch(){
   var s=batchResults.slice().sort(function(a,b){var av=a[bCol]||(-999),bv=b[bCol]||(-999);return(av>bv?1:av<bv?-1:0)*bDir;});
   document.getElementById('batchTbody').innerHTML=s.map(function(r){
-    return '<tr><td><b>'+r.tk+'</b></td><td>'+gb(r.grp)+'</td>'+'<td>'+cWR(r.a,20)+'</td><td>'+cPF(r.a)+'</td><td>'+cRet(r.a)+'</td>'+'<td>'+cWR(r.b,14.3)+'</td><td>'+cPF(r.b)+'</td><td>'+cRet(r.b)+'</td>'+'<td>'+cWR(r.c,11.1)+'</td><td>'+cPF(r.c)+'</td><td>'+cRet(r.c)+'</td>'+'<td>'+cWR(r.d,20)+'</td><td>'+cPF(r.d)+'</td><td>'+cRet(r.d)+'</td>'+'<td>'+(r.e?r.e.n:0)+'</td><td>'+cWR(r.e,50)+'</td><td>'+cPF(r.e)+'</td>'+'<td>'+(r.f?r.f.n:0)+'</td><td>'+cWR(r.f,50)+'</td><td>'+cPF(r.f)+'</td>'+'<td>'+(r.g?r.g.n:0)+'</td><td>'+cWR(r.g,57.1)+'</td><td>'+cPF(r.g)+'</td>'+'<td>'+(r.h?r.h.n:0)+'</td><td>'+cWR(r.h,62.5)+'</td><td>'+cPF(r.h)+'</td>'+'</tr>';
+    return '<tr><td><b>'+r.tk+'</b></td><td>'+gb(r.grp)+'</td>'+'<td>'+cWR(r.a,20)+'</td><td>'+cPF(r.a)+'</td><td>'+cRet(r.a)+'</td>'+'<td>'+cWR(r.b,14.3)+'</td><td>'+cPF(r.b)+'</td><td>'+cRet(r.b)+'</td>'+'<td>'+cWR(r.c,11.1)+'</td><td>'+cPF(r.c)+'</td><td>'+cRet(r.c)+'</td>'+'<td>'+cWR(r.d,20)+'</td><td>'+cPF(r.d)+'</td><td>'+cRet(r.d)+'</td>'+'<td>'+(r.e?r.e.n:0)+'</td><td>'+cWR(r.e,50)+'</td><td>'+cPF(r.e)+'</td>'+'<td>'+(r.e2?r.e2.n:0)+'</td><td>'+cWR(r.e2,50)+'</td><td>'+cPF(r.e2)+'</td>'+'<td>'+(r.e3?r.e3.n:0)+'</td><td>'+cWR(r.e3,50)+'</td><td>'+cPF(r.e3)+'</td>'+'<td>'+(r.e4?r.e4.n:0)+'</td><td>'+cWR(r.e4,50)+'</td><td>'+cPF(r.e4)+'</td>'+'<td>'+(r.f?r.f.n:0)+'</td><td>'+cWR(r.f,50)+'</td><td>'+cPF(r.f)+'</td>'+'<td>'+(r.g?r.g.n:0)+'</td><td>'+cWR(r.g,57.1)+'</td><td>'+cPF(r.g)+'</td>'+'<td>'+(r.h?r.h.n:0)+'</td><td>'+cWR(r.h,62.5)+'</td><td>'+cPF(r.h)+'</td>'+'</tr>';
   }).join('');
 }
 function bsrt(c){bCol===c?bDir*=-1:(bCol=c,bDir=-1);renderBatch();}
@@ -605,7 +623,7 @@ async function runOne(){
   ['boxA','boxB','boxC','boxD','boxE','boxF','boxG','boxH'].forEach(function(id){var b=document.getElementById(id);if(b)b.classList.remove('win');});
   document.getElementById('singleTitle').textContent=tk+' -- Single Ticker Results';
   document.getElementById('singleTitle').style.display='block';
-  var cardMap={a:'boxA',b:'boxB',c:'boxC',d:'boxD',e:'boxE',f:'boxF',g:'boxG',h:'boxH'};
+  var cardMap={a:'boxA',b:'boxB',c:'boxC',d:'boxD',e:'boxE',e2:'boxE2',e3:'boxE3',e4:'boxE4',f:'boxF',g:'boxG',h:'boxH'};
   Object.keys(cardMap).forEach(function(id){var b=document.getElementById(cardMap[id]);if(b)b.style.display=isOn(id)?'':'none';});
   document.getElementById('plab').textContent='Fetching '+tk+'...';
   document.getElementById('bar').style.width='30%';
@@ -626,7 +644,7 @@ async function runOne(){
     document.getElementById('fCardTitle').innerHTML='F: GAP FADE LONG<br>PM min gap &lt;-'+gfmF+'% &#x00B7; up '+fWinP+'% / down '+fStopP+'% | BE '+fBE+'%';
     document.getElementById('gCardTitle').innerHTML='G: HONED FADE LONG<br>Gap &le;-'+gfmG+'% &#x00B7; RVOL &ge;3x | BE '+gBE+'%';
     document.getElementById('hCardTitle').innerHTML='H: PANIC REVERSAL<br>Gap &le;-'+gfmH+'% &#x00B7; RVOL &ge;4x &le;9:42 | BE '+hBE+'%';
-    var res=await processTicker(tk,from,to,gfmV,eWinP,eStopP,fWinP,fStopP,isOn('a'),isOn('b'),isOn('c'),isOn('d'),isOn('e'),isOn('f'),gfmF,isOn('g'),gWinP,gStopP,gfmG,isOn('h'),hWinP,hStopP,gfmH);
+    var res=await processTicker(tk,from,to,gfmV,eWinP,eStopP,fWinP,fStopP,isOn('a'),isOn('b'),isOn('c'),isOn('d'),isOn('e'),isOn('f'),gfmF,isOn('g'),gWinP,gStopP,gfmG,isOn('h'),hWinP,hStopP,gfmH,isOn('e2'),+document.getElementById('e2Gap').value,+document.getElementById('e2Win').value,+document.getElementById('e2Stop').value,isOn('e3'),+document.getElementById('e3Gap').value,+document.getElementById('e3Win').value,+document.getElementById('e3Stop').value,isOn('e4'),+document.getElementById('e4Gap').value,+document.getElementById('e4Win').value,+document.getElementById('e4Stop').value);
     document.getElementById('bar').style.width='100%';
     if(!res){lg(tk+': no data','err');}
     else{
@@ -671,7 +689,7 @@ async function runAll(){
       try{res=await processTicker(tk,from,to,gfm,+document.getElementById('eWin').value,+document.getElementById('eStop').value,+document.getElementById('fWin').value,+document.getElementById('fStop').value,isOn('a'),isOn('b'),isOn('c'),isOn('d'),isOn('e'),isOn('f'),+document.getElementById('gapFadeF').value,isOn('g'),+document.getElementById('gWin').value,+document.getElementById('gStop').value,+document.getElementById('gapFadeG').value,isOn('h'),+document.getElementById('hWin').value,+document.getElementById('hStop').value,+document.getElementById('gapFadeH').value);}
       catch(e){if(e.retry){lg(tk+': rate limited, waiting 65s...','err');await sleep(65000);attempts++;}else{errMsg=e.message;lg(tk+': '+e.message,'err');break;}}
     }
-    var row={tk:tk,grp:grp,a:res?res.a:null,b:res?res.b:null,c:res?res.c:null,d:res?res.d:null,e:res?res.e:null,f:res?res.f:null,g:res?res.g:null,h:res?res.h:null,error:res?null:errMsg,a_wr:res?res.a.wr:-999,a_pf:res?res.a.pf:-999,a_ret:res?res.a.ret:-999,b_wr:res?res.b.wr:-999,b_pf:res?res.b.pf:-999,b_ret:res?res.b.ret:-999,c_wr:res?res.c.wr:-999,c_pf:res?res.c.pf:-999,c_ret:res?res.c.ret:-999,d_wr:res?res.d.wr:-999,d_pf:res?res.d.pf:-999,d_ret:res?res.d.ret:-999,e_n:res?res.e.n:0,e_wr:res?res.e.wr:-999,e_pf:res?res.e.pf:-999,f_n:res?res.f.n:0,f_wr:res?res.f.wr:-999,f_pf:res?res.f.pf:-999,g_n:res?res.g.n:0,g_wr:res?res.g.wr:-999,g_pf:res?res.g.pf:-999,h_n:res?res.h.n:0,h_wr:res?res.h.wr:-999,h_pf:res?res.h.pf:-999};
+    var row={tk:tk,grp:grp,a:res?res.a:null,b:res?res.b:null,c:res?res.c:null,d:res?res.d:null,e:res?res.e:null,f:res?res.f:null,g:res?res.g:null,h:res?res.h:null,error:res?null:errMsg,a_wr:res?res.a.wr:-999,a_pf:res?res.a.pf:-999,a_ret:res?res.a.ret:-999,b_wr:res?res.b.wr:-999,b_pf:res?res.b.pf:-999,b_ret:res?res.b.ret:-999,c_wr:res?res.c.wr:-999,c_pf:res?res.c.pf:-999,c_ret:res?res.c.ret:-999,d_wr:res?res.d.wr:-999,d_pf:res?res.d.pf:-999,d_ret:res?res.d.ret:-999,e_n:res?res.e.n:0,e_wr:res?res.e.wr:-999,e_pf:res?res.e.pf:-999,e2_n:res?res.e2.n:0,e2_wr:res?res.e2.wr:-999,e2_pf:res?res.e2.pf:-999,e3_n:res?res.e3.n:0,e3_wr:res?res.e3.wr:-999,e3_pf:res?res.e3.pf:-999,e4_n:res?res.e4.n:0,e4_wr:res?res.e4.wr:-999,e4_pf:res?res.e4.pf:-999,f_n:res?res.f.n:0,f_wr:res?res.f.wr:-999,f_pf:res?res.f.pf:-999,g_n:res?res.g.n:0,g_wr:res?res.g.wr:-999,g_pf:res?res.g.pf:-999,h_n:res?res.h.n:0,h_wr:res?res.h.wr:-999,h_pf:res?res.h.pf:-999};
     batchResults.push(row);
     renderBatch();
     if(res)lg(tk+'['+grp+'] E:'+res.e.n+' F:'+res.f.n+' G:'+res.g.n+' H:'+res.h.n+' sigs',(res.d.pf>=1||res.e.pf>=1||res.f.pf>=1||res.g.pf>=1||res.h.pf>=1)?'ok':'neu');
@@ -715,7 +733,7 @@ function exportAll(){
 function dl(c,name){var a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([c],{type:'text/csv'})),download:name});a.click();}
 
 function updatePills(){
-  var map={a:'on',b:'on-green',c:'on-purple',d:'on-red',e:'on-orange',f:'on-teal',g:'on-cyan',h:'on-yellow'};
+  var map={a:'on',b:'on-green',c:'on-purple',d:'on-red',e:'on-orange',e2:'on-orange',e3:'on-orange',e4:'on-orange',f:'on-teal',g:'on-cyan',h:'on-yellow'};
   Object.keys(map).forEach(function(id){
     var pill=document.getElementById('pill_'+id);
     var cb=document.getElementById('cb_'+id);
