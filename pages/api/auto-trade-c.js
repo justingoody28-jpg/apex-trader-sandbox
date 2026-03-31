@@ -1,4 +1,4 @@
-// pages/api/auto-trade-c.js ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
+// pages/api/auto-trade-c.js ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
 // Cron: 9:29 AM EDT weekdays (cron-job.org "APEX Auto-Trade C")
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
@@ -92,7 +92,25 @@ export default async function handler(req, res) {
       } catch(eD) { results.push({ symbol: sym, scenario: 'D', status: 'error', error: eD.message }); }
     }
 
-    // Scenario F: Long gap-down <=-5% | TP +2% / SL -2%
+    // Scenario A: Long gap-up >=2% ONLY when SPY gap >0.5% | TP +2% / SL -0.5%
+    if (gap >= 2 && spyGap > 0.5) {
+      const tpA = +(price * 1.02).toFixed(2);
+      const slA = +(price * 0.995).toFixed(2);
+      const qtyA = Math.max(1, Math.floor(bet / price));
+      try {
+        const paramsA = new URLSearchParams({
+          'class': 'otoco', 'duration': 'day',
+          'symbol[0]': sym, 'side[0]': 'buy', 'quantity[0]': String(qtyA), 'type[0]': 'market',
+          'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyA), 'type[1]': 'limit', 'price[1]': String(tpA),
+          'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qtyA), 'type[2]': 'stop', 'stop[2]': String(slA),
+        });
+        const rdA = await fetch(BASE + '/accounts/' + TRADIER_ACCOUNT_ID + '/orders', { method: 'POST', headers: H, body: paramsA });
+        const jA = await rdA.json();
+        results.push({ symbol: sym, scenario: 'A', status: rdA.ok ? 'filled' : 'error', gap: gap.toFixed(2), spyGap: spyGap.toFixed(2), price, qty: qtyA, tp: tpA, sl: slA, order: jA?.order });
+      } catch(eA) { results.push({ symbol: sym, scenario: 'A', status: 'error', error: eA.message }); }
+    }
+
+        // Scenario F: Long gap-down <=-5% | TP +2% / SL -2%
     if (gap <= -5) {
       const tpF = +(price * 1.02).toFixed(2);
       const slF = +(price * 0.98).toFixed(2);
