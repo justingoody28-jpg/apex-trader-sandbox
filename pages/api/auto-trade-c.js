@@ -1,4 +1,4 @@
-// pages/api/auto-trade-c.js Ã¢ÂÂ Scenario E GAP FADE SHORT, Tiered Exits
+// pages/api/auto-trade-c.js ÃÂ¢ÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
 // Cron: 9:29 AM EDT weekdays (cron-job.org "APEX Auto-Trade C")
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
@@ -104,46 +104,7 @@ export default async function handler(req, res) {
       } catch(eF) { results.push({ symbol: sym, scenario: 'F', status: 'error', error: eF.message }); }
     }
 
-
-      const tpD = +(price * 0.98).toFixed(2);
-      const slD = +(price * 1.005).toFixed(2);
-      const qtyD = Math.max(1, Math.floor(bet / price));
-      try {
-        const paramsD = new URLSearchParams({
-          'class': 'otoco', 'duration': 'day',
-          'symbol[0]': sym, 'side[0]': 'sell_short', 'quantity[0]': String(qtyD), 'type[0]': 'market',
-          'symbol[1]': sym, 'side[1]': 'buy_to_cover', 'quantity[1]': String(qtyD), 'type[1]': 'limit', 'price[1]': String(tpD),
-          'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qtyD), 'type[2]': 'stop', 'stop[2]': String(slD),
-        });
-        const rdD = await fetch('https://api.tradier.com/v1/accounts/' + TRADIER_ACCOUNT_ID + '/orders', {
-          method: 'POST', headers: { 'Authorization': 'Bearer ' + TRADIER_TOKEN, 'Accept': 'application/json' }, body: paramsD
-        });
-        const jD = await rdD.json();
-        results.push({ symbol: sym, scenario: 'D', status: rdD.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD, order: jD?.order });
-      } catch(eD) { results.push({ symbol: sym, scenario: 'D', status: 'error', error: eD.message }); }
-    }
-
-    // Scenario F: Long gap-down <=-5% | TP +2% / SL -2%
-    if (gap <= -5) {
-      const tpF = +(price * 1.02).toFixed(2);
-      const slF = +(price * 0.98).toFixed(2);
-      const qtyF = Math.max(1, Math.floor(bet / price));
-      try {
-        const paramsF = new URLSearchParams({
-          'class': 'otoco', 'duration': 'day',
-          'symbol[0]': sym, 'side[0]': 'buy', 'quantity[0]': String(qtyF), 'type[0]': 'market',
-          'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'limit', 'price[1]': String(tpF),
-          'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qtyF), 'type[2]': 'stop', 'stop[2]': String(slF),
-        });
-        const rdF = await fetch('https://api.tradier.com/v1/accounts/' + TRADIER_ACCOUNT_ID + '/orders', {
-          method: 'POST', headers: { 'Authorization': 'Bearer ' + TRADIER_TOKEN, 'Accept': 'application/json' }, body: paramsF
-        });
-        const jF = await rdF.json();
-        results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order });
-      } catch(eF) { results.push({ symbol: sym, scenario: 'F', status: 'error', error: eF.message }); }
-    }
-
-    if (!tier) {
+        if (!tier) {
       results.push({ symbol: sym, status: 'skipped', reason: `Gap ${gap.toFixed(2)}% below +10% threshold`, gap: +gap.toFixed(2), rvol_logged: rvol, priceSource: bidPrice ? 'bid' : 'last' });
       continue;
     }
