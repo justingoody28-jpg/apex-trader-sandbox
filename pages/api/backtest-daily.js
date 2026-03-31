@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     for (const bar of pmBars) {
       const dt = new Date(bar.t);
       const utcH = dt.getUTCHours();
-      const utcM = dt.getUTCMnutes();
+      const utcM = dt.getUTCMinutes();
       if (utcM === 25 && (utcH === 13 || utcH === 14)) {
         const dateStr = dt.toISOString().slice(0, 10);
         pmMap[dateStr] = bar.c; // close of 9:25-9:30 bar = last pre-market print
