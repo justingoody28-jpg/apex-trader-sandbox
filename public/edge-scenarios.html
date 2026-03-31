@@ -323,7 +323,7 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
   </div>
   <div class="trade-ctrls">
     <div style="margin-bottom:8px">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">BULK ADD ÃÂ¢ÃÂÃÂ paste tickers (comma, space, or newline separated)</div>
+      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">BULK ADD ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ paste tickers (comma, space, or newline separated)</div>
       <textarea id="bulkTickerInput" rows="3" placeholder="AAPL, TSLA, NVDA..." style="width:100%;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box"></textarea>
       <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
         <label style="font-size:11px;color:#8b949e;white-space:nowrap">$ Bet each:</label>
@@ -689,7 +689,7 @@ async function runAll(){
       try{res=await processTicker(tk,from,to,gfm,+document.getElementById('eWin').value,+document.getElementById('eStop').value,+document.getElementById('fWin').value,+document.getElementById('fStop').value,isOn('a'),isOn('b'),isOn('c'),isOn('d'),isOn('e'),isOn('f'),+document.getElementById('gapFadeF').value,isOn('g'),+document.getElementById('gWin').value,+document.getElementById('gStop').value,+document.getElementById('gapFadeG').value,isOn('h'),+document.getElementById('hWin').value,+document.getElementById('hStop').value,+document.getElementById('gapFadeH').value,isOn('e2'),+document.getElementById('e2Gap').value,+document.getElementById('e2Win').value,+document.getElementById('e2Stop').value,isOn('e3'),+document.getElementById('e3Gap').value,+document.getElementById('e3Win').value,+document.getElementById('e3Stop').value,isOn('e4'),+document.getElementById('e4Gap').value,+document.getElementById('e4Win').value,+document.getElementById('e4Stop').value);}
       catch(e){if(e.retry){lg(tk+': rate limited, waiting 65s...','err');await sleep(65000);attempts++;}else{errMsg=e.message;lg(tk+': '+e.message,'err');break;}}
     }
-    var row={tk:tk,grp:grp,a:res?res.a:null,b:res?res.b:null,c:res?res.c:null,d:res?res.d:null,e:res?res.e:null,f:res?res.f:null,g:res?res.g:null,h:res?res.h:null,error:res?null:errMsg,a_wr:res?res.a.wr:-999,a_pf:res?res.a.pf:-999,a_ret:res?res.a.ret:-999,b_wr:res?res.b.wr:-999,b_pf:res?res.b.pf:-999,b_ret:res?res.b.ret:-999,c_wr:res?res.c.wr:-999,c_pf:res?res.c.pf:-999,c_ret:res?res.c.ret:-999,d_wr:res?res.d.wr:-999,d_pf:res?res.d.pf:-999,d_ret:res?res.d.ret:-999,e_n:res?res.e.n:0,e_wr:res?res.e.wr:-999,e_pf:res?res.e.pf:-999,e2_n:res?res.e2.n:0,e2_wr:res?res.e2.wr:-999,e2_pf:res?res.e2.pf:-999,e3_n:res?res.e3.n:0,e3_wr:res?res.e3.wr:-999,e3_pf:res?res.e3.pf:-999,e4_n:res?res.e4.n:0,e4_wr:res?res.e4.wr:-999,e4_pf:res?res.e4.pf:-999,f_n:res?res.f.n:0,f_wr:res?res.f.wr:-999,f_pf:res?res.f.pf:-999,g_n:res?res.g.n:0,g_wr:res?res.g.wr:-999,g_pf:res?res.g.pf:-999,h_n:res?res.h.n:0,h_wr:res?res.h.wr:-999,h_pf:res?res.h.pf:-999};
+    var row={tk:tk,grp:grp,a:res?res.a:null,b:res?res.b:null,c:res?res.c:null,d:res?res.d:null,e:res?res.e:null,e2:res?res.e2:null,e3:res?res.e3:null,e4:res?res.e4:null,f:res?res.f:null,g:res?res.g:null,h:res?res.h:null,error:res?null:errMsg,a_wr:res?res.a.wr:-999,a_pf:res?res.a.pf:-999,a_ret:res?res.a.ret:-999,b_wr:res?res.b.wr:-999,b_pf:res?res.b.pf:-999,b_ret:res?res.b.ret:-999,c_wr:res?res.c.wr:-999,c_pf:res?res.c.pf:-999,c_ret:res?res.c.ret:-999,d_wr:res?res.d.wr:-999,d_pf:res?res.d.pf:-999,d_ret:res?res.d.ret:-999,e_n:res?res.e.n:0,e_wr:res?res.e.wr:-999,e_pf:res?res.e.pf:-999,e2_n:res?res.e2.n:0,e2_wr:res?res.e2.wr:-999,e2_pf:res?res.e2.pf:-999,e3_n:res?res.e3.n:0,e3_wr:res?res.e3.wr:-999,e3_pf:res?res.e3.pf:-999,e4_n:res?res.e4.n:0,e4_wr:res?res.e4.wr:-999,e4_pf:res?res.e4.pf:-999,f_n:res?res.f.n:0,f_wr:res?res.f.wr:-999,f_pf:res?res.f.pf:-999,g_n:res?res.g.n:0,g_wr:res?res.g.wr:-999,g_pf:res?res.g.pf:-999,h_n:res?res.h.n:0,h_wr:res?res.h.wr:-999,h_pf:res?res.h.pf:-999};
     batchResults.push(row);
     renderBatch();
     // Interim card updates every 10 tickers
@@ -1073,7 +1073,7 @@ function batchExport() {
   lg("Exported " + list.length + " tickers to CSV", "ok");
 }
 
-// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ AUTO-TRADER helpers ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
+// ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ AUTO-TRADER helpers ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 function injectScheduleBtns() {
   ['A','B','C','D','E','F','G','H'].forEach(function(s) {
     var wrap = document.getElementById('execWrap' + s);
@@ -1120,12 +1120,12 @@ function renderScheduleList() {
   var schedules = [];
   try { schedules = JSON.parse(localStorage.getItem('apex_auto_schedules') || '[]'); } catch(e) {}
   if (!schedules.length) {
-    el.innerHTML = '<em style="color:#8b949e">No schedules yet ÃÂ¢ÃÂÃÂ run a backtest, then click ÃÂ°ÃÂÃÂÃÂ Schedule</em>';
+    el.innerHTML = '<em style="color:#8b949e">No schedules yet ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ run a backtest, then click ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ Schedule</em>';
     return;
   }
   el.innerHTML = schedules.map(function(x) {
     return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid #21262d;padding:2px 0">' +
-      '<span>ÃÂ¢ÃÂÃÂ¶ ' + x.symbol + ' ' + x.scenario + ' ' + x.side.toUpperCase() + ' $' + x.bet + '</span>' +
+      '<span>ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¶ ' + x.symbol + ' ' + x.scenario + ' ' + x.side.toUpperCase() + ' $' + x.bet + '</span>' +
       '<span style="color:#8b949e;font-size:10px">' + (x.added||''). slice(0,10) + '</span></div>';
   }).join('');
 }
@@ -1144,13 +1144,13 @@ function syncSchedules() {
     if (!st) return;
     if (d.ok) {
       st.style.color='#3fb950';
-      st.textContent='ÃÂ¢ÃÂÃÂ Synced '+d.saved+' schedules at '+new Date().toLocaleTimeString();
+      st.textContent='ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Synced '+d.saved+' schedules at '+new Date().toLocaleTimeString();
     } else {
       st.style.color='#f85149';
-      st.textContent='ÃÂ¢ÃÂÃÂ '+(d.error||'Sync failed');
+      st.textContent='ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ '+(d.error||'Sync failed');
     }
   }).catch(function(e){
-    if (st) { st.style.color='#f85149'; st.textContent='ÃÂ¢ÃÂÃÂ '+e.message; }
+    if (st) { st.style.color='#f85149'; st.textContent='ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ '+e.message; }
   });
 }
 
@@ -1182,7 +1182,7 @@ function bulkSchedule() {
   var inp = document.getElementById('bulkTickerInput');
   if (inp) inp.value = '';
   var st = document.getElementById('syncStatus');
-  if (st) { st.style.color='#3fb950'; st.textContent='+ Added '+added+' tickers ÃÂ¢ÃÂÃÂ click Sync to Server when ready'; }
+  if (st) { st.style.color='#3fb950'; st.textContent='+ Added '+added+' tickers ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ click Sync to Server when ready'; }
 }
 </script>
 </body>
