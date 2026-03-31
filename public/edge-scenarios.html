@@ -323,7 +323,7 @@ button { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; font-
   </div>
   <div class="trade-ctrls">
     <div style="margin-bottom:8px">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">BULK ADD Ã¢ÂÂ paste tickers (comma, space, or newline separated)</div>
+      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">BULK ADD ÃÂ¢ÃÂÃÂ paste tickers (comma, space, or newline separated)</div>
       <textarea id="bulkTickerInput" rows="3" placeholder="AAPL, TSLA, NVDA..." style="width:100%;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box"></textarea>
       <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
         <label style="font-size:11px;color:#8b949e;white-space:nowrap">$ Bet each:</label>
@@ -694,13 +694,23 @@ async function runAll(){
     renderBatch();
     // Interim card updates every 10 tickers
     if((i+1)%10===0||i===tickers.length-1){
-      var sc2=['d','e','e2','e3','e4','g','h'];
-      var agg2={}; sc2.forEach(function(sc){agg2[sc]={w:0,l:0,n:0};});
-      batchResults.forEach(function(row){sc2.forEach(function(sc){if(row[sc]&&row[sc].n){agg2[sc].w+=row[sc].w;agg2[sc].l+=row[sc].l;agg2[sc].n+=row[sc].n;}});});
-      var parts2=sc2.filter(function(sc){return agg2[sc].n>0;}).map(function(sc){return sc.toUpperCase()+': '+(agg2[sc].w/agg2[sc].n*100).toFixed(0)+'% WR (n='+agg2[sc].n+')';});
-      lg('📊 Interim '+(i+1)+'/'+tickers.length+' | '+parts2.join(' | '),'inf');
+      var scAll=['a','b','c','d','e','e2','e3','e4','f','g','h'];
+      var agg2={};
+      scAll.forEach(function(sc){agg2[sc]={w:0,l:0,n:0,ret:0,pf:0,wr:0};});
+      batchResults.forEach(function(row){
+        scAll.forEach(function(sc){
+          if(row[sc]&&row[sc].n){agg2[sc].w+=row[sc].w;agg2[sc].l+=row[sc].l;agg2[sc].n+=row[sc].n;agg2[sc].ret+=row[sc].ret;}
+        });
+      });
+      scAll.forEach(function(sc){
+        var a=agg2[sc];
+        if(a.n>0){a.wr=a.w/a.n*100;a.pf=a.l>0?Math.abs(a.w*1/a.l):a.w>0?99:0;}
+      });
+      var boxMap={a:'boxA',b:'boxB',c:'boxC',d:'boxD',e:'boxE',e2:'boxE2',e3:'boxE3',e4:'boxE4',f:'boxF',g:'boxG',h:'boxH'};
+      scAll.forEach(function(sc){if(agg2[sc].n>0)setCard(sc,agg2[sc],{a:20,b:14.3,c:11.1,d:20,e:50,e2:50,e3:50,e4:50,f:50,g:57.1,h:62.5}[sc],boxMap[sc]);});
+      var parts2=['d','e','e2','e3','e4','g','h'].filter(function(sc){return agg2[sc].n>0;}).map(function(sc){return sc.toUpperCase()+': '+agg2[sc].wr.toFixed(0)+'% WR (n='+agg2[sc].n+')';});
+      lg('\uD83D\uDCCA Interim '+(i+1)+'/'+tickers.length+' | '+parts2.join(' | '),'inf');
     }
-
     if(res)lg(tk+'['+grp+'] E:'+res.e.n+' F:'+res.f.n+' G:'+res.g.n+' H:'+res.h.n+' sigs',(res.d.pf>=1||res.e.pf>=1||res.f.pf>=1||res.g.pf>=1||res.h.pf>=1)?'ok':'neu');
     if(i<tickers.length-1&&running)await sleep(delayMs);
   }
@@ -1063,7 +1073,7 @@ function batchExport() {
   lg("Exported " + list.length + " tickers to CSV", "ok");
 }
 
-// Ã¢ÂÂÃ¢ÂÂ AUTO-TRADER helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ AUTO-TRADER helpers ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
 function injectScheduleBtns() {
   ['A','B','C','D','E','F','G','H'].forEach(function(s) {
     var wrap = document.getElementById('execWrap' + s);
@@ -1110,12 +1120,12 @@ function renderScheduleList() {
   var schedules = [];
   try { schedules = JSON.parse(localStorage.getItem('apex_auto_schedules') || '[]'); } catch(e) {}
   if (!schedules.length) {
-    el.innerHTML = '<em style="color:#8b949e">No schedules yet Ã¢ÂÂ run a backtest, then click Ã°ÂÂÂ Schedule</em>';
+    el.innerHTML = '<em style="color:#8b949e">No schedules yet ÃÂ¢ÃÂÃÂ run a backtest, then click ÃÂ°ÃÂÃÂÃÂ Schedule</em>';
     return;
   }
   el.innerHTML = schedules.map(function(x) {
     return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid #21262d;padding:2px 0">' +
-      '<span>Ã¢ÂÂ¶ ' + x.symbol + ' ' + x.scenario + ' ' + x.side.toUpperCase() + ' $' + x.bet + '</span>' +
+      '<span>ÃÂ¢ÃÂÃÂ¶ ' + x.symbol + ' ' + x.scenario + ' ' + x.side.toUpperCase() + ' $' + x.bet + '</span>' +
       '<span style="color:#8b949e;font-size:10px">' + (x.added||''). slice(0,10) + '</span></div>';
   }).join('');
 }
@@ -1134,13 +1144,13 @@ function syncSchedules() {
     if (!st) return;
     if (d.ok) {
       st.style.color='#3fb950';
-      st.textContent='Ã¢ÂÂ Synced '+d.saved+' schedules at '+new Date().toLocaleTimeString();
+      st.textContent='ÃÂ¢ÃÂÃÂ Synced '+d.saved+' schedules at '+new Date().toLocaleTimeString();
     } else {
       st.style.color='#f85149';
-      st.textContent='Ã¢ÂÂ '+(d.error||'Sync failed');
+      st.textContent='ÃÂ¢ÃÂÃÂ '+(d.error||'Sync failed');
     }
   }).catch(function(e){
-    if (st) { st.style.color='#f85149'; st.textContent='Ã¢ÂÂ '+e.message; }
+    if (st) { st.style.color='#f85149'; st.textContent='ÃÂ¢ÃÂÃÂ '+e.message; }
   });
 }
 
@@ -1172,7 +1182,7 @@ function bulkSchedule() {
   var inp = document.getElementById('bulkTickerInput');
   if (inp) inp.value = '';
   var st = document.getElementById('syncStatus');
-  if (st) { st.style.color='#3fb950'; st.textContent='+ Added '+added+' tickers Ã¢ÂÂ click Sync to Server when ready'; }
+  if (st) { st.style.color='#3fb950'; st.textContent='+ Added '+added+' tickers ÃÂ¢ÃÂÃÂ click Sync to Server when ready'; }
 }
 </script>
 </body>
