@@ -1,4 +1,4 @@
-// pages/api/auto-trade-c.js ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
+// pages/api/auto-trade-c.js ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Scenario E GAP FADE SHORT, Tiered Exits
 // Cron: 9:29 AM EDT weekdays (cron-job.org "APEX Auto-Trade C")
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
@@ -105,7 +105,8 @@ export default async function handler(req, res) {
           'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qtyA), 'type[2]': 'stop', 'stop[2]': String(slA),
         });
         const rdA = await fetch(BASE + '/accounts/' + TRADIER_ACCOUNT_ID + '/orders', { method: 'POST', headers: H, body: paramsA });
-        const jA = await rdA.json();
+        const rawA = await rdA.text();
+        const jA = rdA.ok ? JSON.parse(rawA) : { _status: rdA.status, _body: rawA.slice(0,200) };
         results.push({ symbol: sym, scenario: 'A', status: rdA.ok ? 'filled' : 'error', gap: gap.toFixed(2), spyGap: spyGap.toFixed(2), price, qty: qtyA, tp: tpA, sl: slA, order: jA?.order });
       } catch(eA) { results.push({ symbol: sym, scenario: 'A', status: 'error', error: eA.message }); }
     }
@@ -123,7 +124,8 @@ export default async function handler(req, res) {
           'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qtyF), 'type[2]': 'stop', 'stop[2]': String(slF),
         });
         const rdF = await fetch(BASE + '/accounts/' + TRADIER_ACCOUNT_ID + '/orders', { method: 'POST', headers: H, body: paramsF });
-        const jF = await rdF.json();
+        const rawF = await rdF.text();
+        const jF = rdF.ok ? JSON.parse(rawF) : { _status: rdF.status, _body: rawF.slice(0,200) };
         results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order });
       } catch(eF) { results.push({ symbol: sym, scenario: 'F', status: 'error', error: eF.message }); }
     }
