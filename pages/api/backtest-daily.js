@@ -46,10 +46,15 @@ export default async function handler(req, res) {
     //   EST (Nov-Mar approx): 14:25 UTC
     // Check both to avoid DST edge-case errors around transition weeks
     const pmMap = {};
+    const pm900Map = {};
     for (const bar of allPmBars) {
       const dt = new Date(bar.t);
       const utcH = dt.getUTCHours();
       const utcM = dt.getUTCMinutes();
+      if (utcM === 0 && (utcH === 13 || utcH === 14)) {
+        const ds0 = dt.toISOString().slice(0, 10);
+        pm900Map[ds0] = bar.c;
+      }
       if (utcM === 29 && (utcH === 13 || utcH === 14)) {
         const dateStr = dt.toISOString().slice(0, 10);
         pmMap[dateStr] = bar.c; // close of 9:29 1-min bar = last pre-market print
@@ -59,7 +64,7 @@ export default async function handler(req, res) {
     // Attach pmPrice to each daily bar
     const result = dailyBars.map(bar => {
       const dateStr = new Date(bar.t).toISOString().slice(0, 10);
-      return { ...bar, pmPrice: pmMap[dateStr] ?? null };
+      return { ...bar, pmPrice: pmMap[dateStr] ?? null, pm900Price: pm900Map[dateStr] ?? null };
     });
 
     res.setHeader('Cache-Control', 's-maxage=3600');
