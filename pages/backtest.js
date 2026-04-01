@@ -83,13 +83,13 @@ function evalTrade(bar, dir, tp, sl, entry) {
   if(hitW&&hitS)  return 'ambiguous'; return 'timeout';
 }
 
-function qualifyScenarios(gap, rvol, spyGap, spyRecovering) {
+function qualifyScenarios(gap, rvol, spyGap, spyRecovering, vix) {
   const q=[];
   const spyBullish = spyGap > 0.005; // SPY gap > +0.5%
   // A: long gap-up >= 2%, only on SPY bullish days
-  if(gap>=0.02 && spyBullish && spyRecovering !== false)                  q.push('A');
+  if(gap>=0.02 && spyBullish && spyRecovering !== false && (vix==null||vix<=25))                  q.push('A');
   // D: short gap-up >= 2%, only on SPY flat/down days
-  if(gap>=0.02 && !spyBullish && spyRecovering !== true)                 q.push('D');
+  if(gap>=0.02 && !spyBullish && spyRecovering !== true && (vix==null||vix>20))                 q.push('D');
   // E1-E4: tiered extreme gap-up shorts (always active)
   if(gap>=0.10 && gap<0.11)                    q.push('E1');
   if(gap>=0.11 && gap<0.13)                    q.push('E2');
@@ -195,6 +195,10 @@ export default function BacktestPage() {
       addLog('ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SPY...');
       const spyBars=await getDailyBars('SPY',FROM,TO);
       await sleep(150);
+      const vixBars=await getDailyBars('I:VIX',FROM,TO);
+      const vixMap={};
+      vixBars.forEach(b=>{ const d=new Date(b.t).toISOString().slice(0,10); vixMap[d]=b.c; });
+      await sleep(150);
       const spyMap={};
       const spy900Map={};
       const spyPmMap={};
@@ -224,7 +228,7 @@ export default function BacktestPage() {
           const avgVol=vols.slice(Math.max(0,di-20),di).reduce((a,b)=>a+b,0)/Math.min(20,di);
           const rvol=avgVol>0?(bar.v||0)/avgVol:1;
 
-          const qualifying=qualifyScenarios(gap,rvol,spyMap[date]||0,(spyPmMap[date]&&spy900Map[date])?spyPmMap[date]>spy900Map[date]:null);
+          const qualifying=qualifyScenarios(gap,rvol,spyMap[date]||0,(spyPmMap[date]&&spy900Map[date])?spyPmMap[date]>spy900Map[date]:null,vixMap[date]||null);
           if(!qualifying.length) continue;
 
           const date=new Date(bar.t).toISOString().slice(0,10);
