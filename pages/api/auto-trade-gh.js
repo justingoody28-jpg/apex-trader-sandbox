@@ -1,4 +1,4 @@
-// pages/api/auto-trade-gh.js — Scenarios G (Honed Fade Long) + H (Panic Reversal)
+// pages/api/auto-trade-gh.js â Scenarios G (Honed Fade Long) + H (Panic Reversal)
 // Cron: 9:29 AM EDT weekdays
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
@@ -8,7 +8,7 @@
 // WOLF excluded from G/H (consistently underperforms).
 //
 // Uses q.bid for pre-market price (updates live).
-// q.last only updates when a trade prints — stays at prev close pre-market.
+// q.last only updates when a trade prints â stays at prev close pre-market.
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -17,6 +17,9 @@ export default async function handler(req, res) {
 
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN;
   const TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
+  const TRADIER_PAPER_TOKEN = process.env.TRADIER_PAPER_TOKEN;
+  const PAPER_BASE = 'https://sandbox.tradier.com/v1';
+  const PaperHeaders = { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json' };
 
   if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) {
     return res.status(500).json({ error: 'Missing env vars: TRADIER_TOKEN, TRADIER_ACCOUNT_ID' });
@@ -135,9 +138,9 @@ export default async function handler(req, res) {
         'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qty), 'type[2]': 'stop',  'stop[2]':  String(sl),
       });
 
-      const or = await fetch(`${BASE}/accounts/${TRADIER_ACCOUNT_ID}/orders`, {
+      const or = await fetch(`${PAPER_BASE}/accounts/${TRADIER_ACCOUNT_ID}/orders`, {
         method: 'POST',
-        headers: { ...Headers, 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { ...PaperHeaders, 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),
       });
       const od = await or.json();
