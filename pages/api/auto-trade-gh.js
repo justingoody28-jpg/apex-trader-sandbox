@@ -1,4 +1,4 @@
-// pages/api/auto-trade-gh.js â Scenarios G (Honed Fade Long) + H (Panic Reversal)
+// pages/api/auto-trade-gh.js Ã¢ÂÂ Scenarios G (Honed Fade Long) + H (Panic Reversal)
 // Cron: 9:29 AM EDT weekdays
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
@@ -8,7 +8,7 @@
 // WOLF excluded from G/H (consistently underperforms).
 //
 // Uses q.bid for pre-market price (updates live).
-// q.last only updates when a trade prints â stays at prev close pre-market.
+// q.last only updates when a trade prints Ã¢ÂÂ stays at prev close pre-market.
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -18,6 +18,7 @@ export default async function handler(req, res) {
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN;
   const TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
   const TRADIER_PAPER_TOKEN = process.env.TRADIER_PAPER_TOKEN;
+  const TRADIER_PAPER_ACCOUNT_ID = process.env.TRADIER_PAPER_ACCOUNT_ID;
   const PAPER_BASE = 'https://sandbox.tradier.com/v1';
   const PaperHeaders = { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json' };
 
@@ -138,7 +139,7 @@ export default async function handler(req, res) {
         'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qty), 'type[2]': 'stop',  'stop[2]':  String(sl),
       });
 
-      const or = await fetch(`${PAPER_BASE}/accounts/${TRADIER_ACCOUNT_ID}/orders`, {
+      const or = await fetch(`${PAPER_BASE}/accounts/${TRADIER_PAPER_ACCOUNT_ID}/orders`, {
         method: 'POST',
         headers: { ...PaperHeaders, 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString(),
