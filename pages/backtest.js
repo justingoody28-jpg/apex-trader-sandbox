@@ -10,13 +10,15 @@ const TICKERS = [
 
 // All 7 scenarios with their exact parameters
 const SCENARIOS = {
-  A: { label:'A', full:'Long +2% / -0.5%',  dir:'long',  gapDir:'up',   gapMin:0.02, gapMax:null,  rvolMin:null, tp:0.020, sl:0.005, be:20.0, color:'#34d399' },
-  B: { label:'B', full:'Long +3% / -0.5%',  dir:'long',  gapDir:'up',   gapMin:0.02, gapMax:null,  rvolMin:null, tp:0.030, sl:0.005, be:14.3, color:'#60a5fa' },
-  C: { label:'C', full:'Long +4% / -0.5%',  dir:'long',  gapDir:'up',   gapMin:0.02, gapMax:null,  rvolMin:null, tp:0.040, sl:0.005, be:11.1, color:'#a78bfa' },
-  D: { label:'D', full:'Short -2% / +0.5%', dir:'short', gapDir:'up',   gapMin:0.02, gapMax:null,  rvolMin:null, tp:0.020, sl:0.005, be:20.0, color:'#fb923c' },
-  E: { label:'E', full:'Short -2% / +2%',   dir:'short', gapDir:'up',   gapMin:0.10, gapMax:null,  rvolMin:null, tp:0.020, sl:0.020, be:50.0, color:'#fb7185' },
-  G: { label:'G', full:'Long +3% / -3%',    dir:'long',  gapDir:'down', gapMin:null, gapMax:-0.08, rvolMin:3,    tp:0.030, sl:0.030, be:50.0, color:'#fbbf24' },
-  H: { label:'H', full:'Long +3% / -5%',    dir:'long',  gapDir:'down', gapMin:null, gapMax:-0.10, rvolMin:4,    tp:0.030, sl:0.050, be:62.5, color:'#f97316' },
+  A:  { label:'A',  full:'Long +2% / -0.5% (SPY gap >+0.5%)',   dir:'long',  gapDir:'up',   gapMin:0.02, gapMax:null,  rvolMin:null, tp:0.020, sl:0.005, be:20.0, color:'#34d399' },
+  D:  { label:'D',  full:'Short -2% / +0.5% (SPY gap ≤+0.5%)',  dir:'short', gapDir:'up',   gapMin:0.02, gapMax:null,  rvolMin:null, tp:0.020, sl:0.005, be:20.0, color:'#60a5fa' },
+  E1: { label:'E1', full:'Short -2% / -1% (gap 10-11%)',         dir:'short', gapDir:'up',   gapMin:0.10, gapMax:0.11,  rvolMin:null, tp:0.020, sl:0.010, be:33.3, color:'#f87171' },
+  E2: { label:'E2', full:'Short -2.5% / -1.5% (gap 11-13%)',     dir:'short', gapDir:'up',   gapMin:0.11, gapMax:0.13,  rvolMin:null, tp:0.025, sl:0.015, be:37.5, color:'#f87171' },
+  E3: { label:'E3', full:'Short -3% / -1.5% (gap 13-15%)',       dir:'short', gapDir:'up',   gapMin:0.13, gapMax:0.15,  rvolMin:null, tp:0.030, sl:0.015, be:33.3, color:'#f87171' },
+  E4: { label:'E4', full:'Short -5% / -3% (gap ≥15%)',           dir:'short', gapDir:'up',   gapMin:0.15, gapMax:null,  rvolMin:null, tp:0.050, sl:0.030, be:37.5, color:'#f87171' },
+  F:  { label:'F',  full:'Long +2% / -2% (gap -5% to -25%)',     dir:'long',  gapDir:'down', gapMin:0.05, gapMax:0.25,  rvolMin:null, tp:0.020, sl:0.020, be:50.0, color:'#c084fc' },
+  G:  { label:'G',  full:'Long +1.5% / -1.5% (gap ≤-10% RVOL≥5x)', dir:'long', gapDir:'down', gapMin:0.10, gapMax:null, rvolMin:5,   tp:0.015, sl:0.015, be:50.0, color:'#fbbf24' },
+  H:  { label:'H',  full:'Long +1.5% / -2.5% (gap ≤-10% RVOL≥4x ≤9:42)', dir:'long', gapDir:'down', gapMin:0.10, gapMax:null, rvolMin:4, tp:0.015, sl:0.025, be:62.5, color:'#fb923c' },
 };
 
 const SIGS = [
@@ -167,12 +169,12 @@ export default function BacktestPage() {
 
     try {
       setProg({msg:'Fetching SPY...',pct:1});
-      addLog('↓ SPY...');
+      addLog('â SPY...');
       const spyBars=await getDailyBars('SPY',FROM,TO);
       await sleep(150);
       const spyMap={};
       spyBars.forEach((b,i)=>{ const d=new Date(b.t).toISOString().slice(0,10); const p=spyBars[i-1]; if(p) spyMap[d]=(b.o-p.c)/p.c; });
-      addLog(`✓ SPY: ${spyBars.length} days`);
+      addLog(`â SPY: ${spyBars.length} days`);
 
       for(let ti=0;ti<TICKERS.length;ti++){
         if(cancelRef.current) break;
@@ -180,9 +182,9 @@ export default function BacktestPage() {
         setProg({msg:`${ticker} (${done}/${TICKERS.length})`,pct:2+Math.round(ti/TICKERS.length*88)});
 
         let bars;
-        try { addLog(`↓ ${ticker}...`); bars=await getDailyBars(ticker,FROM,TO); await sleep(150); }
-        catch(e){ addLog(`✗ ${ticker}: ${e.message}`); continue; }
-        if(!bars||bars.length<25){ addLog(`⚠ ${ticker}: no data`); continue; }
+        try { addLog(`â ${ticker}...`); bars=await getDailyBars(ticker,FROM,TO); await sleep(150); }
+        catch(e){ addLog(`â ${ticker}: ${e.message}`); continue; }
+        if(!bars||bars.length<25){ addLog(`â  ${ticker}: no data`); continue; }
 
         let earns=[],analysts=[];
         try{ const f=await getFMPData(ticker); earns=f.earns||[]; analysts=f.analysts||[]; await sleep(150); } catch(e){}
@@ -215,27 +217,27 @@ export default function BacktestPage() {
           }
           n++;
         }
-        addLog(`✓ ${ticker}: ${n} qualifying days`);
+        addLog(`â ${ticker}: ${n} qualifying days`);
 
         if(done%CHUNK===0||done===TICKERS.length){
           const isFinal=done===TICKERS.length;
-          addLog(`\n📊 Interim — ${done}/${TICKERS.length} tickers (${allTrades.length} trades)\n`);
+          addLog(`\nð Interim â ${done}/${TICKERS.length} tickers (${allTrades.length} trades)\n`);
           updateResults([...allTrades],done,TICKERS.length,isFinal);
         }
       }
 
       setProg({msg:'Complete',pct:100});
-      addLog(`✅ Done — ${allTrades.length} total trades`);
+      addLog(`â Done â ${allTrades.length} total trades`);
       setTab('results');
 
-    } catch(e){ addLog(`\n💥 ${e.message}`); }
+    } catch(e){ addLog(`\nð¥ ${e.message}`); }
     finally{ setRunning(false); }
   },[]);
 
   // Formatters
-  const pct   = v => v===null?'—':`${(v*100).toFixed(1)}%`;
-  const pfmt  = v => v===null?'—':v===Infinity?'∞':`${v.toFixed(2)}x`;
-  const ret   = v => v===null?'—':`${v>0?'+':''}${(v*100).toFixed(1)}%`;
+  const pct   = v => v===null?'â':`${(v*100).toFixed(1)}%`;
+  const pfmt  = v => v===null?'â':v===Infinity?'â':`${v.toFixed(2)}x`;
+  const ret   = v => v===null?'â':`${v>0?'+':''}${(v*100).toFixed(1)}%`;
   const col   = v => v===null?'#4b5563':v>=.65?'#34d399':v>=.52?'#fbbf24':'#f87171';
   const retcol= v => v===null?'#4b5563':v>0?'#34d399':v<0?'#f87171':'#9ca3af';
   const pp    = v => `${v>0?'+':''}${(v*100).toFixed(0)}pp`;
@@ -251,9 +253,9 @@ export default function BacktestPage() {
   };
 
   const tabLabel = t => {
-    if(t==='results'&&results&&running) return `📊 Results (${results.tickersDone}/${results.totalTickers})`;
-    if(t==='results'&&results) return '📊 Results ✓';
-    return {setup:'⚙ Setup',running:'▶ Running',results:'📊 Results'}[t];
+    if(t==='results'&&results&&running) return `ð Results (${results.tickersDone}/${results.totalTickers})`;
+    if(t==='results'&&results) return 'ð Results â';
+    return {setup:'â Setup',running:'â¶ Running',results:'ð Results'}[t];
   };
 
   const r = results && results[scen];
@@ -264,16 +266,16 @@ export default function BacktestPage() {
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid #1f2937',paddingBottom:'12px',marginBottom:'16px'}}>
         <div>
           <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-            <a href="/" style={{color:'#4b5563',fontSize:'11px',textDecoration:'none'}}>← APEX</a>
-            <div style={{fontSize:'16px',fontWeight:'bold',color:'#f9fafb'}}>◈ Signal Correlation Backtester</div>
+            <a href="/" style={{color:'#4b5563',fontSize:'11px',textDecoration:'none'}}>â APEX</a>
+            <div style={{fontSize:'16px',fontWeight:'bold',color:'#f9fafb'}}>â Signal Correlation Backtester</div>
           </div>
-          <div style={{fontSize:'10px',color:'#4b5563',marginTop:'2px'}}>41 tickers · 5 signals · Mar 2024–Mar 2025 · Scenarios A B C D E G H</div>
+          <div style={{fontSize:'10px',color:'#4b5563',marginTop:'2px'}}>41 tickers Â· 5 signals Â· Mar 2024âMar 2025 Â· Scenarios A B C D E G H</div>
         </div>
         <div style={{display:'flex',gap:'6px',alignItems:'center'}}>
           {['setup','running','results'].map(t=>(
             <button key={t} style={C.tabBtn(tab===t)} onClick={()=>setTab(t)}>{tabLabel(t)}</button>
           ))}
-          {running&&<span style={{fontSize:'10px',color:'#fbbf24',marginLeft:'4px'}}>● LIVE</span>}
+          {running&&<span style={{fontSize:'10px',color:'#fbbf24',marginLeft:'4px'}}>â LIVE</span>}
         </div>
       </div>
 
@@ -281,14 +283,14 @@ export default function BacktestPage() {
       {tab==='setup'&&(
         <div style={{maxWidth:'580px',display:'flex',flexDirection:'column',gap:'14px'}}>
           <div style={{...C.card,borderColor:'#064e3b',background:'#022c22'}}>
-            <div style={{fontSize:'11px',color:'#34d399'}}>✓ API keys loaded from environment. Interim results every {CHUNK} tickers.</div>
+            <div style={{fontSize:'11px',color:'#34d399'}}>â API keys loaded from environment. Interim results every {CHUNK} tickers.</div>
           </div>
           <div style={C.card}>
             <div style={{color:'#6b7280',fontSize:'10px',marginBottom:'10px',textTransform:'uppercase',letterSpacing:'1px'}}>Scenarios</div>
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
               <thead>
                 <tr style={{borderBottom:'1px solid #1f2937'}}>
-                  {['Scenario','Direction','Entry','TP','SL','Breakeven WR'].map(h=>(
+                  {['Scenario','Direction','Entry','TP','SL','Breakeven WR','Notes'].map(h=>(
                     <th key={h} style={{...C.th,padding:'4px 8px'}}>{h}</th>
                   ))}
                 </tr>
@@ -299,7 +301,7 @@ export default function BacktestPage() {
                     <td style={{...C.td,padding:'6px 8px'}}><span style={{color:s.color,fontWeight:'bold'}}>{k}</span></td>
                     <td style={{...C.td,padding:'6px 8px',color:s.dir==='long'?'#34d399':'#fb7185'}}>{s.dir}</td>
                     <td style={{...C.td,padding:'6px 8px',color:'#9ca3af'}}>
-                      {s.gapDir==='up'?`gap ≥${(s.gapMin*100).toFixed(0)}%`:`gap ≤${(s.gapMax*100).toFixed(0)}%${s.rvolMin?` RVOL≥${s.rvolMin}x`:''}`}
+                      {s.gapDir==='up'?`gap â¥${(s.gapMin*100).toFixed(0)}%`:`gap â¤${(s.gapMax*100).toFixed(0)}%${s.rvolMin?` RVOLâ¥${s.rvolMin}x`:''}`}
                     </td>
                     <td style={{...C.td,padding:'6px 8px',color:'#34d399'}}>+{(s.tp*100).toFixed(1)}%</td>
                     <td style={{...C.td,padding:'6px 8px',color:'#f87171'}}>-{(s.sl*100).toFixed(1)}%</td>
@@ -311,7 +313,7 @@ export default function BacktestPage() {
           </div>
           <button onClick={run} disabled={running}
             style={{padding:'10px',background:running?'#1f2937':'#1d4ed8',border:'none',borderRadius:'4px',color:running?'#6b7280':'#fff',cursor:running?'default':'pointer',fontSize:'13px',fontWeight:'bold'}}>
-            {running?'⟳ Running...':'▶ Run Backtest — 7 Scenarios · Results every 10 tickers'}
+            {running?'â³ Running...':'â¶ Run Backtest â 7 Scenarios Â· Results every 10 tickers'}
           </button>
         </div>
       )}
@@ -330,7 +332,7 @@ export default function BacktestPage() {
             </div>
             <div style={{height:'400px',overflowY:'auto',fontSize:'11px',lineHeight:'1.7'}}>
               {log.map((l,i)=>(
-                <div key={i} style={{color:l.startsWith('✓')?'#374151':l.startsWith('✗')?'#7f1d1d':l.startsWith('📊')?'#3b82f6':l.startsWith('✅')?'#065f46':'#6b7280'}}>{l}</div>
+                <div key={i} style={{color:l.startsWith('â')?'#374151':l.startsWith('â')?'#7f1d1d':l.startsWith('ð')?'#3b82f6':l.startsWith('â')?'#065f46':'#6b7280'}}>{l}</div>
               ))}
             </div>
             {running&&<button onClick={()=>{cancelRef.current=true;}} style={{marginTop:'8px',padding:'4px 12px',background:'#7f1d1d',border:'none',borderRadius:'3px',color:'#fca5a5',cursor:'pointer',fontSize:'11px'}}>Cancel</button>}
@@ -338,7 +340,7 @@ export default function BacktestPage() {
 
           <div style={C.card}>
             <div style={{fontSize:'10px',color:'#6b7280',marginBottom:'8px',textTransform:'uppercase'}}>
-              Live Overview {results?`— ${results.tickersDone}/${results.totalTickers} tickers`:'— waiting...'}
+              Live Overview {results?`â ${results.tickersDone}/${results.totalTickers} tickers`:'â waiting...'}
             </div>
             {!results&&<div style={{color:'#374151',textAlign:'center',paddingTop:'30px',fontSize:'11px'}}>Results after first {CHUNK} tickers...</div>}
             {results&&(
@@ -366,14 +368,14 @@ export default function BacktestPage() {
         <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
           {partial&&(
             <div style={{background:'#1c1a00',border:'1px solid #713f12',borderRadius:'6px',padding:'8px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{color:'#fbbf24',fontSize:'11px'}}>⟳ Partial — {results.tickersDone}/{results.totalTickers} tickers. Auto-updates every {CHUNK}.</span>
-              <span style={{color:'#713f12',fontSize:'10px'}}>Switch to ▶ Running for progress</span>
+              <span style={{color:'#fbbf24',fontSize:'11px'}}>â³ Partial â {results.tickersDone}/{results.totalTickers} tickers. Auto-updates every {CHUNK}.</span>
+              <span style={{color:'#713f12',fontSize:'10px'}}>Switch to â¶ Running for progress</span>
             </div>
           )}
 
-          {/* Summary table — all scenarios at once */}
+          {/* Summary table â all scenarios at once */}
           <div style={C.card}>
-            <div style={{fontSize:'10px',color:'#6b7280',marginBottom:'10px',textTransform:'uppercase',letterSpacing:'1px'}}>All Scenarios — Summary</div>
+            <div style={{fontSize:'10px',color:'#6b7280',marginBottom:'10px',textTransform:'uppercase',letterSpacing:'1px'}}>All Scenarios â Summary</div>
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:'11px'}}>
               <thead>
                 <tr style={{borderBottom:'1px solid #1f2937'}}>
@@ -401,7 +403,7 @@ export default function BacktestPage() {
                 })}
               </tbody>
             </table>
-            <div style={{fontSize:'10px',color:'#374151',marginTop:'6px'}}>Click a row to drill into signal analysis. Total Return = flat sizing, sum of (wins×TP − losses×SL).</div>
+            <div style={{fontSize:'10px',color:'#374151',marginTop:'6px'}}>Click a row to drill into signal analysis. Total Return = flat sizing, sum of (winsÃTP â lossesÃSL).</div>
           </div>
 
           {/* Scenario selector */}
@@ -419,12 +421,12 @@ export default function BacktestPage() {
               {/* Signal tier table for selected scenario */}
               <div style={C.card}>
                 <div style={{fontSize:'10px',color:'#6b7280',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'1px'}}>
-                  Scenario <span style={{color:SCENARIOS[scen].color}}>{scen}</span> — Signal Tier Analysis
+                  Scenario <span style={{color:SCENARIOS[scen].color}}>{scen}</span> â Signal Tier Analysis
                   <span style={{color:'#374151',marginLeft:'8px',fontWeight:'normal',textTransform:'none'}}>({SCENARIOS[scen].full})</span>
                 </div>
                 {(scen==='G'||scen==='H')&&(
                   <div style={{fontSize:'10px',color:'#713f12',background:'#1c1200',padding:'6px 8px',borderRadius:'3px',marginBottom:'8px'}}>
-                    ℹ Gap-down setup: LOW Momentum = counter-trend gap = better reversal candidate. LOW Catalyst = no fundamental driver = gap may be overreaction.
+                    â¹ Gap-down setup: LOW Momentum = counter-trend gap = better reversal candidate. LOW Catalyst = no fundamental driver = gap may be overreaction.
                   </div>
                 )}
                 <table style={{width:'100%',borderCollapse:'collapse'}}>
@@ -434,7 +436,7 @@ export default function BacktestPage() {
                       <th style={{...C.th,textAlign:'center',color:'#374151'}}>LOW</th>
                       <th style={{...C.th,textAlign:'center',color:'#374151'}}>MED</th>
                       <th style={{...C.th,textAlign:'center',color:'#374151'}}>HIGH</th>
-                      <th style={{...C.th,textAlign:'center',color:SCENARIOS[scen].color}}>Δ (H−L)</th>
+                      <th style={{...C.th,textAlign:'center',color:SCENARIOS[scen].color}}>Î (HâL)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -454,21 +456,21 @@ export default function BacktestPage() {
                     ))}
                   </tbody>
                 </table>
-                <div style={{fontSize:'10px',color:'#374151',marginTop:'6px'}}>Δ = High tier WR − Low tier WR · Green ≥65% · Yellow ≥52% · Red &lt;52% · — = &lt;5 trades</div>
+                <div style={{fontSize:'10px',color:'#374151',marginTop:'6px'}}>Î = High tier WR â Low tier WR Â· Green â¥65% Â· Yellow â¥52% Â· Red &lt;52% Â· â = &lt;5 trades</div>
               </div>
 
               {/* Power chart + Pairs */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
                 <div style={C.card}>
                   <div style={{fontSize:'10px',color:'#6b7280',marginBottom:'8px',textTransform:'uppercase'}}>
-                    Scenario {scen} — Signal Predictive Power (Δ pp)
+                    Scenario {scen} â Signal Predictive Power (Î pp)
                   </div>
                   <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={[...r.sigStats].sort((a,b)=>Math.abs(b.power)-Math.abs(a.power)).map(s=>({name:s.label,v:+(s.power*100).toFixed(0),color:s.color}))}
                       layout="vertical" margin={{left:5,right:24,top:0,bottom:0}}>
                       <XAxis type="number" tick={{fill:'#4b5563',fontSize:9}} tickFormatter={v=>`${v}pp`}/>
                       <YAxis type="category" dataKey="name" tick={{fill:'#9ca3af',fontSize:11}} width={58}/>
-                      <Tooltip formatter={v=>[`${v}pp`,'High−Low spread']} contentStyle={{background:'#111827',border:'1px solid #1f2937',fontSize:'11px',color:'#e5e7eb'}}/>
+                      <Tooltip formatter={v=>[`${v}pp`,'HighâLow spread']} contentStyle={{background:'#111827',border:'1px solid #1f2937',fontSize:'11px',color:'#e5e7eb'}}/>
                       <Bar dataKey="v" radius={[0,3,3,0]}>
                         {[...r.sigStats].sort((a,b)=>Math.abs(b.power)-Math.abs(a.power)).map((d,i)=>(
                           <Cell key={i} fill={d.power>0?d.color:'#374151'}/>
@@ -479,7 +481,7 @@ export default function BacktestPage() {
                 </div>
 
                 <div style={C.card}>
-                  <div style={{fontSize:'10px',color:'#6b7280',marginBottom:'8px',textTransform:'uppercase'}}>Top Signal Pairs — Both High Tier</div>
+                  <div style={{fontSize:'10px',color:'#6b7280',marginBottom:'8px',textTransform:'uppercase'}}>Top Signal Pairs â Both High Tier</div>
                   {r.pairs.length===0&&<div style={{color:'#374151',fontSize:'11px',paddingTop:'10px'}}>Not enough data yet...</div>}
                   {r.pairs.map(p=>(
                     <div key={p.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid #0d0d0d'}}>
