@@ -16,6 +16,7 @@ export default async function handler(req, res) {
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN, TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
   const TRADIER_PAPER_TOKEN = process.env.TRADIER_PAPER_TOKEN;
   const TRADIER_PAPER_ACCOUNT_ID = process.env.TRADIER_PAPER_ACCOUNT_ID;
+  const POLYGON_KEY = process.env.POLYGON_KEY;
   if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) return res.status(500).json({ error: 'Missing env vars' });
   const H = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
   const PAPER_H = { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
@@ -59,6 +60,21 @@ export default async function handler(req, res) {
   const spyGap = spyQ && spyQ.prevclose > 0 ? ((spyQ.bid || spyQ.last) - spyQ.prevclose) / spyQ.prevclose * 100 : 0;
   const skipD = spyGap > 0.5;
 
+  // SPY Pre-Market Momentum: 9:29 AM vs 9:00 AM
+  let spyRecovering = false;
+  try {
+    if (POLYGON_KEY && spyQ) {
+      const ds = new Date().toISOString().split('T')[0];
+      const pr = await fetch('https://api.polygon.io/v2/aggs/ticker/SPY/range/1/minute/' + ds + 'T09:00:00/' + ds + 'T09:01:00?adjusted=false&limit=1&apiKey=' + POLYGON_KEY);
+      if (pr.ok) {
+        const pd = await pr.json();
+        const spy900 = pd.results && pd.results[0] ? pd.results[0].c : null;
+        const spy929 = spyQ.bid || spyQ.last;
+        if (spy900 && spy929) spyRecovering = spy929 > spy900;
+      }
+    }
+  } catch(e) { /* non-fatal */ }
+
   for (const ticker of tickers) {
     const sym = ticker.symbol.toUpperCase(), bet = ticker.bet, q = quoteMap[sym];
     if (!q) { results.push({ symbol: sym, status: 'skipped', reason: 'No quote from Tradier' }); continue; }
@@ -79,7 +95,7 @@ export default async function handler(req, res) {
 
 
     // Scenario D: Short gap-up >=2% | TP -2% / SL +0.5%
-    if (gap >= 2 && !skipD) {
+    if (gap >= 2 && !skipD && !spyRecovering) {
       const tpD = +(price * 0.98).toFixed(2);
       const slD = +(price * 1.005).toFixed(2);
       const qtyD = Math.max(1, Math.floor(bet / price));
@@ -97,7 +113,7 @@ export default async function handler(req, res) {
     }
 
     // Scenario A: Long gap-up >=2% ONLY when SPY gap >0.5% | TP +2% / SL -0.5%
-    if (gap >= 2 && spyGap > 0.5) {
+    if (gap >= 2 && spyGap > 0.5 && spyRecovering) {
       const tpA = +(price * 1.02).toFixed(2);
       const slA = +(price * 0.995).toFixed(2);
       const qtyA = Math.max(1, Math.floor(bet / price));
