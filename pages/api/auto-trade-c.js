@@ -75,6 +75,19 @@ export default async function handler(req, res) {
     }
   } catch(e) { /* non-fatal */ }
 
+  // VIX filter: fetch I:VIX daily bar from Polygon
+  let vix = null;
+  try {
+    if (POLYGON_KEY) {
+      const ds = new Date().toISOString().split('T')[0];
+      const vr = await fetch('https://api.polygon.io/v2/aggs/ticker/I:VIX/range/1/day/' + ds + '/' + ds + '?adjusted=false&limit=1&apiKey=' + POLYGON_KEY);
+      if (vr.ok) {
+        const vd = await vr.json();
+        if (vd.results && vd.results[0]) vix = vd.results[0].c;
+      }
+    }
+  } catch(e) { /* non-fatal */ }
+
   for (const ticker of tickers) {
     const sym = ticker.symbol.toUpperCase(), bet = ticker.bet, q = quoteMap[sym];
     if (!q) { results.push({ symbol: sym, status: 'skipped', reason: 'No quote from Tradier' }); continue; }
@@ -95,7 +108,7 @@ export default async function handler(req, res) {
 
 
     // Scenario D: Short gap-up >=2% | TP -2% / SL +0.5%
-    if (gap >= 2 && !skipD && !spyRecovering) {
+    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20)) {
       const tpD = +(price * 0.98).toFixed(2);
       const slD = +(price * 1.005).toFixed(2);
       const qtyD = Math.max(1, Math.floor(bet / price));
@@ -113,7 +126,7 @@ export default async function handler(req, res) {
     }
 
     // Scenario A: Long gap-up >=2% ONLY when SPY gap >0.5% | TP +2% / SL -0.5%
-    if (gap >= 2 && spyGap > 0.5 && spyRecovering) {
+    if (gap >= 2 && spyGap > 0.5 && spyRecovering && (vix === null || vix <= 25)) {
       const tpA = +(price * 1.02).toFixed(2);
       const slA = +(price * 0.995).toFixed(2);
       const qtyA = Math.max(1, Math.floor(bet / price));
