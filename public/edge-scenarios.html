@@ -480,7 +480,7 @@ async function fetchAvgVol(tk){
   try{
     var to=new Date();to.setDate(to.getDate()-1);
     var fr=new Date();fr.setDate(fr.getDate()-31);
-    var r=await fetch('https://api.polygon.io/v2/aggs/ticker/'+tk+'/range/1/day/'+fr.toISOString().slice(0,10)+'/'+to.toISOString().slice(0,10)+'?adjusted=true&sort=asc&limit=30&apiKey='+KEY);
+    var _ac2=new AbortController();var _tid2=setTimeout(function(){_ac2.abort();},20000);var r;try{r=await fetch('https://api.polygon.io/v2/aggs/ticker/'+tk+'/range/1/day/'+fr.toISOString().slice(0,10)+'/'+to.toISOString().slice(0,10)+'?adjusted=true&sort=asc&limit=30&apiKey='+KEY,{signal:_ac2.signal});}catch(e){clearTimeout(_tid2);return null;}clearTimeout(_tid2);
     if(!r.ok)return null;
     var res=(await r.json()).results||[];
     return res.length?res.reduce(function(s,b){return s+b.v;},0)/res.length:null;
