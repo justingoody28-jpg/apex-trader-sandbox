@@ -471,7 +471,7 @@ function tradingDays(s,e){var out=[],end=new Date(e+'T12:00:00Z'),d=new Date(s+'
 function getFirstGreenCandle(bars,maxHour){maxHour=maxHour||16;for(var i=0;i<bars.length;i++){var h=etH(bars[i].t);if(h>=9.5&&h<=maxHour&&bars[i].c>bars[i].o)return bars[i];}return null;}
 
 async function fetchBars(tk,from,to){
-  var r=await fetch('https://api.polygon.io/v2/aggs/ticker/'+tk+'/range/1/minute/'+from+'/'+to+'?adjusted=true&sort=asc&limit=50000&apiKey='+KEY);
+  var _ac=new AbortController();var _tid=setTimeout(function(){_ac.abort();},20000);var r;try{r=await fetch('https://api.polygon.io/v2/aggs/ticker/'+tk+'/range/1/minute/'+from+'/'+to+'?adjusted=true&sort=asc&limit=50000&apiKey='+KEY,{signal:_ac.signal});}catch(e){clearTimeout(_tid);return[];}clearTimeout(_tid);
   if(r.status===429){var e=new Error('RATE_LIMIT');e.retry=true;throw e;}
   if(!r.ok)throw new Error('HTTP '+r.status);
   var d=await r.json();return d.results||[];
