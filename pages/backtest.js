@@ -83,13 +83,13 @@ function evalTrade(bar, dir, tp, sl, entry) {
   if(hitW&&hitS)  return 'ambiguous'; return 'timeout';
 }
 
-function qualifyScenarios(gap, rvol, spyGap) {
+function qualifyScenarios(gap, rvol, spyGap, spyRecovering) {
   const q=[];
   const spyBullish = spyGap > 0.005; // SPY gap > +0.5%
   // A: long gap-up >= 2%, only on SPY bullish days
-  if(gap>=0.02 && spyBullish)                  q.push('A');
+  if(gap>=0.02 && spyBullish && spyRecovering !== false)                  q.push('A');
   // D: short gap-up >= 2%, only on SPY flat/down days
-  if(gap>=0.02 && !spyBullish)                 q.push('D');
+  if(gap>=0.02 && !spyBullish && spyRecovering !== true)                 q.push('D');
   // E1-E4: tiered extreme gap-up shorts (always active)
   if(gap>=0.10 && gap<0.11)                    q.push('E1');
   if(gap>=0.11 && gap<0.13)                    q.push('E2');
@@ -196,7 +196,9 @@ export default function BacktestPage() {
       const spyBars=await getDailyBars('SPY',FROM,TO);
       await sleep(150);
       const spyMap={};
-      spyBars.forEach((b,i)=>{ const d=new Date(b.t).toISOString().slice(0,10); const p=spyBars[i-1]; if(p) spyMap[d]=(b.o-p.c)/p.c; });
+      const spy900Map={};
+      const spyPmMap={};
+      spyBars.forEach((b,i)=>{ const d=new Date(b.t).toISOString().slice(0,10); const p=spyBars[i-1]; if(p) spyMap[d]=(b.o-p.c)/p.c; if(b.pm900Price) spy900Map[d]=b.pm900Price; if(b.pmPrice) spyPmMap[d]=b.pmPrice; });
       addLog(`ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SPY: ${spyBars.length} days`);
 
       for(let ti=0;ti<TICKERS.length;ti++){
@@ -222,7 +224,7 @@ export default function BacktestPage() {
           const avgVol=vols.slice(Math.max(0,di-20),di).reduce((a,b)=>a+b,0)/Math.min(20,di);
           const rvol=avgVol>0?(bar.v||0)/avgVol:1;
 
-          const qualifying=qualifyScenarios(gap,rvol,spyMap[date]||0);
+          const qualifying=qualifyScenarios(gap,rvol,spyMap[date]||0,(spyPmMap[date]&&spy900Map[date])?spyPmMap[date]>spy900Map[date]:null);
           if(!qualifying.length) continue;
 
           const date=new Date(bar.t).toISOString().slice(0,10);
