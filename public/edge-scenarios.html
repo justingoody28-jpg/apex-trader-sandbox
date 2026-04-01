@@ -528,15 +528,16 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
     var spyGap=(window.spyPmMap&&window.spyPmMap[date])||0;
     var spyBullish=spyGap>0.5;
     var spyRecovering=(window.spyRawPmMap&&window.spy900Map&&window.spyRawPmMap[date]!=null&&window.spy900Map[date]!=null)?window.spyRawPmMap[date]>window.spy900Map[date]:null;
+    var vix=(window.vixMap&&window.vixMap[date]!=null)?window.vixMap[date]:null;
 
     var gapDown=((minPM-prevC)/prevC)*100;
     var pmVol=pm.reduce(function(s,b){return s+b.v;},0);
     var rvol=avgVol?parseFloat((pmVol/(avgVol*0.05)).toFixed(2)):null;
     var ep=ent.o;
-    var rA=(runA&&spyBullish&&spyRecovering!==false)?evalLong(intra,ep,2,0.5):null;
+    var rA=(runA&&spyBullish&&spyRecovering!==false&&(vix===null||vix<=25))?evalLong(intra,ep,2,0.5):null;
     var rB=runB?evalLong(intra,ep,3,0.5):null;
     var rC=runC?evalLong(intra,ep,4,0.5):null;
-    var rD=(runD&&!spyBullish&&spyRecovering!==true)?evalShort(intra,ep,2,0.5):null;
+    var rD=(runD&&!spyBullish&&spyRecovering!==true&&(vix===null||vix>20))?evalShort(intra,ep,2,0.5):null;
     var rvol_val=rvol||0;
     var eActive=gap>=gfm,rE=(runE&&eActive)?evalShort(intra,ep,eWinP,eStopP):null;
     var e2Active=gap>=(e2GapV||11),rE2=(runE2&&e2Active)?evalShort(intra,ep,e2WinP,e2StopP):null;
@@ -674,6 +675,15 @@ async function runOne(){
 }
 
 
+async function buildVixMap(from,to){
+  var KEY='Bnm35KUdSdLOFv37f6NyfUcQdc1aH5IF';
+  var map={};
+  try{
+    var bars=(await fetch('https://api.polygon.io/v2/aggs/ticker/I:VIX/range/1/day/'+from+'/'+to+'?adjusted=false&sort=asc&limit=500&apiKey='+KEY).then(function(r){return r.json();})).results||[];
+    bars.forEach(function(b){ var d=new Date(b.t).toISOString().slice(0,10); map[d]=b.c; });
+  }catch(e){console.warn('VIX map failed',e);}
+  return map;
+}
 async function buildSpyPmMap(from,to){
   var KEY='Bnm35KUdSdLOFv37f6NyfUcQdc1aH5IF';
   var map={};
@@ -704,6 +714,7 @@ async function runAll(){
   var gfm=+document.getElementById('gapFade').value,delayMs=+document.getElementById('delay').value*1000;
   var tickers=getActiveTickers();
   window.spyPmMap=await buildSpyPmMap(from,to);
+  window.vixMap=await buildVixMap(from,to);
   console.log('SPY pm map:',Object.keys(window.spyPmMap).length,'days');
   running=true;batchResults=[];
   setBtn(true);document.getElementById('expAllBtn').disabled=true;
