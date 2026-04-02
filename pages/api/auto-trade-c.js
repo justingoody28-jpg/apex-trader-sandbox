@@ -109,7 +109,7 @@ export default async function handler(req, res) {
 
     // Scenario D: Short gap-up >=2% | TP -2% / SL +0.5%
     if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20)) {
-      const tpD = +(price * 0.98).toFixed(2);
+      const tpD = +(price * 0.97).toFixed(2);
       const slD = +(price * 1.005).toFixed(2);
       const qtyD = Math.max(1, Math.floor(bet / price));
       try {
