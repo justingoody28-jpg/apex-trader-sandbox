@@ -45,10 +45,10 @@ export default async function handler(req, res) {
   const BASE = 'https://api.tradier.com/v1';
 
   function getTier(gap) {
-    if (gap >= 15) return { tier: 3, tpPct: 5.0, slPct: 3.0 };
-    if (gap >= 13) return { tier: 2, tpPct: 3.0, slPct: 1.5 };
-    if (gap >= 11) return { tier: 1, tpPct: 2.5, slPct: 1.5 };
-    if (gap >= 10) return { tier: 0, tpPct: 2.0, slPct: 1.0 };
+    if (gap >= 15) return { tier: 3, tpPct: 5.0, slPct: 3.0, bet: 2000 };
+    if (gap >= 13) return { tier: 2, tpPct: 3.0, slPct: 1.5, bet: 1000 };
+    if (gap >= 11) return { tier: 1, tpPct: 2.5, slPct: 1.5, bet: 750 };
+    if (gap >= 10) return { tier: 0, tpPct: 2.0, slPct: 1.0, bet: 500 };
     return null;
   }
 
@@ -190,7 +190,7 @@ export default async function handler(req, res) {
       continue;
     }
 
-    const qty = Math.floor(bet / price);
+    const eBet = tier.bet || bet; const qty = Math.max(1, Math.floor(eBet / price));
     if (qty < 1) {
       results.push({ symbol: sym, status: 'skipped', reason: `Bet too small at $${price.toFixed(2)}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
       continue;
