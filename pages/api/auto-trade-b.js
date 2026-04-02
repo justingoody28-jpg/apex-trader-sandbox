@@ -6,6 +6,8 @@
 // Breakeven = 50% on all tiers (symmetric TP/SL)
 
 export default async function handler(req, res) {
+  const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
+
   // ── Dedup guard: prevent double-execution on same trading day ────────────
   const _todayEDT = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).toISOString().slice(0,10);
   try {
