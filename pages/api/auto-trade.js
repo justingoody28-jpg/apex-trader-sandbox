@@ -4,6 +4,8 @@
 // Tier 2: gap 13-15% → TP 3% / SL 3%  (100% WR, PF infinity)
 // Tier 3: gap 15%+   → TP 5% / SL 5%  (87.5% WR, PF 7.0)
 export default async function handler(req, res) {
+  const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
+
   // ── Dedup guard: prevent double-execution on same trading day ────────────
   const _todayEDT = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).toISOString().slice(0,10);
   try {
