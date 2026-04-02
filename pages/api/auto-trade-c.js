@@ -12,6 +12,8 @@
 // q.last only updates when a trade prints, stays at prev close pre-market.
 
 export default async function handler(req, res) {
+  const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
+
   // ── Dedup guard: prevent double-execution on same trading day ────────────
   const _todayEDT = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).toISOString().slice(0,10);
   try {
@@ -138,6 +140,7 @@ export default async function handler(req, res) {
           'symbol[1]': sym, 'side[1]': 'buy_to_cover', 'quantity[1]': String(qtyD), 'type[1]': 'limit', 'price[1]': String(tpD),
           'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qtyD), 'type[2]': 'stop', 'stop[2]': String(slD),
         });
+        if (DRY_RUN) return res.status(200).json({ timestamp: new Date().toISOString(), status: 'dry_run', message: 'Dry run — no orders placed. Scan complete.', variant: variant||'unknown' });
         const rdD = await fetch(PAPER_BASE + '/accounts/' + TRADIER_PAPER_ACCOUNT_ID + '/orders', { method: 'POST', headers: PAPER_H, body: paramsD });
         const jD = await rdD.json();
         results.push({ symbol: sym, scenario: 'D', status: rdD.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD, order: jD?.order });
