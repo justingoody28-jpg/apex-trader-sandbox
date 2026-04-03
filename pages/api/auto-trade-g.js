@@ -46,6 +46,23 @@ export default async function handler(req, res) {
   if (!config.scenarios || !config.scenarios.G)
     return res.status(200).json({ message: 'Scenario G disabled', trades: [] });
 
+  // ── Market hours guard: block on holidays and non-trading days ──────────
+  try {
+    const _mk = await fetch('https://api.tradier.com/v1/markets/clock', {
+      headers: { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' }
+    });
+    const _mj = await _mk.json();
+    if (_mj?.clock?.state === 'closed') {
+      return res.status(200).json({
+        timestamp: new Date().toISOString(),
+        status: 'market_closed',
+        message: 'Market is closed today (holiday or non-trading day). No trades placed.',
+        trades: []
+      });
+    }
+  } catch(_me) { /* non-fatal — proceed if clock check fails */ }
+  // ── End market hours guard ───────────────────────────────────────────────
+
   const tickers = (config.tickers || []).filter(t => t.symbol && t.bet > 0);
   if (!tickers.length) return res.status(200).json({ message: 'No tickers', trades: [] });
 
