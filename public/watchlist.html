@@ -5,556 +5,239 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APEX Watchlist Manager</title>
 <style>
-  :root {
-    --bg: #0d0f14;
-    --surface: #13161e;
-    --border: #1e2330;
-    --accent: #3b82f6;
-    --accent2: #6366f1;
-    --green: #10b981;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --pill-sm: #1e3a2f;
-    --pill-sm-t: #34d399;
-    --pill-mid: #1e2d4a;
-    --pill-mid-t: #60a5fa;
-    --pill-lg: #2d1e4a;
-    --pill-lg-t: #a78bfa;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; font-size: 13px; min-height: 100vh; }
-
-  /* Header */
-  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .header-left { display: flex; align-items: center; gap: 16px; }
-  .back-btn { display: flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; font-size: 12px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; transition: all .15s; }
-  .back-btn:hover { color: var(--text); border-color: var(--accent); }
-  .title { font-size: 15px; font-weight: 600; letter-spacing: .3px; }
-  .title span { color: var(--accent); }
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  .count-badge { background: var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--muted); }
-  .count-badge b { color: var(--text); }
-  .save-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
-  .save-btn:hover { opacity: .85; }
-  .save-indicator { font-size: 11px; color: var(--green); opacity: 0; transition: opacity .3s; }
-  .save-indicator.show { opacity: 1; }
-
-  /* Controls */
-  .controls { padding: 14px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface); }
-  .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 280px; }
-  .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
-  .search-inp { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px 6px 30px; color: var(--text); font-size: 12px; outline: none; transition: border-color .15s; }
-  .search-inp:focus { border-color: var(--accent); }
-  .search-inp::placeholder { color: var(--muted); }
-  select.filter { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; cursor: pointer; }
-  select.filter:focus { border-color: var(--accent); }
-  .ctrl-sep { width: 1px; height: 24px; background: var(--border); }
-  .bulk-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; transition: all .15s; }
-  .bulk-btn:hover { color: var(--text); border-color: var(--muted); }
-  .ctrl-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-  .sort-label { color: var(--muted); font-size: 11px; }
-
-  /* Table */
-  .table-wrap { padding: 0 24px 40px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  thead th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; }
-  thead th:hover { color: var(--text); }
-  thead th .sort-icon { display: inline-block; margin-left: 4px; opacity: .4; }
-  thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
-  th.col-active, td.col-active { text-align: center; }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
-  tbody tr:hover { background: rgba(59,130,246,.04); }
-  tbody tr.inactive { opacity: .45; }
-  td { padding: 8px 12px; }
-  td.col-sym { font-weight: 700; font-size: 13px; letter-spacing: .3px; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--text); }
-  .cap-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; white-space: nowrap; }
-  .cap-pill.large { background: var(--pill-lg); color: var(--pill-lg-t); }
-  .cap-pill.mid { background: var(--pill-mid); color: var(--pill-mid-t); }
-  .cap-pill.small { background: var(--pill-sm); color: var(--pill-sm-t); }
-  td.col-seg { color: var(--muted); font-size: 12px; }
-  .toggle { position: relative; width: 36px; height: 20px; cursor: pointer; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; inset: 0; background: var(--border); border-radius: 20px; transition: background .2s; }
-  .slider:before { content: ''; position: absolute; left: 3px; top: 3px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: transform .2s; }
-  input:checked + .slider { background: var(--green); }
-  input:checked + .slider:before { transform: translateX(16px); }
-
-  /* Group headers */
-  .group-row td { background: rgba(255,255,255,.025); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); padding: 6px 12px; }
-
-  /* Empty state */
-  .empty-row td { text-align: center; padding: 40px; color: var(--muted); }
-
-  /* Responsive */
-  @media (max-width: 640px) {
-    .controls { padding: 10px 16px; }
-    .table-wrap { padding: 0 16px 40px; }
-    .header { padding: 12px 16px; }
-    .col-seg { display: none; }
-  }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0d0d;--surface:#141414;--surface2:#1a1a1a;--border:#222;--text:#e8e8e8;--muted:#666;--accent:#f0b429;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',monospace;font-size:12px;min-height:100vh}
+.hdr{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.hdr h1{font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.5px;white-space:nowrap}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.badge{background:#1f1f1f;border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:var(--muted);font-size:11px}
+.badge span{color:var(--accent);font-weight:600}
+.btn{cursor:pointer;border:none;border-radius:4px;padding:5px 12px;font-size:11px;font-family:inherit;font-weight:600;letter-spacing:.3px;transition:.15s}
+.btn-save{background:var(--accent);color:#000}.btn-save:hover{background:#d99e20}
+.btn-ghost{background:#1a1a1a;color:var(--muted);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text);border-color:#444}
+.btn-danger{background:#1a0a0a;color:var(--red);border:1px solid #3a1010}.btn-danger:hover{background:#2a1010}
+#saveIndicator{opacity:0;transition:.3s;color:var(--green);font-size:11px;font-weight:600}
+#saveIndicator.show{opacity:1}
+.filters{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.filters select,.filters input{background:#111;border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:4px;font-size:11px;font-family:inherit}
+.filters select:focus,.filters input:focus{outline:none;border-color:#444}
+.filters input{width:170px}
+.filter-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.tbl-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 112px)}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+col.c-sym{width:72px}col.c-cap{width:48px}col.c-seg{width:110px}col.c-sc{width:76px}
+thead th{position:sticky;top:0;background:#111;z-index:10;border-bottom:2px solid var(--border);padding:6px 4px;text-align:center;font-size:10px;font-weight:600;letter-spacing:.5px;white-space:nowrap}
+thead th.h-sym{text-align:left;padding-left:10px;cursor:pointer;user-select:none}
+thead th.h-sym:hover,thead th.h-seg:hover{background:#181818}
+thead th.h-seg{text-align:left;cursor:pointer;user-select:none}
+thead th.h-cap{cursor:pointer;user-select:none}thead th.h-cap:hover{background:#181818}
+.sc-hdr{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:2px 0}
+.sc-hdr:hover{opacity:.75}
+.sc-hdr .sc-lbl{font-size:12px;font-weight:700;color:var(--accent)}
+.sc-hdr .sc-excl{font-size:9px;color:var(--muted)}
+tbody tr{border-bottom:1px solid #181818;transition:.1s}
+tbody tr:hover{background:#181818}
+tbody tr.excl-all{opacity:.35}
+td{padding:4px;text-align:center;vertical-align:middle}
+td.c-sym{text-align:left;padding-left:10px;font-weight:600;font-size:11px}
+td.c-cap{font-size:10px;color:var(--muted)}
+td.c-seg{text-align:left;font-size:10px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:4px}
+.sc-cell{display:flex;flex-direction:column;align-items:center;gap:1px}
+.sc-cell input[type=checkbox]{cursor:pointer;accent-color:var(--accent);width:13px;height:13px}
+.sc-stat{font-size:9px;font-weight:600;line-height:1.1}
+.sc-stat.hi{color:var(--green)}.sc-stat.md{color:var(--yellow)}.sc-stat.lo{color:var(--red)}.sc-stat.none{color:#3a3a3a}
+.sc-cell.off .sc-stat{opacity:.3}
+.sa{display:inline-block;margin-left:3px;opacity:.35;font-size:9px}.sa.on{opacity:1;color:var(--accent)}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#111}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 </style>
 </head>
 <body>
-
-<div class="header">
-  <div class="header-left">
-    <a href="/edge-scenarios.html" class="back-btn">
-      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-      Edge Scenarios
-    </a>
-    <div class="title"><span>APEX</span> Watchlist Manager</div>
-  </div>
-  <div class="header-right">
-    <div class="count-badge">Active: <b id="activeCount">0</b> / <b id="totalCount">0</b></div>
-    <span class="save-indicator" id="saveIndicator">â Saved</span>
-    <button class="save-btn" onclick="saveState()">Save</button>
+<div class="hdr">
+  <h1>⚙ APEX WATCHLIST</h1>
+  <div class="badge">Tickers <span id="cTotal">223</span></div>
+  <div class="badge">With Stats <span id="cStats">0</span></div>
+  <div class="hdr-right">
+    <span id="saveIndicator">✓ Saved</span>
+    <button class="btn btn-danger" onclick="clearStats()">Clear Stats</button>
+    <button class="btn btn-ghost" onclick="resetAll()">Reset All</button>
+    <button class="btn btn-save" onclick="saveState()">Save Watchlist</button>
   </div>
 </div>
-
-<div class="controls">
-  <div class="search-wrap">
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    <input class="search-inp" id="searchInp" type="text" placeholder="Search symbol or segment..." oninput="renderTable()">
-  </div>
-  <select class="filter" id="capFilter" onchange="renderTable()">
-    <option value="">All Cap Tiers</option>
-    <option value="Large">Large Cap</option>
-    <option value="Mid">Mid Cap</option>
-    <option value="Small/Micro">Small/Micro Cap</option>
+<div class="filters">
+  <span class="filter-label">Filter:</span>
+  <select id="fCap" onchange="applyFilters()">
+    <option value="">All Caps</option>
+    <option value="Large">Large</option>
+    <option value="Mid">Mid</option>
+    <option value="Small/Micro">Small/Micro</option>
   </select>
-  <select class="filter" id="segFilter" onchange="renderTable()">
-    <option value="">All Segments</option>
+  <select id="fSeg" onchange="applyFilters()"><option value="">All Segments</option></select>
+  <select id="fSc" onchange="applyFilters()">
+    <option value="">All Scenarios</option>
+    <option value="A">A exclusions</option><option value="B">B exclusions</option>
+    <option value="C">C exclusions</option><option value="D">D exclusions</option>
+    <option value="E">E exclusions</option><option value="F">F exclusions</option>
+    <option value="G">G exclusions</option><option value="H">H exclusions</option>
   </select>
-  <select class="filter" id="activeFilter" onchange="renderTable()">
-    <option value="">All Status</option>
-    <option value="active">Active Only</option>
-    <option value="inactive">Inactive Only</option>
-  </select>
-  <div class="ctrl-sep"></div>
-  <button class="bulk-btn" onclick="bulkToggle(true)">Enable All</button>
-  <button class="bulk-btn" onclick="bulkToggle(false)">Disable All</button>
-  <button class="bulk-btn" onclick="resetToDefault()">Reset Default</button>
+  <input id="fSearch" placeholder="Search symbol or segment…" oninput="applyFilters()">
+  <span class="filter-label" style="margin-left:8px">Showing <span id="cShowing">223</span></span>
 </div>
-
-<div class="table-wrap">
-  <table id="mainTable">
-    <thead>
-      <tr>
-        <th onclick="setSort('t')" class="col-sym">Symbol <span class="sort-icon" id="sort-t">â</span></th>
-        <th onclick="setSort('cap')">Cap <span class="sort-icon" id="sort-cap">â</span></th>
-        <th onclick="setSort('seg')">Segment <span class="sort-icon" id="sort-seg">â</span></th>
-        <th class="col-active">Active</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+<div class="tbl-wrap">
+<table>
+  <colgroup>
+    <col class="c-sym"><col class="c-cap"><col class="c-seg">
+    <col class="c-sc"><col class="c-sc"><col class="c-sc"><col class="c-sc">
+    <col class="c-sc"><col class="c-sc"><col class="c-sc"><col class="c-sc">
+  </colgroup>
+  <thead><tr>
+    <th class="h-sym" onclick="sortBy('sym')">SYMBOL<span class="sa" id="a-sym">↕</span></th>
+    <th class="h-cap" onclick="sortBy('cap')">CAP<span class="sa" id="a-cap">↕</span></th>
+    <th class="h-seg" onclick="sortBy('seg')">SEGMENT<span class="sa" id="a-seg">↕</span></th>
+    <th onclick="toggleAll('A')"><div class="sc-hdr"><span class="sc-lbl">A</span><span class="sc-excl" id="x-A">all on</span></div></th>
+    <th onclick="toggleAll('B')"><div class="sc-hdr"><span class="sc-lbl">B</span><span class="sc-excl" id="x-B">all on</span></div></th>
+    <th onclick="toggleAll('C')"><div class="sc-hdr"><span class="sc-lbl">C</span><span class="sc-excl" id="x-C">all on</span></div></th>
+    <th onclick="toggleAll('D')"><div class="sc-hdr"><span class="sc-lbl">D</span><span class="sc-excl" id="x-D">all on</span></div></th>
+    <th onclick="toggleAll('E')"><div class="sc-hdr"><span class="sc-lbl">E</span><span class="sc-excl" id="x-E">all on</span></div></th>
+    <th onclick="toggleAll('F')"><div class="sc-hdr"><span class="sc-lbl">F</span><span class="sc-excl" id="x-F">all on</span></div></th>
+    <th onclick="toggleAll('G')"><div class="sc-hdr"><span class="sc-lbl">G</span><span class="sc-excl" id="x-G">all on</span></div></th>
+    <th onclick="toggleAll('H')"><div class="sc-hdr"><span class="sc-lbl">H</span><span class="sc-excl" id="x-H">all on</span></div></th>
+  </tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
 </div>
-
 <script>
-const ALL_TICKERS = [
-  // ââ Large Cap ââââââââââââââââââââââââââââââââââââââââââââââ
-  {t:'AMD',  grp:'Large', seg:'Semiconductors'},
-  {t:'NVDA', grp:'Large', seg:'Semiconductors'},
-  {t:'INTC', grp:'Large', seg:'Semiconductors'},
-  {t:'TSLA', grp:'Large', seg:'Consumer Tech'},
-  {t:'AMZN', grp:'Large', seg:'Mega Tech'},
-  {t:'AAPL', grp:'Large', seg:'Mega Tech'},
-  {t:'GOOGL',grp:'Large', seg:'Mega Tech'},
-  {t:'META', grp:'Large', seg:'Mega Tech'},
-  {t:'NFLX', grp:'Large', seg:'Mega Tech'},
-  {t:'MSFT', grp:'Large', seg:'Mega Tech'},
-  {t:'JPM',  grp:'Large', seg:'Financial Services'},
-  {t:'GS',   grp:'Large', seg:'Financial Services'},
-  {t:'LLY',  grp:'Large', seg:'Pharma'},
-  {t:'PFE',  grp:'Large', seg:'Pharma'},
-  {t:'UNH',  grp:'Large', seg:'Managed Care'},
-  // ââ Mid Cap ââââââââââââââââââââââââââââââââââââââââââââââââ
-  {t:'TWLO', grp:'Mid', seg:'SaaS'},
-  {t:'COIN', grp:'Mid', seg:'Fintech'},
-  {t:'HUBS', grp:'Mid', seg:'SaaS'},
-  {t:'OKTA', grp:'Mid', seg:'Cybersecurity'},
-  {t:'SNAP', grp:'Mid', seg:'Social Media'},
-  {t:'HOOD', grp:'Mid', seg:'Fintech'},
-  {t:'CRWD', grp:'Mid', seg:'Cybersecurity'},
-  {t:'DDOG', grp:'Mid', seg:'SaaS'},
-  {t:'SOFI', grp:'Mid', seg:'Fintech'},
-  {t:'GLOB', grp:'Mid', seg:'IT Services'},
-  {t:'EXLS', grp:'Mid', seg:'IT Services'},
-  {t:'PEGA', grp:'Mid', seg:'Enterprise Software'},
-  {t:'NCNO', grp:'Mid', seg:'SaaS'},
-  {t:'ALRM', grp:'Mid', seg:'SaaS'},
-  {t:'JAMF', grp:'Mid', seg:'SaaS'},
-  {t:'TNET', grp:'Mid', seg:'HR Tech'},
-  {t:'ATEN', grp:'Mid', seg:'Networking'},
-  {t:'LPSN', grp:'Mid', seg:'SaaS'},
-  {t:'DOMO', grp:'Mid', seg:'SaaS'},
-  {t:'QTWO', grp:'Mid', seg:'Fintech'},
-  {t:'EVBG', grp:'Mid', seg:'SaaS'},
-  {t:'BRZE', grp:'Mid', seg:'SaaS'},
-  {t:'ASAN', grp:'Mid', seg:'SaaS'},
-  {t:'UMBF', grp:'Mid', seg:'Regional Banks'},
-  {t:'WTFC', grp:'Mid', seg:'Regional Banks'},
-  {t:'SNV',  grp:'Mid', seg:'Regional Banks'},
-  {t:'IBOC', grp:'Mid', seg:'Regional Banks'},
-  {t:'PRSP', grp:'Mid', seg:'Regional Banks'},
-  {t:'CATY', grp:'Mid', seg:'Regional Banks'},
-  {t:'FFIN', grp:'Mid', seg:'Regional Banks'},
-  {t:'WSBC', grp:'Mid', seg:'Regional Banks'},
-  {t:'CVBF', grp:'Mid', seg:'Regional Banks'},
-  {t:'FULT', grp:'Mid', seg:'Regional Banks'},
-  {t:'INVA', grp:'Mid', seg:'Specialty Pharma'},
-  {t:'PRGO', grp:'Mid', seg:'Specialty Pharma'},
-  {t:'HALO', grp:'Mid', seg:'Biotech'},
-  {t:'NTRA', grp:'Mid', seg:'Genomics'},
-  {t:'MDRX', grp:'Mid', seg:'Health IT'},
-  {t:'OMCL', grp:'Mid', seg:'Health IT'},
-  {t:'PINC', grp:'Mid', seg:'Healthcare Services'},
-  {t:'ADUS', grp:'Mid', seg:'Healthcare Services'},
-  {t:'AMSF', grp:'Mid', seg:'Healthcare Services'},
-  {t:'ACAD', grp:'Mid', seg:'Biotech'},
-  {t:'NVCR', grp:'Mid', seg:'Biotech'},
-  {t:'RYTM', grp:'Mid', seg:'Biotech'},
-  {t:'RARE', grp:'Mid', seg:'Biotech'},
-  {t:'FOLD', grp:'Mid', seg:'Biotech'},
-  {t:'CRDF', grp:'Mid', seg:'Biotech'},
-  {t:'ARQT', grp:'Mid', seg:'Biotech'},
-  {t:'XNCR', grp:'Mid', seg:'Biotech'},
-  {t:'IMVT', grp:'Mid', seg:'Biotech'},
-  {t:'PRAX', grp:'Mid', seg:'Biotech'},
-  {t:'KYMR', grp:'Mid', seg:'Biotech'},
-  {t:'BOOT', grp:'Mid', seg:'Retail'},
-  {t:'WING', grp:'Mid', seg:'Restaurant'},
-  {t:'FRPT', grp:'Mid', seg:'Pet Food'},
-  {t:'CAVA', grp:'Mid', seg:'Restaurant'},
-  {t:'SG',   grp:'Mid', seg:'Restaurant'},
-  {t:'TACO', grp:'Mid', seg:'Restaurant'},
-  {t:'TXRH', grp:'Mid', seg:'Restaurant'},
-  {t:'FAT',  grp:'Mid', seg:'Restaurant'},
-  {t:'RRGB', grp:'Mid', seg:'Restaurant'},
-  {t:'JACK', grp:'Mid', seg:'Restaurant'},
-  {t:'ACVA', grp:'Mid', seg:'Auto Marketplace'},
-  {t:'PRTY', grp:'Mid', seg:'Retail'},
-  {t:'VSCO', grp:'Mid', seg:'Retail'},
-  {t:'JOANN',grp:'Mid', seg:'Retail'},
-  {t:'ODP',  grp:'Mid', seg:'Retail'},
-  {t:'RCII', grp:'Mid', seg:'Retail'},
-  {t:'ASTE', grp:'Mid', seg:'Industrial'},
-  {t:'HCSG', grp:'Mid', seg:'Facility Services'},
-  {t:'TREX', grp:'Mid', seg:'Building Products'},
-  {t:'APOG', grp:'Mid', seg:'Industrial'},
-  {t:'ARCB', grp:'Mid', seg:'Logistics'},
-  {t:'MATX', grp:'Mid', seg:'Logistics'},
-  {t:'MRTN', grp:'Mid', seg:'Logistics'},
-  {t:'SAIA', grp:'Mid', seg:'Logistics'},
-  {t:'LSTR', grp:'Mid', seg:'Logistics'},
-  {t:'ECHO', grp:'Mid', seg:'Logistics'},
-  {t:'CEIX', grp:'Mid', seg:'Coal Energy'},
-  {t:'ARCH', grp:'Mid', seg:'Coal Energy'},
-  {t:'SWN',  grp:'Mid', seg:'E&P Energy'},
-  {t:'RRC',  grp:'Mid', seg:'E&P Energy'},
-  {t:'CIVI', grp:'Mid', seg:'E&P Energy'},
-  {t:'VTLE', grp:'Mid', seg:'E&P Energy'},
-  {t:'SM',   grp:'Mid', seg:'E&P Energy'},
-  {t:'REX',  grp:'Mid', seg:'E&P Energy'},
-  {t:'HESM', grp:'Mid', seg:'Midstream Energy'},
-  {t:'SRLP', grp:'Mid', seg:'Midstream Energy'},
-  {t:'IOSP', grp:'Mid', seg:'Specialty Chemicals'},
-  {t:'KWR',  grp:'Mid', seg:'Specialty Chemicals'},
-  {t:'TROX', grp:'Mid', seg:'Specialty Chemicals'},
-  {t:'MTRN', grp:'Mid', seg:'Specialty Chemicals'},
-  {t:'ASIX', grp:'Mid', seg:'Specialty Chemicals'},
-  {t:'KREF', grp:'Mid', seg:'Mortgage REIT'},
-  {t:'GPMT', grp:'Mid', seg:'Mortgage REIT'},
-  {t:'STWD', grp:'Mid', seg:'Mortgage REIT'},
-  {t:'BXMT', grp:'Mid', seg:'Mortgage REIT'},
-  {t:'TRTX', grp:'Mid', seg:'Mortgage REIT'},
-  // ââ Small / Micro Cap ââââââââââââââââââââââââââââââââââââââ
-  {t:'ATER', grp:'Small/Micro', seg:'Consumer Products'},
-  {t:'LAZR', grp:'Small/Micro', seg:'Lidar / Tech'},
-  {t:'MRNA', grp:'Small/Micro', seg:'Biotech'},
-  {t:'AGEN', grp:'Small/Micro', seg:'Biotech'},
-  {t:'GFAI', grp:'Small/Micro', seg:'AI / Tech'},
-  {t:'IONQ', grp:'Small/Micro', seg:'Quantum Computing'},
-  {t:'FCEL', grp:'Small/Micro', seg:'Clean Energy'},
-  {t:'RCKT', grp:'Small/Micro', seg:'Biotech'},
-  {t:'SPCE', grp:'Small/Micro', seg:'Space Tech'},
-  {t:'HUT',  grp:'Small/Micro', seg:'Crypto Mining'},
-  {t:'WOLF', grp:'Small/Micro', seg:'Semiconductors'},
-  {t:'PAYO', grp:'Small/Micro', seg:'Fintech'},
-  {t:'FLYW', grp:'Small/Micro', seg:'Fintech'},
-  {t:'TASK', grp:'Small/Micro', seg:'SaaS'},
-  {t:'MNDY', grp:'Small/Micro', seg:'SaaS'},
-  {t:'NRDS', grp:'Small/Micro', seg:'Fintech'},
-  {t:'MAPS', grp:'Small/Micro', seg:'Cannabis Tech'},
-  {t:'RSKD', grp:'Small/Micro', seg:'SaaS'},
-  {t:'AMBR', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'CLBK', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'OBNK', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'HBCP', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'BSVN', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'ORRF', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'MCBC', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'NWIN', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'FSBC', grp:'Small/Micro', seg:'Regional Banks'},
-  {t:'OPAD', grp:'Small/Micro', seg:'Auto Marketplace'},
-  {t:'VZIO', grp:'Small/Micro', seg:'Consumer Electronics'},
-  {t:'SOUN', grp:'Small/Micro', seg:'AI / Tech'},
-  {t:'CPTN', grp:'Small/Micro', seg:'AI / Tech'},
-  {t:'VNET', grp:'Small/Micro', seg:'Data Centers'},
-  {t:'ARQQ', grp:'Small/Micro', seg:'Quantum Computing'},
-  {t:'QUBT', grp:'Small/Micro', seg:'Quantum Computing'},
-  {t:'SDGR', grp:'Small/Micro', seg:'AI / Drug Discovery'},
-  {t:'LQDT', grp:'Small/Micro', seg:'Marketplace'},
-  {t:'SPRY', grp:'Small/Micro', seg:'Specialty Pharma'},
-  {t:'TGTX', grp:'Small/Micro', seg:'Biotech'},
-  {t:'CDNA', grp:'Small/Micro', seg:'Genomics'},
-  {t:'VERV', grp:'Small/Micro', seg:'Biotech'},
-  {t:'KRYS', grp:'Small/Micro', seg:'Biotech'},
-  {t:'AGIO', grp:'Small/Micro', seg:'Biotech'},
-  {t:'XBIT', grp:'Small/Micro', seg:'Biotech'},
-  {t:'DRTS', grp:'Small/Micro', seg:'Biotech'},
-  {t:'REGN', grp:'Small/Micro', seg:'Biotech'},
-  {t:'GOSS', grp:'Small/Micro', seg:'Biotech'},
-  {t:'NVAX', grp:'Small/Micro', seg:'Biotech'},
-  {t:'OCGN', grp:'Small/Micro', seg:'Biotech'},
-  {t:'SRPT', grp:'Small/Micro', seg:'Biotech'},
-  {t:'HRTX', grp:'Small/Micro', seg:'Biotech'},
-  {t:'MESO', grp:'Small/Micro', seg:'Biotech'},
-  {t:'ESSA', grp:'Small/Micro', seg:'Biotech'},
-  {t:'TELA', grp:'Small/Micro', seg:'Medtech'},
-  {t:'ATRC', grp:'Small/Micro', seg:'Medtech'},
-  {t:'PRCT', grp:'Small/Micro', seg:'Medtech'},
-  {t:'SILK', grp:'Small/Micro', seg:'Medtech'},
-  {t:'RNXT', grp:'Small/Micro', seg:'Medtech'},
-  {t:'WTTR', grp:'Small/Micro', seg:'Energy Services'},
-  {t:'KLXE', grp:'Small/Micro', seg:'Energy Services'},
-  {t:'NINE', grp:'Small/Micro', seg:'Energy Services'},
-  {t:'BORR', grp:'Small/Micro', seg:'Offshore Drilling'},
-  {t:'PTEN', grp:'Small/Micro', seg:'Energy Services'},
-  {t:'PUMP', grp:'Small/Micro', seg:'Energy Services'},
-  {t:'NR',   grp:'Small/Micro', seg:'Energy Services'},
-  {t:'PFIE', grp:'Small/Micro', seg:'Energy Services'},
-  {t:'DNOW', grp:'Small/Micro', seg:'Energy Distribution'},
-  {t:'GPOR', grp:'Small/Micro', seg:'E&P Energy'},
-  {t:'KCAL', grp:'Small/Micro', seg:'Energy Services'},
-  {t:'TPVG', grp:'Small/Micro', seg:'BDC'},
-  {t:'XPOF', grp:'Small/Micro', seg:'Fitness'},
-  {t:'PLBY', grp:'Small/Micro', seg:'Consumer Media'},
-  {t:'LAZY', grp:'Small/Micro', seg:'Retail'},
-  {t:'GIII', grp:'Small/Micro', seg:'Apparel'},
-  {t:'CATO', grp:'Small/Micro', seg:'Retail'},
-  {t:'SCVL', grp:'Small/Micro', seg:'Retail'},
-  {t:'DXLG', grp:'Small/Micro', seg:'Retail'},
-  {t:'CURV', grp:'Small/Micro', seg:'Retail'},
-  {t:'BURL', grp:'Small/Micro', seg:'Retail'},
-  {t:'CULP', grp:'Small/Micro', seg:'Textiles'},
-  {t:'ITRN', grp:'Small/Micro', seg:'IoT / Tech'},
-  {t:'HIMS', grp:'Small/Micro', seg:'Telehealth'},
-  {t:'BARK', grp:'Small/Micro', seg:'Pet Products'},
-  {t:'PETQ', grp:'Small/Micro', seg:'Pet Products'},
-  {t:'GENC', grp:'Small/Micro', seg:'Industrial'},
-  {t:'HLIO', grp:'Small/Micro', seg:'Industrial'},
-  {t:'FWRD', grp:'Small/Micro', seg:'Logistics'},
-  {t:'HTLD', grp:'Small/Micro', seg:'Logistics'},
-  {t:'USAK', grp:'Small/Micro', seg:'Logistics'},
-  {t:'ATSG', grp:'Small/Micro', seg:'Air Cargo'},
-  {t:'AIRT', grp:'Small/Micro', seg:'Air Services'},
-  {t:'GLDD', grp:'Small/Micro', seg:'Marine Construction'},
-  {t:'MFAC', grp:'Small/Micro', seg:'Financial Services'},
-  {t:'NVEE', grp:'Small/Micro', seg:'Environmental'},
-  {t:'CLPR', grp:'Small/Micro', seg:'REIT'},
-  {t:'NXRT', grp:'Small/Micro', seg:'REIT'},
-  {t:'GOOD', grp:'Small/Micro', seg:'REIT'},
-  {t:'LAND', grp:'Small/Micro', seg:'REIT'},
-  {t:'GIPR', grp:'Small/Micro', seg:'REIT'},
-  {t:'PKST', grp:'Small/Micro', seg:'REIT'},
-  {t:'JBGS', grp:'Small/Micro', seg:'REIT'},
-  {t:'AIV',  grp:'Small/Micro', seg:'REIT'},
-  {t:'GMRE', grp:'Small/Micro', seg:'REIT'},
-  {t:'CLDT', grp:'Small/Micro', seg:'Hotel REIT'},
-  {t:'SHAK', grp:'Small/Micro', seg:'Restaurant'},
-  {t:'KRUS', grp:'Small/Micro', seg:'Restaurant'},
-  {t:'FWRG', grp:'Small/Micro', seg:'Restaurant'},
-  {t:'ARCO', grp:'Small/Micro', seg:'Restaurant'},
-  {t:'PZZA', grp:'Small/Micro', seg:'Restaurant'},
-  {t:'NAPA', grp:'Small/Micro', seg:'Winery / Beverage'},
-];
+const SC = ['A','B','C','D','E','F','G','H'];
+const ALL = [{"t":"AMD","grp":"Large","seg":"Semiconductors"},{"t":"NVDA","grp":"Large","seg":"Semiconductors"},{"t":"INTC","grp":"Large","seg":"Semiconductors"},{"t":"TSLA","grp":"Large","seg":"Consumer Tech"},{"t":"AMZN","grp":"Large","seg":"Mega Tech"},{"t":"AAPL","grp":"Large","seg":"Mega Tech"},{"t":"GOOGL","grp":"Large","seg":"Mega Tech"},{"t":"META","grp":"Large","seg":"Mega Tech"},{"t":"NFLX","grp":"Large","seg":"Mega Tech"},{"t":"MSFT","grp":"Large","seg":"Mega Tech"},{"t":"JPM","grp":"Large","seg":"Financial Services"},{"t":"GS","grp":"Large","seg":"Financial Services"},{"t":"LLY","grp":"Large","seg":"Pharma"},{"t":"PFE","grp":"Large","seg":"Pharma"},{"t":"UNH","grp":"Large","seg":"Managed Care"},{"t":"TWLO","grp":"Mid","seg":"SaaS"},{"t":"COIN","grp":"Mid","seg":"Fintech"},{"t":"HUBS","grp":"Mid","seg":"SaaS"},{"t":"OKTA","grp":"Mid","seg":"Cybersecurity"},{"t":"SNAP","grp":"Mid","seg":"Social Media"},{"t":"HOOD","grp":"Mid","seg":"Fintech"},{"t":"CRWD","grp":"Mid","seg":"Cybersecurity"},{"t":"DDOG","grp":"Mid","seg":"SaaS"},{"t":"SOFI","grp":"Mid","seg":"Fintech"},{"t":"GLOB","grp":"Mid","seg":"IT Services"},{"t":"EXLS","grp":"Mid","seg":"IT Services"},{"t":"PEGA","grp":"Mid","seg":"Enterprise Software"},{"t":"NCNO","grp":"Mid","seg":"SaaS"},{"t":"ALRM","grp":"Mid","seg":"SaaS"},{"t":"JAMF","grp":"Mid","seg":"SaaS"},{"t":"TNET","grp":"Mid","seg":"HR Tech"},{"t":"ATEN","grp":"Mid","seg":"Networking"},{"t":"LPSN","grp":"Mid","seg":"SaaS"},{"t":"DOMO","grp":"Mid","seg":"SaaS"},{"t":"QTWO","grp":"Mid","seg":"Fintech"},{"t":"EVBG","grp":"Mid","seg":"SaaS"},{"t":"BRZE","grp":"Mid","seg":"SaaS"},{"t":"ASAN","grp":"Mid","seg":"SaaS"},{"t":"UMBF","grp":"Mid","seg":"Regional Banks"},{"t":"WTFC","grp":"Mid","seg":"Regional Banks"},{"t":"SNV","grp":"Mid","seg":"Regional Banks"},{"t":"IBOC","grp":"Mid","seg":"Regional Banks"},{"t":"PRSP","grp":"Mid","seg":"Regional Banks"},{"t":"CATY","grp":"Mid","seg":"Regional Banks"},{"t":"FFIN","grp":"Mid","seg":"Regional Banks"},{"t":"WSBC","grp":"Mid","seg":"Regional Banks"},{"t":"CVBF","grp":"Mid","seg":"Regional Banks"},{"t":"FULT","grp":"Mid","seg":"Regional Banks"},{"t":"INVA","grp":"Mid","seg":"Specialty Pharma"},{"t":"PRGO","grp":"Mid","seg":"Specialty Pharma"},{"t":"HALO","grp":"Mid","seg":"Biotech"},{"t":"NTRA","grp":"Mid","seg":"Genomics"},{"t":"MDRX","grp":"Mid","seg":"Health IT"},{"t":"OMCL","grp":"Mid","seg":"Health IT"},{"t":"PINC","grp":"Mid","seg":"Healthcare Services"},{"t":"ADUS","grp":"Mid","seg":"Healthcare Services"},{"t":"AMSF","grp":"Mid","seg":"Healthcare Services"},{"t":"ACAD","grp":"Mid","seg":"Biotech"},{"t":"NVCR","grp":"Mid","seg":"Biotech"},{"t":"RYTM","grp":"Mid","seg":"Biotech"},{"t":"RARE","grp":"Mid","seg":"Biotech"},{"t":"FOLD","grp":"Mid","seg":"Biotech"},{"t":"CRDF","grp":"Mid","seg":"Biotech"},{"t":"ARQT","grp":"Mid","seg":"Biotech"},{"t":"XNCR","grp":"Mid","seg":"Biotech"},{"t":"IMVT","grp":"Mid","seg":"Biotech"},{"t":"PRAX","grp":"Mid","seg":"Biotech"},{"t":"KYMR","grp":"Mid","seg":"Biotech"},{"t":"BOOT","grp":"Mid","seg":"Retail"},{"t":"WING","grp":"Mid","seg":"Restaurant"},{"t":"FRPT","grp":"Mid","seg":"Pet Food"},{"t":"CAVA","grp":"Mid","seg":"Restaurant"},{"t":"SG","grp":"Mid","seg":"Restaurant"},{"t":"TACO","grp":"Mid","seg":"Restaurant"},{"t":"TXRH","grp":"Mid","seg":"Restaurant"},{"t":"FAT","grp":"Mid","seg":"Restaurant"},{"t":"RRGB","grp":"Mid","seg":"Restaurant"},{"t":"JACK","grp":"Mid","seg":"Restaurant"},{"t":"ACVA","grp":"Mid","seg":"Auto Marketplace"},{"t":"PRTY","grp":"Mid","seg":"Retail"},{"t":"VSCO","grp":"Mid","seg":"Retail"},{"t":"JOANN","grp":"Mid","seg":"Retail"},{"t":"ODP","grp":"Mid","seg":"Retail"},{"t":"RCII","grp":"Mid","seg":"Retail"},{"t":"ASTE","grp":"Mid","seg":"Industrial"},{"t":"HCSG","grp":"Mid","seg":"Facility Services"},{"t":"TREX","grp":"Mid","seg":"Building Products"},{"t":"APOG","grp":"Mid","seg":"Industrial"},{"t":"ARCB","grp":"Mid","seg":"Logistics"},{"t":"MATX","grp":"Mid","seg":"Logistics"},{"t":"MRTN","grp":"Mid","seg":"Logistics"},{"t":"SAIA","grp":"Mid","seg":"Logistics"},{"t":"LSTR","grp":"Mid","seg":"Logistics"},{"t":"ECHO","grp":"Mid","seg":"Logistics"},{"t":"CEIX","grp":"Mid","seg":"Coal Energy"},{"t":"ARCH","grp":"Mid","seg":"Coal Energy"},{"t":"SWN","grp":"Mid","seg":"E&P Energy"},{"t":"RRC","grp":"Mid","seg":"E&P Energy"},{"t":"CIVI","grp":"Mid","seg":"E&P Energy"},{"t":"VTLE","grp":"Mid","seg":"E&P Energy"},{"t":"SM","grp":"Mid","seg":"E&P Energy"},{"t":"REX","grp":"Mid","seg":"E&P Energy"},{"t":"HESM","grp":"Mid","seg":"Midstream Energy"},{"t":"SRLP","grp":"Mid","seg":"Midstream Energy"},{"t":"IOSP","grp":"Mid","seg":"Specialty Chemicals"},{"t":"KWR","grp":"Mid","seg":"Specialty Chemicals"},{"t":"TROX","grp":"Mid","seg":"Specialty Chemicals"},{"t":"MTRN","grp":"Mid","seg":"Specialty Chemicals"},{"t":"ASIX","grp":"Mid","seg":"Specialty Chemicals"},{"t":"KREF","grp":"Mid","seg":"Mortgage REIT"},{"t":"GPMT","grp":"Mid","seg":"Mortgage REIT"},{"t":"STWD","grp":"Mid","seg":"Mortgage REIT"},{"t":"BXMT","grp":"Mid","seg":"Mortgage REIT"},{"t":"TRTX","grp":"Mid","seg":"Mortgage REIT"},{"t":"ATER","grp":"Small/Micro","seg":"Consumer Products"},{"t":"LAZR","grp":"Small/Micro","seg":"Lidar / Tech"},{"t":"MRNA","grp":"Small/Micro","seg":"Biotech"},{"t":"AGEN","grp":"Small/Micro","seg":"Biotech"},{"t":"GFAI","grp":"Small/Micro","seg":"AI / Tech"},{"t":"IONQ","grp":"Small/Micro","seg":"Quantum Computing"},{"t":"FCEL","grp":"Small/Micro","seg":"Clean Energy"},{"t":"RCKT","grp":"Small/Micro","seg":"Biotech"},{"t":"SPCE","grp":"Small/Micro","seg":"Space Tech"},{"t":"HUT","grp":"Small/Micro","seg":"Crypto Mining"},{"t":"WOLF","grp":"Small/Micro","seg":"Semiconductors"},{"t":"PAYO","grp":"Small/Micro","seg":"Fintech"},{"t":"FLYW","grp":"Small/Micro","seg":"Fintech"},{"t":"TASK","grp":"Small/Micro","seg":"SaaS"},{"t":"MNDY","grp":"Small/Micro","seg":"SaaS"},{"t":"NRDS","grp":"Small/Micro","seg":"Fintech"},{"t":"MAPS","grp":"Small/Micro","seg":"Cannabis Tech"},{"t":"RSKD","grp":"Small/Micro","seg":"SaaS"},{"t":"AMBR","grp":"Small/Micro","seg":"Regional Banks"},{"t":"CLBK","grp":"Small/Micro","seg":"Regional Banks"},{"t":"OBNK","grp":"Small/Micro","seg":"Regional Banks"},{"t":"HBCP","grp":"Small/Micro","seg":"Regional Banks"},{"t":"BSVN","grp":"Small/Micro","seg":"Regional Banks"},{"t":"ORRF","grp":"Small/Micro","seg":"Regional Banks"},{"t":"MCBC","grp":"Small/Micro","seg":"Regional Banks"},{"t":"NWIN","grp":"Small/Micro","seg":"Regional Banks"},{"t":"FSBC","grp":"Small/Micro","seg":"Regional Banks"},{"t":"OPAD","grp":"Small/Micro","seg":"Auto Marketplace"},{"t":"VZIO","grp":"Small/Micro","seg":"Consumer Electronics"},{"t":"SOUN","grp":"Small/Micro","seg":"AI / Tech"},{"t":"CPTN","grp":"Small/Micro","seg":"AI / Tech"},{"t":"VNET","grp":"Small/Micro","seg":"Data Centers"},{"t":"ARQQ","grp":"Small/Micro","seg":"Quantum Computing"},{"t":"QUBT","grp":"Small/Micro","seg":"Quantum Computing"},{"t":"SDGR","grp":"Small/Micro","seg":"AI / Drug Discovery"},{"t":"LQDT","grp":"Small/Micro","seg":"Marketplace"},{"t":"SPRY","grp":"Small/Micro","seg":"Specialty Pharma"},{"t":"TGTX","grp":"Small/Micro","seg":"Biotech"},{"t":"CDNA","grp":"Small/Micro","seg":"Genomics"},{"t":"VERV","grp":"Small/Micro","seg":"Biotech"},{"t":"KRYS","grp":"Small/Micro","seg":"Biotech"},{"t":"AGIO","grp":"Small/Micro","seg":"Biotech"},{"t":"XBIT","grp":"Small/Micro","seg":"Biotech"},{"t":"DRTS","grp":"Small/Micro","seg":"Biotech"},{"t":"REGN","grp":"Small/Micro","seg":"Biotech"},{"t":"GOSS","grp":"Small/Micro","seg":"Biotech"},{"t":"NVAX","grp":"Small/Micro","seg":"Biotech"},{"t":"OCGN","grp":"Small/Micro","seg":"Biotech"},{"t":"SRPT","grp":"Small/Micro","seg":"Biotech"},{"t":"HRTX","grp":"Small/Micro","seg":"Biotech"},{"t":"MESO","grp":"Small/Micro","seg":"Biotech"},{"t":"ESSA","grp":"Small/Micro","seg":"Biotech"},{"t":"TELA","grp":"Small/Micro","seg":"Medtech"},{"t":"ATRC","grp":"Small/Micro","seg":"Medtech"},{"t":"PRCT","grp":"Small/Micro","seg":"Medtech"},{"t":"SILK","grp":"Small/Micro","seg":"Medtech"},{"t":"RNXT","grp":"Small/Micro","seg":"Medtech"},{"t":"WTTR","grp":"Small/Micro","seg":"Energy Services"},{"t":"KLXE","grp":"Small/Micro","seg":"Energy Services"},{"t":"NINE","grp":"Small/Micro","seg":"Energy Services"},{"t":"BORR","grp":"Small/Micro","seg":"Offshore Drilling"},{"t":"PTEN","grp":"Small/Micro","seg":"Energy Services"},{"t":"PUMP","grp":"Small/Micro","seg":"Energy Services"},{"t":"NR","grp":"Small/Micro","seg":"Energy Services"},{"t":"PFIE","grp":"Small/Micro","seg":"Energy Services"},{"t":"DNOW","grp":"Small/Micro","seg":"Energy Distribution"},{"t":"GPOR","grp":"Small/Micro","seg":"E&P Energy"},{"t":"KCAL","grp":"Small/Micro","seg":"Energy Services"},{"t":"TPVG","grp":"Small/Micro","seg":"BDC"},{"t":"XPOF","grp":"Small/Micro","seg":"Fitness"},{"t":"PLBY","grp":"Small/Micro","seg":"Consumer Media"},{"t":"LAZY","grp":"Small/Micro","seg":"Retail"},{"t":"GIII","grp":"Small/Micro","seg":"Apparel"},{"t":"CATO","grp":"Small/Micro","seg":"Retail"},{"t":"SCVL","grp":"Small/Micro","seg":"Retail"},{"t":"DXLG","grp":"Small/Micro","seg":"Retail"},{"t":"CURV","grp":"Small/Micro","seg":"Retail"},{"t":"BURL","grp":"Small/Micro","seg":"Retail"},{"t":"CULP","grp":"Small/Micro","seg":"Textiles"},{"t":"ITRN","grp":"Small/Micro","seg":"IoT / Tech"},{"t":"HIMS","grp":"Small/Micro","seg":"Telehealth"},{"t":"BARK","grp":"Small/Micro","seg":"Pet Products"},{"t":"PETQ","grp":"Small/Micro","seg":"Pet Products"},{"t":"GENC","grp":"Small/Micro","seg":"Industrial"},{"t":"HLIO","grp":"Small/Micro","seg":"Industrial"},{"t":"FWRD","grp":"Small/Micro","seg":"Logistics"},{"t":"HTLD","grp":"Small/Micro","seg":"Logistics"},{"t":"USAK","grp":"Small/Micro","seg":"Logistics"},{"t":"ATSG","grp":"Small/Micro","seg":"Air Cargo"},{"t":"AIRT","grp":"Small/Micro","seg":"Air Services"},{"t":"GLDD","grp":"Small/Micro","seg":"Marine Construction"},{"t":"MFAC","grp":"Small/Micro","seg":"Financial Services"},{"t":"NVEE","grp":"Small/Micro","seg":"Environmental"},{"t":"CLPR","grp":"Small/Micro","seg":"REIT"},{"t":"NXRT","grp":"Small/Micro","seg":"REIT"},{"t":"GOOD","grp":"Small/Micro","seg":"REIT"},{"t":"LAND","grp":"Small/Micro","seg":"REIT"},{"t":"GIPR","grp":"Small/Micro","seg":"REIT"},{"t":"PKST","grp":"Small/Micro","seg":"REIT"},{"t":"JBGS","grp":"Small/Micro","seg":"REIT"},{"t":"AIV","grp":"Small/Micro","seg":"REIT"},{"t":"GMRE","grp":"Small/Micro","seg":"REIT"},{"t":"CLDT","grp":"Small/Micro","seg":"Hotel REIT"},{"t":"SHAK","grp":"Small/Micro","seg":"Restaurant"},{"t":"KRUS","grp":"Small/Micro","seg":"Restaurant"},{"t":"FWRG","grp":"Small/Micro","seg":"Restaurant"},{"t":"ARCO","grp":"Small/Micro","seg":"Restaurant"},{"t":"PZZA","grp":"Small/Micro","seg":"Restaurant"},{"t":"NAPA","grp":"Small/Micro","seg":"Winery / Beverage"}];
+let excl = {}, stats = {}, sortCol='sym', sortDir=1, filtered=[...ALL];
 
-const CAP_ORDER = { 'Large': 0, 'Mid': 1, 'Small/Micro': 2 };
-
-let activeSet = new Set();
-let sortCol = 'cap';
-let sortDir = 1;
-
-function capLabel(grp) {
-  if (grp === 'Large') return 'Large Cap';
-  if (grp === 'Mid') return 'Mid Cap';
-  return 'Small/Micro Cap';
-}
-function capClass(grp) {
-  if (grp === 'Large') return 'large';
-  if (grp === 'Mid') return 'mid';
-  return 'small';
+function loadState(){
+  try{const d=JSON.parse(localStorage.getItem('apex_tickers')||'{}');const e=d.excluded||{};SC.forEach(s=>{excl[s]=new Set(e[s]||[]);});}
+  catch(e){SC.forEach(s=>{excl[s]=new Set();});}
+  try{stats=JSON.parse(localStorage.getItem('apex_backtest_stats')||'{}');}catch(e){stats={};}
 }
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem('apex_tickers');
-    if (raw) {
-      const data = JSON.parse(raw);
-      if (data.approved) {
-        activeSet = new Set(data.approved.split(',').filter(Boolean));
-      } else {
-        activeSet = new Set(ALL_TICKERS.map(t => t.t));
-      }
-    } else {
-      activeSet = new Set(ALL_TICKERS.map(t => t.t));
-    }
-  } catch(e) {
-    activeSet = new Set(ALL_TICKERS.map(t => t.t));
-  }
+function saveState(){
+  try{
+    const d=JSON.parse(localStorage.getItem('apex_tickers')||'{}');
+    d.list=ALL.map(t=>({t:t.t,grp:t.grp}));
+    d.approved=ALL.map(t=>t.t).filter(s=>SC.some(sc=>!excl[sc].has(s))).join(',');
+    const e={};SC.forEach(sc=>{e[sc]=[...excl[sc]];});d.excluded=e;
+    localStorage.setItem('apex_tickers',JSON.stringify(d));
+  }catch(e){}
+  const ind=document.getElementById('saveIndicator');ind.classList.add('show');setTimeout(()=>ind.classList.remove('show'),2000);
+  updateHdr();
 }
 
-function saveState() {
-  try {
-    const existing = JSON.parse(localStorage.getItem('apex_tickers') || '{}');
-    existing.list = ALL_TICKERS.map(t => ({ t: t.t, grp: t.grp }));
-    existing.approved = [...activeSet].join(',');
-    localStorage.setItem('apex_tickers', JSON.stringify(existing));
-  } catch(e) {}
-  const ind = document.getElementById('saveIndicator');
-  ind.classList.add('show');
-  setTimeout(() => ind.classList.remove('show'), 2000);
-  updateCounts();
+function clearStats(){
+  if(!confirm('Clear all backtest stats?'))return;
+  localStorage.removeItem('apex_backtest_stats');stats={};render();
 }
 
-function updateCounts() {
-  const filtered = getFiltered();
-  document.getElementById('totalCount').textContent = ALL_TICKERS.length;
-  document.getElementById('activeCount').textContent = activeSet.size;
+function resetAll(){
+  if(!confirm('Reset all exclusions? Every ticker will be active in all scenarios.'))return;
+  SC.forEach(sc=>{excl[sc]=new Set();});render();
 }
 
-function getFiltered() {
-  const q = document.getElementById('searchInp').value.trim().toLowerCase();
-  const cap = document.getElementById('capFilter').value;
-  const seg = document.getElementById('segFilter').value;
-  const status = document.getElementById('activeFilter').value;
+function populateSeg(){
+  const segs=[...new Set(ALL.map(t=>t.seg).filter(Boolean))].sort();
+  const sel=document.getElementById('fSeg');
+  segs.forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;sel.appendChild(o);});
+}
 
-  return ALL_TICKERS.filter(tk => {
-    if (cap && tk.grp !== cap) return false;
-    if (seg && tk.seg !== seg) return false;
-    if (status === 'active' && !activeSet.has(tk.t)) return false;
-    if (status === 'inactive' && activeSet.has(tk.t)) return false;
-    if (q && !tk.t.toLowerCase().includes(q) && !tk.seg.toLowerCase().includes(q) && !tk.grp.toLowerCase().includes(q)) return false;
+function toggleCell(sym,sc){
+  if(excl[sc].has(sym))excl[sc].delete(sym);else excl[sc].add(sym);
+  const cb=document.getElementById('cb-'+sym+'-'+sc);if(cb)cb.checked=!excl[sc].has(sym);
+  const cl=document.getElementById('cl-'+sym+'-'+sc);if(cl)cl.classList.toggle('off',excl[sc].has(sym));
+  updateHdr();
+}
+
+function toggleAll(sc){
+  const allOff=filtered.every(t=>excl[sc].has(t.t));
+  filtered.forEach(t=>{if(allOff)excl[sc].delete(t.t);else excl[sc].add(t.t);});
+  render();
+}
+
+function getStat(sym,sc){
+  const s=stats[sym]?.[sc];
+  if(!s||!s.n)return null;
+  return{wr:Math.round(s.w/s.n*100),n:s.n};
+}
+
+function wrCls(wr){return wr>=60?'hi':wr>=45?'md':'lo';}
+
+function applyFilters(){
+  const cap=document.getElementById('fCap').value;
+  const seg=document.getElementById('fSeg').value;
+  const sc=document.getElementById('fSc').value;
+  const q=document.getElementById('fSearch').value.toLowerCase().trim();
+  filtered=ALL.filter(t=>{
+    if(cap&&t.grp!==cap)return false;
+    if(seg&&t.seg!==seg)return false;
+    if(sc&&!excl[sc].has(t.t))return false;
+    if(q&&!t.t.toLowerCase().includes(q)&&!(t.seg||'').toLowerCase().includes(q))return false;
     return true;
   });
+  sortArr();render();
 }
 
-function getSorted(list) {
-  return [...list].sort((a, b) => {
-    let av, bv;
-    if (sortCol === 't') { av = a.t; bv = b.t; }
-    else if (sortCol === 'cap') {
-      av = CAP_ORDER[a.grp] + a.seg;
-      bv = CAP_ORDER[b.grp] + b.seg;
-    }
-    else if (sortCol === 'seg') { av = a.seg; bv = b.seg; }
-    else { av = a[sortCol] || ''; bv = b[sortCol] || ''; }
-    if (av < bv) return -sortDir;
-    if (av > bv) return sortDir;
-    return 0;
+function sortBy(col){
+  if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('.sa').forEach(a=>{a.classList.remove('on');a.textContent='↕';});
+  const a=document.getElementById('a-'+col);if(a){a.classList.add('on');a.textContent=sortDir>0?'↑':'↓';}
+  sortArr();render();
+}
+
+function sortArr(){
+  const co={'Large':0,'Mid':1,'Small/Micro':2};
+  filtered.sort((a,b)=>{
+    let av,bv;
+    if(sortCol==='sym'){av=a.t;bv=b.t;}
+    else if(sortCol==='cap'){av=co[a.grp]??9;bv=co[b.grp]??9;}
+    else{av=a.seg||'';bv=b.seg||'';}
+    return typeof av==='string'?sortDir*av.localeCompare(bv):sortDir*(av-bv);
   });
 }
 
-function setSort(col) {
-  if (sortCol === col) { sortDir *= -1; }
-  else { sortCol = col; sortDir = 1; }
-  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
-  const icon = document.getElementById('sort-' + col);
-  if (icon) {
-    icon.closest('th').classList.add('sorted');
-    icon.textContent = sortDir === 1 ? 'â' : 'â';
-  }
-  renderTable();
-}
-
-function renderTable() {
-  const filtered = getFiltered();
-  const sorted = getSorted(filtered);
-  const tbody = document.getElementById('tableBody');
-  if (sorted.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No tickers match your filters.</td></tr>';
-    updateCounts();
-    return;
-  }
-
-  let html = '';
-  let lastGroup = null;
-
-  // Only show group headers when sorted by cap
-  const showGroups = (sortCol === 'cap');
-
-  sorted.forEach(tk => {
-    if (showGroups && tk.grp !== lastGroup) {
-      lastGroup = tk.grp;
-      const count = sorted.filter(x => x.grp === tk.grp).length;
-      html += `<tr class="group-row"><td colspan="4">${capLabel(tk.grp)} &nbsp;<span style="color:#475569;font-weight:400">(${count})</span></td></tr>`;
-    }
-    const isActive = activeSet.has(tk.t);
-    html += `<tr class="${isActive ? '' : 'inactive'}">
-      <td class="col-sym">${tk.t}</td>
-      <td><span class="cap-pill ${capClass(tk.grp)}">${capLabel(tk.grp)}</span></td>
-      <td class="col-seg">${tk.seg}</td>
-      <td class="col-active">
-        <label class="toggle" title="${isActive ? 'Active â click to disable' : 'Inactive â click to enable'}">
-          <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleTicker('${tk.t}', this.checked)">
-          <span class="slider"></span>
-        </label>
-      </td>
-    </tr>`;
+function render(){
+  const tb=document.getElementById('tbody');
+  const f=document.createDocumentFragment();
+  filtered.forEach(t=>{
+    const sym=t.t;
+    const allOff=SC.every(sc=>excl[sc].has(sym));
+    const tr=document.createElement('tr');
+    if(allOff)tr.className='excl-all';
+    const capShort=t.grp==='Small/Micro'?'SM':t.grp==='Large'?'LG':'MD';
+    tr.innerHTML='<td class="c-sym">'+sym+'</td><td class="c-cap">'+capShort+'</td><td class="c-seg" title="'+(t.seg||'')+'">'+(t.seg||'—')+'</td>';
+    SC.forEach(sc=>{
+      const off=excl[sc].has(sym);
+      const st=getStat(sym,sc);
+      const statTxt=st?st.wr+'%/'+st.n:'—';
+      const statCls=st?wrCls(st.wr):'none';
+      const td=document.createElement('td');
+      td.innerHTML='<div class="sc-cell'+(off?' off':'')+'" id="cl-'+sym+'-'+sc+'">'
+        +'<input type="checkbox" id="cb-'+sym+'-'+sc+'" '+(off?'':'checked')+'>'
+        +'<span class="sc-stat '+statCls+'">'+statTxt+'</span></div>';
+      td.querySelector('input').addEventListener('change',()=>toggleCell(sym,sc));
+      tr.appendChild(td);
+    });
+    f.appendChild(tr);
   });
-
-  tbody.innerHTML = html;
-  updateCounts();
+  tb.innerHTML='';tb.appendChild(f);
+  document.getElementById('cShowing').textContent=filtered.length;
+  updateHdr();
 }
 
-function toggleTicker(sym, on) {
-  if (on) activeSet.add(sym);
-  else activeSet.delete(sym);
-  // Update row class without full re-render
-  const row = document.querySelector(`input[onchange*="'${sym}'"]`)?.closest('tr');
-  if (row) row.className = on ? '' : 'inactive';
-  updateCounts();
-}
-
-function bulkToggle(on) {
-  const filtered = getFiltered();
-  filtered.forEach(tk => { if (on) activeSet.add(tk.t); else activeSet.delete(tk.t); });
-  renderTable();
-}
-
-function resetToDefault() {
-  activeSet = new Set(ALL_TICKERS.map(t => t.t));
-  renderTable();
-}
-
-function populateSegFilter() {
-  const segs = [...new Set(ALL_TICKERS.map(t => t.seg))].sort();
-  const sel = document.getElementById('segFilter');
-  segs.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = s;
-    sel.appendChild(opt);
+function updateHdr(){
+  SC.forEach(sc=>{
+    const n=[...excl[sc]].filter(s=>ALL.some(t=>t.t===s)).length;
+    document.getElementById('x-'+sc).textContent=n>0?n+' off':'all on';
   });
+  const ws=ALL.filter(t=>stats[t.t]&&Object.keys(stats[t.t]).length>0).length;
+  document.getElementById('cStats').textContent=ws;
 }
 
-// Init
-loadState();
-populateSegFilter();
-setSort('cap'); // default sort by cap tier
-renderTable();
+loadState();populateSeg();applyFilters();
 </script>
 </body>
 </html>
