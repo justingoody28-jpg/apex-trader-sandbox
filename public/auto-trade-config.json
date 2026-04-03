@@ -168,7 +168,9 @@
   "scenarios": {
     "E": true,
     "G": true,
-    "H": true
+    "H": true,
+    "B": false,
+    "C": false
   },
   "thresholds": {
     "eGap": 10,
@@ -180,5 +182,5 @@
   "defaultBet": 500,
   "count": 41,
   "updated": "2026-03-30T12:50:52.575Z",
-  "_note": "E tiered, G: gap≤-10% RVOL≥5x TP1.5/SL1.5, H: gap≤-10% RVOL≥4x TP1.5/SL2.5 (baseline), WOLF excluded from G/H"
+  "_note": "E tiered, G: gapâ¤-10% RVOLâ¥5x TP1.5/SL1.5, H: gapâ¤-10% RVOLâ¥4x TP1.5/SL2.5 (baseline), WOLF excluded from G/H"
 }
