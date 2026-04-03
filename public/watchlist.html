@@ -24,36 +24,102 @@
   --yellow-dim:#3d2c00;
   --red:       #ff4444;
   --red-dim:   #3d0000;
-  --a:  #c084fc; --a-dim: rgba(192,132,252,0.08);
-  --b:  #86efac; --b-dim: rgba(134,239,172,0.08);
-  --c:  #67e8f9; --c-dim: rgba(103,232,249,0.08);
-  --d:  #ff6b6b; --d-dim: rgba(255,107,107,0.08);
-  --e:  #69db7c; --e-dim: rgba(105,219,124,0.08);
-  --f:  #ff9f43; --f-dim: rgba(255,159,67,0.08);
-  --g:  #74c0fc; --g-dim: rgba(116,192,252,0.08);
-  --h:  #ffd43b; --h-dim: rgba(255,212,59,0.08);
+  --a:  #c084fc; --a-dim:  rgba(192,132,252,0.08);
+  --b:  #86efac; --b-dim:  rgba(134,239,172,0.08);
+  --c:  #67e8f9; --c-dim:  rgba(103,232,249,0.08);
+  --d:  #ff6b6b; --d-dim:  rgba(255,107,107,0.08);
+  --e:  #69db7c; --e-dim:  rgba(105,219,124,0.08);
+  --f:  #ff9f43; --f-dim:  rgba(255,159,67,0.08);
+  --g:  #74c0fc; --g-dim:  rgba(116,192,252,0.08);
+  --h:  #ffd43b; --h-dim:  rgba(255,212,59,0.08);
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 13px; min-height: 100vh; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  min-height: 100vh;
+}
 
 /* ── Breadcrumb ─────────────────────────────────────────── */
-.breadcrumb { padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; font-family: 'IBM Plex Sans', sans-serif; }
+.breadcrumb {
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
 .breadcrumb span { color: var(--accent); }
 .breadcrumb a { color: var(--muted); text-decoration: none; }
 .breadcrumb a:hover { color: var(--accent); }
 
-/* ── Header ─────────────────────────────────────────────── */
-.wm-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; background: var(--surface); cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); gap: 12px; }
+/* ── Collapse header ────────────────────────────────────── */
+.wm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  background: var(--surface);
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
 .wm-header:hover { background: var(--surface2); }
+
 .header-left { display: flex; align-items: center; gap: 10px; }
-.header-icon { width: 28px; height: 28px; background: var(--accent-dim); border: 1px solid var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--accent); flex-shrink: 0; }
-.header-title { font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
-.header-sub { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; }
+
+.header-icon {
+  width: 28px; height: 28px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--accent);
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.header-sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 400;
+}
+
 .header-right { display: flex; align-items: center; gap: 10px; }
-.pill { padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; border: 1px solid; }
+
+.pill {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border: 1px solid;
+}
 .pill-accent { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
 .pill-muted  { background: transparent; border-color: var(--border2); color: var(--muted); }
-.chevron { color: var(--dim); font-size: 10px; transition: transform 0.2s; margin-left: 4px; }
+
+.chevron {
+  color: var(--dim);
+  font-size: 10px;
+  transition: transform 0.2s;
+  margin-left: 4px;
+}
 .open .chevron { transform: rotate(180deg); }
 
 /* ── Body ───────────────────────────────────────────────── */
@@ -61,15 +127,63 @@ body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', 
 .open .wm-body { display: block; }
 
 /* ── Scenario tabs ──────────────────────────────────────── */
-.sc-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; padding: 0 6px; }
+.sc-tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 6px;
+}
 .sc-tabs::-webkit-scrollbar { display: none; }
-.sc-tab { display: flex; flex-direction: column; align-items: center; padding: 10px 18px 8px; cursor: pointer; border: none; background: transparent; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: color 0.15s, background 0.15s; font-family: 'IBM Plex Mono', monospace; gap: 3px; min-width: 72px; }
+
+.sc-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 18px 8px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s;
+  font-family: 'IBM Plex Mono', monospace;
+  gap: 3px;
+  min-width: 72px;
+}
 .sc-tab:hover { background: var(--surface2); color: var(--text); }
 .sc-tab.active { color: var(--text); }
-.sc-tab-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; }
-.sc-tab-meta { font-size: 9px; font-weight: 400; letter-spacing: 0; opacity: 0.65; font-family: 'IBM Plex Sans', sans-serif; }
-.sc-tab-count { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 8px; margin-top: 1px; background: var(--border); color: var(--muted); }
-.sc-tab.active .sc-tab-count { background: color-mix(in srgb, currentColor 15%, transparent); color: currentColor; }
+
+.sc-tab-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.sc-tab-meta {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0;
+  opacity: 0.65;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+.sc-tab-count {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-top: 1px;
+  background: var(--border);
+  color: var(--muted);
+}
+.sc-tab.active .sc-tab-count {
+  background: color-mix(in srgb, currentColor 15%, transparent);
+  color: currentColor;
+}
+
+/* Active tab per-color */
 .sc-tab[data-s="A"].active { color: var(--a); border-color: var(--a); background: var(--a-dim); }
 .sc-tab[data-s="B"].active { color: var(--b); border-color: var(--b); background: var(--b-dim); }
 .sc-tab[data-s="C"].active { color: var(--c); border-color: var(--c); background: var(--c-dim); }
@@ -84,105 +198,350 @@ body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', 
 .sc-panel.active { display: block; }
 
 /* ── Panel bar ──────────────────────────────────────────── */
-.panel-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; gap: 10px; }
+.panel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .panel-params { display: flex; gap: 16px; flex-wrap: wrap; }
+
 .param-item { display: flex; flex-direction: column; gap: 1px; }
-.param-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); font-family: 'IBM Plex Sans', sans-serif; }
+.param-label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-family: 'IBM Plex Sans', sans-serif;
+}
 .param-val { font-size: 12px; font-weight: 700; color: var(--text); }
 .param-val.good { color: var(--green); }
 .param-val.warn { color: var(--yellow); }
-.panel-actions { display: flex; align-items: center; gap: 8px; }
-.stats-row { display: flex; gap: 12px; align-items: center; font-size: 11px; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; }
+
+.stats-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'IBM Plex Sans', sans-serif;
+}
 .stat-val { font-weight: 600; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
 
 /* ── Filter bar ─────────────────────────────────────────── */
-.filter-bar { display: flex; align-items: center; gap: 10px; padding: 8px 20px; border-bottom: 1px solid var(--border); background: var(--bg); flex-wrap: wrap; }
-.search-wrap { position: relative; flex: 1; min-width: 160px; max-width: 260px; }
-.search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--dim); font-size: 12px; pointer-events: none; }
-.search-input { width: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 5px 10px 5px 28px; outline: none; transition: border-color 0.15s; }
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  max-width: 260px;
+}
+.search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim);
+  font-size: 12px;
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  padding: 5px 10px 5px 28px;
+  outline: none;
+  transition: border-color 0.15s;
+}
 .search-input:focus { border-color: var(--accent); }
 .search-input::placeholder { color: var(--dim); }
+
 .filter-btns { display: flex; gap: 4px; }
-.fbtn { padding: 4px 10px; border-radius: 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-family: 'IBM Plex Mono', monospace; transition: all 0.15s; }
+.fbtn {
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.15s;
+}
 .fbtn:hover, .fbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 .fbtn.red.active { border-color: var(--red); color: var(--red); background: var(--red-dim); }
 
 /* ── Ticker list ────────────────────────────────────────── */
-.ticker-list { padding: 0; max-height: 440px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+.ticker-list {
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
 .ticker-list::-webkit-scrollbar { width: 4px; }
 .ticker-list::-webkit-scrollbar-track { background: transparent; }
 .ticker-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-.ticker-row { display: grid; grid-template-columns: 80px 1fr 70px 54px; align-items: center; padding: 9px 20px; border-bottom: 1px solid rgba(33,39,47,0.7); gap: 8px; transition: background 0.1s; }
+
+.ticker-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 90px 70px 54px;
+  align-items: center;
+  padding: 9px 20px;
+  border-bottom: 1px solid rgba(33,39,47,0.7);
+  gap: 8px;
+  transition: background 0.1s;
+}
 .ticker-row:last-child { border-bottom: none; }
 .ticker-row:hover { background: var(--surface2); }
 .ticker-row.disabled { opacity: 0.35; }
-.ticker-row.header-row { padding: 6px 20px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; cursor: default; position: sticky; top: 0; z-index: 10; }
+
+.ticker-row.header-row {
+  padding: 6px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+  font-family: 'IBM Plex Sans', sans-serif;
+  cursor: default;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
 .ticker-row.header-row:hover { background: var(--surface); }
 
-/* Cells */
-.tk-sym { font-weight: 700; font-size: 13px; letter-spacing: 0.06em; color: var(--text); display: flex; align-items: center; gap: 6px; }
-.grp-badge { font-size: 8px; font-weight: 600; padding: 1px 4px; border-radius: 3px; letter-spacing: 0.05em; background: var(--border); color: var(--dim); white-space: nowrap; }
+/* Ticker cell */
+.tk-sym {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.grp-badge {
+  font-size: 8px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+  background: var(--border);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* Perf cell */
 .perf-wrap { display: flex; align-items: center; gap: 8px; }
 .perf-bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .perf-bar-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .perf-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
 .wr-label { font-size: 11px; font-weight: 700; min-width: 40px; }
 .wr-label.good { color: var(--green); }
 .wr-label.warn { color: var(--yellow); }
 .wr-label.bad  { color: var(--red); }
 .wr-label.none { color: var(--dim); }
+
 .sig-label { font-size: 10px; color: var(--muted); white-space: nowrap; }
 
 /* Toggle */
 .toggle-wrap { display: flex; justify-content: center; }
-.toggle { position: relative; width: 34px; height: 18px; cursor: pointer; flex-shrink: 0; }
+.toggle {
+  position: relative;
+  width: 34px; height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 .toggle input { display: none; }
-.toggle-track { position: absolute; inset: 0; background: var(--border2); border-radius: 9px; transition: background 0.2s; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border2);
+  border-radius: 9px;
+  transition: background 0.2s;
+}
 .toggle input:checked ~ .toggle-track { background: var(--accent); }
-.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: white; border-radius: 50%; transition: transform 0.2s; z-index: 1; }
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 12px; height: 12px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  z-index: 1;
+}
 .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
 
-/* Group sep */
-.group-sep { padding: 5px 20px; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--dim); background: rgba(13,17,23,0.8); border-bottom: 1px solid var(--border); font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; position: sticky; top: 28px; z-index: 9; }
+/* Remove btn */
+.btn-x {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 13px;
+  width: 26px; height: 26px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  margin: 0 auto;
+  font-family: inherit;
+}
+.btn-x:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
 
-/* mpty state */
-.empty { padding: 40px 20px; text-align: center; color: var(--dim); font-size: 12px; font-family: 'IBM Plex Sans', sans-serif; }
+/* ── Group separator ────────────────────────────────────── */
+.group-sep {
+  padding: 5px 20px;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: rgba(13,17,23,0.8);
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 600;
+  position: sticky;
+  top: 28px;
+  z-index: 9;
+}
+
+/* ── Empty state ────────────────────────────────────────── */
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
 .empty-icon { font-size: 28px; margin-bottom: 8px; }
 
+/* ── Add ticker row ─────────────────────────────────────── */
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.add-input {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  padding: 5px 10px;
+  outline: none;
+  width: 120px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: border-color 0.15s;
+}
+.add-input:focus { border-color: var(--accent); }
+.add-input::placeholder { color: var(--dim); text-transform: none; letter-spacing: 0; }
+
+.btn {
+  padding: 5px 14px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.04em;
+  transition: all 0.15s;
+}
+.btn-outline {
+  background: transparent;
+  border-color: var(--border2);
+  color: var(--muted);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 700;
+}
+.btn-primary:hover { filter: brightness(0.9); }
+
 /* ── Save bar ───────────────────────────────────────────── */
-.save-bar { display: none; align-items: center; justify-content: space-between; padding: 10px 20px; background: rgba(0,212,255,0.04); border-top: 1px solid rgba(0,212,255,0.15); gap: 12px; }
+.save-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(0,212,255,0.04);
+  border-top: 1px solid rgba(0,212,255,0.15);
+  gap: 12px;
+}
 .save-bar.visible { display: flex; }
-.save-msg { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--accent); font-family: 'IBM Plex Sans', sans-serif; }
-.pulse { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 1.2s infinite; }
+.save-msg {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--accent);
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+.pulse {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 1.2s infinite;
+}
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.7);} }
 .save-actions { display: flex; gap: 8px; }
-.btn { padding: 5px 14px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.04em; transition: all 0.15s; }
-.btn-outline { background: transparent; border-color: var(--border2); color: var(--muted); }
-.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
-.btn-primary:hover { filter: brightness(0.9); }
 </style>
 </head>
 <body>
 
 <div class="breadcrumb">
-  <a href="/edge-scenarios.html">APEX Trader</a> &nbsp;/&nbsp;
-  <a href="/edge-scenarios.html"><span>Edge Scenarios</span></a> &nbsp;/&nbsp;
+  <a href="/edge-scenarios.html">APEX Trader</a>
+  &nbsp;/&nbsp;
+  <a href="/edge-scenarios.html"><span>Edge Scenarios</span></a>
+  &nbsp;/&nbsp;
   Watchlist Manager
 </div>
 
 <div class="wm-root open" id="wm">
-  <div class="wm-header" onclick="togglePanel()">
+
+  <div class="wm-header" onclick="toggle()">
     <div class="header-left">
       <div class="header-icon">⚙</div>
       <div>
         <div class="header-title">Watchlist Manager</div>
-        <div class="header-sub">Per-scenario ticker controls · saves to localStorage</div>
+        <div class="header-sub">Per-scenario ticker controls · saves to auto-trade-config.json</div>
       </div>
     </div>
     <div class="header-right">
       <span class="pill pill-accent" id="totalCount">223 tickers</span>
-      <span class="pill pill-muted" id="statsCount">0 with stats</span>
+      <span class="pill pill-muted" id="statsCount">— with stats</span>
       <span class="pill pill-muted">8 scenarios</span>
       <span class="chevron">▼</span>
     </div>
@@ -194,7 +553,7 @@ body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', 
     <div class="save-bar" id="saveBar">
       <div class="save-msg">
         <div class="pulse"></div>
-        Unsaved changes
+        Unsaved changes — not yet committed to config
       </div>
       <div class="save-actions">
         <button class="btn btn-outline" onclick="discard()">Discard</button>
@@ -207,94 +566,71 @@ body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', 
 <script>
 // ── Scenario definitions ──────────────────────────────────────────────────────
 const SC = [
-  { id:'A', label:'A', sub:'Long ≥2%↑',       tp:'+2%',   sl:'-0.5%', be:20.0,  bet:'$500',   col:'var(--a)' },
-  { id:'B', label:'B', sub:'Long 3–4%↑',       tp:'+3%',   sl:'-1%',   be:25.0,  bet:'$500',   col:'var(--b)' },
-  { id:'C', label:'C', sub:'Long ≥4%↑',        tp:'+4%',   sl:'-1%',   be:20.0,  bet:'$500',   col:'var(--c)' },
-  { id:'D', label:'D', sub:'Short ≥2%↑',       tp:'-2%',   sl:'+0.5%', be:20.0,  bet:'$500',   col:'var(--d)' },
-  { id:'E', label:'E', sub:'Fade ≥10%↑',       tp:'+2%',   sl:'-2%',   be:50.0,  bet:'$500+',  col:'var(--e)' },
-  { id:'F', label:'F', sub:'Gap-Down ≥5%↓',    tp:'+2%',   sl:'-2%',   be:50.0,  bet:'$500',   col:'var(--f)' },
-  { id:'G', label:'G', sub:'Honed Fade ≥8%↓',  tp:'+1.5%', sl:'-2%',   be:57.1,  bet:'$500',   col:'var(--g)' },
-  { id:'H', label:'H', sub:'Panic Rev ≥10%↓',  tp:'+1.5%', sl:'-2.5%', be:62.5,  bet:'$500',   col:'var(--h)' },
+  { id:'A', label:'A', sub:'Long ≥2%↑',      tp:'+2%',   sl:'-0.5%', be:20.0,  bet:'$500'  },
+  { id:'B', label:'B', sub:'Long 3–4%↑',      tp:'+3%',   sl:'-1%',   be:25.0,  bet:'$500'  },
+  { id:'C', label:'C', sub:'Long ≥4%↑',       tp:'+4%',   sl:'-1%',   be:20.0,  bet:'$500'  },
+  { id:'D', label:'D', sub:'Short ≥2%↑',      tp:'-2%',   sl:'+0.5%', be:20.0,  bet:'$500'  },
+  { id:'E', label:'E', sub:'Fade ≥10%↑',      tp:'+2%',   sl:'-2%',   be:50.0,  bet:'$500+' },
+  { id:'F', label:'F', sub:'Gap-Down ≥5%↓',   tp:'+2%',   sl:'-2%',   be:50.0,  bet:'$500'  },
+  { id:'G', label:'G', sub:'Honed Fade ≥8%↓', tp:'+1.5%', sl:'-2%',   be:57.1,  bet:'$500'  },
+  { id:'H', label:'H', sub:'Panic Rev ≥10%↓', tp:'+1.5%', sl:'-2.5%', be:62.5,  bet:'$500'  },
 ];
 
-// ── Tickers ───────────────────────────────────────────────────────────────────
+// ── All tickers ───────────────────────────────────────────────────────────────
 const ALL_TICKERS = [
-  {t:'AMD',g:'Lg',seg:'Semiconductors'},{t:'NVDA',g:'Lg',seg:'Semiconductors'},{t:'INTC',g:'Lg',seg:'Semiconductors'},
-  {t:'TSLA',g:'Lg',seg:'Consumer Tech'},{t:'AMZN',g:'Lg',seg:'Mega Tech'},{t:'AAPL',g:'Lg',seg:'Mega Tech'},
-  {t:'GOOGL',g:'Lg',seg:'Mega Tech'},{t:'META',g:'Lg',seg:'Mega Tech'},{t:'NFLX',g:'Lg',seg:'Mega Tech'},
-  {t:'MSFT',g:'Lg',seg:'Mega Tech'},{t:'JPM',g:'Lg',seg:'Financial Services'},{t:'GS',g:'Lg',seg:'Financial Services'},
-  {t:'LLY',g:'Lg',seg:'Pharma'},{t:'PFE',g:'Lg',seg:'Pharma'},{t:'UNH',g:'Lg',seg:'Managed Care'},
-  {t:'TWLO',g:'Mid',seg:'SaaS'},{t:'COIN',g:'Mid',seg:'Fintech'},{t:'HUBS',g:'Mid',seg:'SaaS'},
-  {t:'OKTA',g:'Mid',seg:'Cybersecurity'},{t:'SNAP',g:'Mid',seg:'Social Media'},{t:'HOOD',g:'Mid',seg:'Fintech'},
-  {t:'CRWD',g:'Mid',seg:'Cybersecurity'},t:'DDOG',g:'Mid',seg:'SaaS'},{t:'SOFI',g:'Mid',seg:'Fintech'},
-  {t:'GLOB',g:'Mid',seg:'IT Services'},{t:'EXLS',g:'Mid',seg:'IT Services'},{t:'PEGA',g:'Mid',seg:'Enterprise Software'},
-  {t:'NCNO',g:'Mid',seg:'SaaS'},{t:'ALRM',g:'Mid',seg:'SaaS'},{t:'JAMF',g:'Mid',seg:'SaaS'},
-  {t:'TNET',g:'Mid',seg:'HR Tech'},{t:'ATEN',g:'Mid',seg:'Networking'},{t:'LPSN',g:'Mid',seg:'SaaS'},
-  {t:'DOMO',g:'Mid',seg:'SaaS'},{t:'QTWO',g:'Mid',seg:'Fintech'},{t:'EVBG',g:'Mid',seg:'SaaS'},
-  {t:'BRZE',g:'Mid',seg:'SaaS'},{t:'ASAN',g:'Mid',seg:'SaaS'},{t:'UMBF',g:'Mid',seg:'Regional Banks'},
-  {t:'WTFC',g:'Mid',seg:'Regional Banks'},t:'SNV',g:'Mid',seg:'Regional Banks'},{t:'IBOC',g:'Mid',seg:'Regional Banks'},
-  {t:'PRSP',g:'Mid',seg:'Regional Banks'},{t:'CATY',g:'Mid',seg:'Regional Banks'},{t:'FFIN',g:'Mid',seg:'Regional Banks'},
-  {t:'WSBC',g:'Mid',seg:'Regional Banks'},{t:'CVBF',g:'Mid',seg:'Regional Banks'},{t:'FULT',g:'Mid',seg:'Regional Banks'},
-  {t:'INVA',g:'Mid',seg:'Specialty Pharma'},{t:'PRGO',g:'Mid',seg:'Specialty Pharma'},{t:'HALO',g:'Mid',seg:'Biotech'},
-  {t:'NTRA',g:'Mid',seg:'Genomics'},{t:'MDRX',g:'Mid',seg:'Health IT'},{t:'OMCL',g:'Mid',seg:'Health IT'},
-  {t:'PINC',g:'Mid',seg:'Healthcare Services'},{t:'ADUS',g:'Mid',seg:'Healthcare Services'},{t:'AMSF',g:'Mid',seg:'Healthcare Services'},
-  {t:'ACAD',g:'Mid',seg:'Biotech'},{t:'NVCR',g:'Mid',seg:'Biotech'},{t:'RYTM',g:'Mid',seg:'Biotech'},
-  {t:'RARE',g:'Mid',seg:'Biotech'},{t:'FOLD',g:'Mid',seg:'Biotech'},{t:'CRDF',g:'Mid',seg:'Biotech'},
-  {t:'ARQT',g:'Mid',seg:'Biotech'},{t:'XNCR',g:'Mid',seg:'Biotech'},{t:'IMVT',g:'Mid',seg:'Biotech'},
-  {t:'PRAX',g:'Mid',seg:'Biotech'},{t:'KYMR',g:'Mid',seg:'Biotech'},{t:'BOOT',g:'Mid',seg:'Retail'},
-  {t:'WING',g:'Mid',seg:'Restaurant'},{t:'FRPT',g:'Mid',seg:'Pet Food'},{t:'CAVA',g:'Mid',seg:'Restaurant'},
-  {t:'SG',g:'Mid',seg:'Restaurant'},{t:'TACO',g:'Mid',seg:'Restaurant'},{t:'TXRH',g:'Mid',seg:'Restaurant'},
-  {t:'FAT',g:'Mid',seg:'Restaurant'},{t:'RRGB',g:'Mid',seg:'Restaurant'},{t:'JACK',g:'Mid',seg:'Restaurant'},
-  {t:'ACVA',g:'Mid',seg:'Auto Marketplace'},{t:'PRTY',g:'Mid',seg:'Retail'},{t:'VSCO',g:'Mid',seg:'Retail'},
-  {t:'JOANn',g:'Mid',seg:'Retail'},{t:'ODP',g:'Mid',seg:'Retail'},{t:'RCII',g:'Mid',seg:'Retail'},
-  {t:'ASTE',g:'Mid',seg:'Industrial'},{t:'HCSG',g:'Mid',seg:'Facility Services'},{t:'TREX',g:'Mid',seg:'Building Products'},
-  {t:'APOG',g:'Mid',seg:'Industrial'},{t:'ARCB',g:'Mid',seg:'Logistics'},{t:'MATX',g:'Mid',seg:'Logistics'},
-  {t:'MRTN',g:'Mid',seg:'Logistics'},{t:'SAIA',g:'Mid',seg:'Logistics'},{t:'LSTR',g:'Mid',seg:'Logistics'},
-  {t:'ECHO',g:'Mid',seg:'Logistics'},{t:'CEIX',g:'Mid',seg:'Coal Energy'},t:'ARCH',g:'Mid',seg:'Coal Energy'},
-  {t:'SWN',g:'Mid',seg:'E&P Energy'},{t:'RRC',g:'Mid',seg:'E&P Energy'},{t:'CIVI',g:'Mid',seg:'E&P Energy'},
-  {t:'VTLE',g:'Mid',seg:'E&P Energy'},{t:'SM',g:'Mid',seg:'E&P Energy'},{t:'REX',g:'Mid',seg:'E&P Energy'},
-  {t:'HESM',g:'Mid',seg:'Midstream Energy'},{t:'SRLP',g:'Mid',seg:'Midstream Energy'},{t:'IOSP',g:'Mid',seg:'Specialty Chemicals'},
-  {t:'KWR',g:'Mid',seg:'Specialty Chemicals'},{t:'TROX',g:'Mid',seg:'Specialty Chemicals'},tt:'MTRN',g:'Mid',seg:'Specialty Chemicals'},
-  {t:'ASIX',g:'Mid',seg:'Specialty Chemicals'},{t:'KREF',g:'Mid',seg:'Mortgage REIT'},{t:'GPMT',g:'Mid',seg:'Mortgage REIT'},
-  {t:'STWD',g:'Mid',seg:'Mortgage REIT'},{t:'BXMT',g:'Mid',seg:'Mortgage REIT'},{t:'TRTX',g:'Mid',seg:'Mortgage REIT'},
-  {t:'ATER',g:'SM',seg:'Consumer Products'},{t:'LAZR',g:'SM',seg:'Lidar / Tech'},{t:'MRNA',g:'SM',seg:'Biotech'},
-  {t:'AGEN',g:'SM',seg:'Biotech'},{t:'GFAI',g:'SM',seg:'AI / Tech'},tt:'IONQ',g:'SM',seg:'Quantum Computing'},
-  {t:'FCEL',g:'SM',seg:'Clean Energy'},{t:'RCKT',g:'SM',seg:'Biotech'},tt:'SPCE',g:'SM',seg:'Space Tech'},
-  {t:'HUT',g:'SM',seg:'Crypto Mining'},{t:'WOLF',g:'SM',seg:'Semiconductors'},{t:'PAYO',g:'SM',seg:'Fintech'},
-  {t:'FLYW',g:'SM',seg:'Fintech'},{t:'TASK',g:'SM',seg:'SaaS'},tt:'MNDY',g:'SM',seg:'SaaS'},
-  {t:'NRDS',g:'SM',seg:'Fintech'},{t:'MAPS',g:'SM',seg:'Cannabis Tech'},{t:'RSKD',g:'SM',seg:'SaaS'},
-  {t:'AMBR',g:'SM',seg:'Regional Banks'},{t:'CLBK',g:'SM',seg:'Regional Banks'},{t:'OBNK',g:'SM',seg:'Regional Banks'},
-  {t:'HBCP',g:'SM',seg:'Regional Banks'},{t:'BSVN',g:'SM',seg:'Regional Banks'},{t:'ORRF',g:'SM',seg:'Regional Banks'},
-  {t:'MCBC',g:'SM',seg:'Regional Banks'},{t:'NWIN',g:'SM',seg:'Regional Banks'},{t:'FSBC',g:'SM',seg:'Regional Banks'},
-  {t:'OPAD',g:'SM',seg:'Auto Marketplace'},{t:'VZIO',g:'SM',seg:'Consumer Electronics'},{t:'SOUN',g:'SM',seg:'AI / Tech'},
-  {t:'CPTN',g:'SM',seg:'AI / Tech'},{t:'VNET',g:'SM',seg:'Data Centers'},{t:'ARQQ',g:'SM',seg:'Quantum Computing'},
-  {t:'QUBT',g:'SM',seg:'Quantum Computing'},{t:'SDGR',g:'SM',seg:'AI / Drug Discovery'},{t:'LQDT',g:'SM',seg:'Marketplace'},
-  {t:'SPRY',g:'SM',seg:'Specialty Pharma'},{t:'TGTX',g:'SM',seg:'Biotech'},{t:'CDNA',g:'SM',seg:'Genomics'},
-  {t:'VERV',g:'SM',seg:'Biotech'},{t:'KRYS',g:'SM',seg:'Biotech'},{t:'AGIO',g:'SM',seg:'Biotech'},
-  {t:'XBIT',g:'SM',seg:'Biotech'},{t:'DRTS',g:'SM',seg:'Biotech'},{t:'REGN',g:'SM',seg:'Biotech'},
-  {t:'GOSS',g:'SM',seg:'Biotech'},{t:'NVAX',g:'SM',seg:'Biotech'},{t:'OCGN',g:'SM',seg:'Biotech'},
-  {t:'SRPT',g:'SM',seg:'Biotech'},{t:'HRTX',g:'SM',seg:'Biotech'},{t:'MESO',g:'SM',seg:'Biotech'},
-  {t:'ESSA',g:'SM',seg:'Biotech'},{t:'TELA',g:'SM',seg:'Medtech'},{t:'ATRC',g:'SM',seg:'Medtech'},
-  {t:'PRCT',g:'SM',seg:'Medtech'},{t:'SILK',g:'SM',seg:'Medtech'},{t:'RNXT',g:'SM',seg:'Medtech'},
-  {t:'WTTR',g:'SM',seg:'Energy Services'},{t:'KLXE',g:'SM',seg:'Energy Services'},tt:'NINE',g:'SM',seg:'Energy Services'},
-  {t:'BORR',g:'SM',seg:'Offshore Drilling'},{t:'PTEN',g:'SM',seg:'Energy Services'},{t:'PUMP',g:'SM',seg:'Energy Services'},
-  {t:'NR',g:'SM',seg:'Energy Services'},{t:'PFIE',g:'SM',seg:'Energy Services'},tt:'DNOW',g:'SM',seg:'Energy Distribution'},
-  {t:'GPOR',g:'SM',seg:'E&P Energy'},{t:'KCAL',g:'SM',seg:'Energy Services'},{t:'TPVG',g:'SM',seg:'BDC'},
-  {t:'XPOF',g:'SM',seg:'Fitness'},{t:'PLBY',g:'SM',seg:'Consumer Media'},{t:'LAZY',g:'SM',seg:'Retail'},
-  {t:'GIII',g:'SM',seg:'Apparel'},{t:'CATO',g:'SM',seg:'Retail'},{t:'SCVL',g:'SM',seg:'Retail'},
-  {t:'DXLG',g:'SM',seg:'Retail'},{t:'CURV',g:'SM',seg:'Retail'},t:'BURL',g:'SM',seg:'Retail'},
-  {t:'CULP',g:'SM',seg:'Textiles'},tt:'ITRN',g:'SM',seg:'IoT / Tech'},{t:'HIMS',g:'SM',seg:'Telehealth'},
-  {t:'BARK',g:'SM',seg:'Pet Products'},{t:'PETQ',g:'SM',seg:'Pet Products'},{t:'GENC',g:'SM',seg:'Industrial'},
-  {t:'HLIO',g:'SM',seg:'Industrial'},{t:'FWRD',g:'SM',seg:'Logistics'},{t:'HTLD',g:'SM',seg:'Logistics'},
-  {t:'USAK',g:'SM',seg:'Logistics'},{t:'ATSG',g:'SM',seg:'Air Cargo'},{t:'AIRT',g:'SM',seg:'Air Services'},
-  {t:'GLDD',g:'SM',seg:'Marine Construction'},{t:'MFAC',g:'SM',seg:'Financial Services'},tt:'NVEE',g:'SM',seg:'Environmental'},
-  {t:'CLPR',g:'SM',seg:'REIT'},{t:'NXRT',g:'SM',seg:'REIT'},t:'GOOD',g:'SM',seg:'REIT'},
-  {t:'LAND',g:'SM',seg:'REIT'},tt:'GIPR',g:'SM',seg:'REIT'},{t:'PKST',g:'SM',seg:'REIT'},
-  {t:'JBGS',g:'SM',seg:'REIT'},tt:'AIV',g:'SM',seg:'REIT'},{t:'GMRE',g:'SM',seg:'REIT'},
-  {t:'CLDT',g:'SM',seg:'Hotel REIT'},{t:'SHAK',g:'SM',seg:'Restaurant'},{t:'KRUS',g:'SM',seg:'Restaurant'},
-  {t:'FWRG',g:'SM',seg:'Restaurant'},{t:'ARCO',g:'SM',seg:'Restaurant'},{t:'PZZA',g:'SM',seg:'Restaurant'},
-  {t:'NAPA',g:'SM',seg:'Winery / Beverage'},
+  // Large
+  {t:'AMD',g:'Lg'},{t:'NVDA',g:'Lg'},{t:'INTC',g:'Lg'},{t:'TSLA',g:'Lg'},{t:'AMZN',g:'Lg'},
+  {t:'AAPL',g:'Lg'},{t:'GOOGL',g:'Lg'},{t:'META',g:'Lg'},{t:'NFLX',g:'Lg'},{t:'MSFT',g:'Lg'},
+  {t:'JPM',g:'Lg'},{t:'GS',g:'Lg'},{t:'LLY',g:'Lg'},{t:'PFE',g:'Lg'},{t:'UNH',g:'Lg'},
+  // Mid
+  {t:'TWLO',g:'Mid'},{t:'COIN',g:'Mid'},{t:'HUBS',g:'Mid'},{t:'OKTA',g:'Mid'},{t:'SNAP',g:'Mid'},
+  {t:'HOOD',g:'Mid'},{t:'CRWD',g:'Mid'},{t:'DDOG',g:'Mid'},{t:'SOFI',g:'Mid'},{t:'GLOB',g:'Mid'},
+  {t:'EXLS',g:'Mid'},{t:'PEGA',g:'Mid'},{t:'NCNO',g:'Mid'},{t:'ALRM',g:'Mid'},{t:'JAMF',g:'Mid'},
+  {t:'TNET',g:'Mid'},{t:'ATEN',g:'Mid'},{t:'LPSN',g:'Mid'},{t:'DOMO',g:'Mid'},{t:'QTWO',g:'Mid'},
+  {t:'EVBG',g:'Mid'},{t:'BRZE',g:'Mid'},{t:'ASAN',g:'Mid'},{t:'UMBF',g:'Mid'},{t:'WTFC',g:'Mid'},
+  {t:'SNV',g:'Mid'},{t:'IBOC',g:'Mid'},{t:'PRSP',g:'Mid'},{t:'CATY',g:'Mid'},{t:'FFIN',g:'Mid'},
+  {t:'WSBC',g:'Mid'},{t:'CVBF',g:'Mid'},{t:'FULT',g:'Mid'},{t:'INVA',g:'Mid'},{t:'PRGO',g:'Mid'},
+  {t:'HALO',g:'Mid'},{t:'NTRA',g:'Mid'},{t:'MDRX',g:'Mid'},{t:'OMCL',g:'Mid'},{t:'PINC',g:'Mid'},
+  {t:'ADUS',g:'Mid'},{t:'AMSF',g:'Mid'},{t:'ACAD',g:'Mid'},{t:'NVCR',g:'Mid'},{t:'RYTM',g:'Mid'},
+  {t:'RARE',g:'Mid'},{t:'FOLD',g:'Mid'},{t:'CRDF',g:'Mid'},{t:'ARQT',g:'Mid'},{t:'XNCR',g:'Mid'},
+  {t:'IMVT',g:'Mid'},{t:'PRAX',g:'Mid'},{t:'KYMR',g:'Mid'},{t:'BOOT',g:'Mid'},{t:'WING',g:'Mid'},
+  {t:'FRPT',g:'Mid'},{t:'CAVA',g:'Mid'},{t:'SG',g:'Mid'},{t:'TACO',g:'Mid'},{t:'TXRH',g:'Mid'},
+  {t:'FAT',g:'Mid'},{t:'RRGB',g:'Mid'},{t:'JACK',g:'Mid'},{t:'ACVA',g:'Mid'},{t:'PRTY',g:'Mid'},
+  {t:'VSCO',g:'Mid'},{t:'JOANN',g:'Mid'},{t:'ODP',g:'Mid'},{t:'RCII',g:'Mid'},{t:'ASTE',g:'Mid'},
+  {t:'HCSG',g:'Mid'},{t:'TREX',g:'Mid'},{t:'APOG',g:'Mid'},{t:'ARCB',g:'Mid'},{t:'MATX',g:'Mid'},
+  {t:'MRTN',g:'Mid'},{t:'SAIA',g:'Mid'},{t:'LSTR',g:'Mid'},{t:'ECHO',g:'Mid'},{t:'CEIX',g:'Mid'},
+  {t:'ARCH',g:'Mid'},{t:'SWN',g:'Mid'},{t:'RRC',g:'Mid'},{t:'CIVI',g:'Mid'},{t:'VTLE',g:'Mid'},
+  {t:'SM',g:'Mid'},{t:'REX',g:'Mid'},{t:'HESM',g:'Mid'},{t:'SRLP',g:'Mid'},{t:'IOSP',g:'Mid'},
+  {t:'KWR',g:'Mid'},{t:'TROX',g:'Mid'},{t:'MTRN',g:'Mid'},{t:'ASIX',g:'Mid'},{t:'KREF',g:'Mid'},
+  {t:'GPMT',g:'Mid'},{t:'STWD',g:'Mid'},{t:'BXMT',g:'Mid'},{t:'TRTX',g:'Mid'},
+  // Small/Micro
+  {t:'ATER',g:'SM'},{t:'LAZR',g:'SM'},{t:'MRNA',g:'SM'},{t:'AGEN',g:'SM'},{t:'GFAI',g:'SM'},
+  {t:'IONQ',g:'SM'},{t:'FCEL',g:'SM'},{t:'RCKT',g:'SM'},{t:'SPCE',g:'SM'},{t:'HUT',g:'SM'},
+  {t:'WOLF',g:'SM'},{t:'PAYO',g:'SM'},{t:'FLYW',g:'SM'},{t:'TASK',g:'SM'},{t:'MNDY',g:'SM'},
+  {t:'NRDS',g:'SM'},{t:'MAPS',g:'SM'},{t:'RSKD',g:'SM'},{t:'AMBR',g:'SM'},{t:'CLBK',g:'SM'},
+  {t:'OBNK',g:'SM'},{t:'HBCP',g:'SM'},{t:'BSVN',g:'SM'},{t:'ORRF',g:'SM'},{t:'MCBC',g:'SM'},
+  {t:'NWIN',g:'SM'},{t:'FSBC',g:'SM'},{t:'OPAD',g:'SM'},{t:'VZIO',g:'SM'},{t:'SOUN',g:'SM'},
+  {t:'CPTN',g:'SM'},{t:'VNET',g:'SM'},{t:'ARQQ',g:'SM'},{t:'QUBT',g:'SM'},{t:'SDGR',g:'SM'},
+  {t:'LQDT',g:'SM'},{t:'SPRY',g:'SM'},{t:'TGTX',g:'SM'},{t:'CDNA',g:'SM'},{t:'VERV',g:'SM'},
+  {t:'KRYS',g:'SM'},{t:'AGIO',g:'SM'},{t:'XBIT',g:'SM'},{t:'DRTS',g:'SM'},{t:'REGN',g:'SM'},
+  {t:'GOSS',g:'SM'},{t:'NVAX',g:'SM'},{t:'OCGN',g:'SM'},{t:'SRPT',g:'SM'},{t:'HRTX',g:'SM'},
+  {t:'MESO',g:'SM'},{t:'ESSA',g:'SM'},{t:'TELA',g:'SM'},{t:'ATRC',g:'SM'},{t:'PRCT',g:'SM'},
+  {t:'SILK',g:'SM'},{t:'RNXT',g:'SM'},{t:'WTTR',g:'SM'},{t:'KLXE',g:'SM'},{t:'NINE',g:'SM'},
+  {t:'BORR',g:'SM'},{t:'PTEN',g:'SM'},{t:'PUMP',g:'SM'},{t:'NR',g:'SM'},{t:'PFIE',g:'SM'},
+  {t:'DNOW',g:'SM'},{t:'GPOR',g:'SM'},{t:'KCAL',g:'SM'},{t:'TPVG',g:'SM'},{t:'XPOF',g:'SM'},
+  {t:'PLBY',g:'SM'},{t:'LAZY',g:'SM'},{t:'GIII',g:'SM'},{t:'CATO',g:'SM'},{t:'SCVL',g:'SM'},
+  {t:'DXLG',g:'SM'},{t:'CURV',g:'SM'},{t:'BURL',g:'SM'},{t:'CULP',g:'SM'},{t:'ITRN',g:'SM'},
+  {t:'HIMS',g:'SM'},{t:'BARK',g:'SM'},{t:'PETQ',g:'SM'},{t:'GENC',g:'SM'},{t:'HLIO',g:'SM'},
+  {t:'FWRD',g:'SM'},{t:'HTLD',g:'SM'},{t:'USAK',g:'SM'},{t:'ATSG',g:'SM'},{t:'AIRT',g:'SM'},
+  {t:'GLDD',g:'SM'},{t:'MFAC',g:'SM'},{t:'NVEE',g:'SM'},{t:'CLPR',g:'SM'},{t:'NXRT',g:'SM'},
+  {t:'GOOD',g:'SM'},{t:'LAND',g:'SM'},{t:'GIPR',g:'SM'},{t:'PKST',g:'SM'},{t:'JBGS',g:'SM'},
+  {t:'AIV',g:'SM'},{t:'GMRE',g:'SM'},{t:'CLDT',g:'SM'},{t:'SHAK',g:'SM'},{t:'KRUS',g:'SM'},
+  {t:'FWRG',g:'SM'},{t:'ARCO',g:'SM'},{t:'PZZA',g:'SM'},{t:'NAPA',g:'SM'},
 ];
+
+// Deduplicate
+const seen = new Set();
+const TICKERS = ALL_TICKERS.filter(t => { if(seen.has(t.t)){return false;} seen.add(t.t); return true; });
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let excluded = {};
@@ -307,7 +643,7 @@ SC.forEach(s => {
   filters[s.id] = { search: '', show: 'all' };
 });
 
-// ── Load / Save ──────────────────────────────────────────────────────────────
+// ── Load / Save ───────────────────────────────────────────────────────────────
 function loadState() {
   try {
     const d = JSON.parse(localStorage.getItem('apex_tickers') || '{}');
@@ -322,19 +658,16 @@ function loadState() {
 function saveState() {
   try {
     const d = JSON.parse(localStorage.getItem('apex_tickers') || '{}');
-    d.list = ALL_TICKERS.map(t => ({ t: t.t, grp: t.g }));
-    d.approved = ALL_TICKERS.map(t => t.t).filter(sym => SC.some(s => !excluded[s.id].has(sym))).join(',');
+    d.list = TICKERS.map(t => ({ t: t.t, grp: t.g }));
+    d.approved = TICKERS.map(t => t.t).filter(sym => SC.some(s => !excluded[s.id].has(sym))).join(',');
     const excl = {};
     SC.forEach(s => { excl[s.id] = [...excluded[s.id]]; });
     d.excluded = excl;
     localStorage.setItem('apex_tickers', JSON.stringify(d));
   } catch(e) {}
   dirty = false;
-  document.getElementById('saveBar').classList.remove('visible');
-  // Flash confirm
   const bar = document.getElementById('saveBar');
-  bar.classList.add('visible');
-  bar.querySelector('.save-msg').innerHTML = '✓ Saved';
+  bar.querySelector('.save-msg').innerHTML = '✓ Saved to localStorage';
   setTimeout(() => bar.classList.remove('visible'), 1800);
 }
 
@@ -346,7 +679,6 @@ function discard() {
   renderTabs();
 }
 
-// ── Perf helpers ──────────────────────────────────────────────────────────────
 function getPerf(tk, scId) {
   const p = stats[tk]?.[scId];
   if (!p || !p.n) return null;
@@ -363,91 +695,47 @@ function barColor(cls) {
   return cls === 'good' ? 'var(--green)' : cls === 'warn' ? 'var(--yellow)' : 'var(--red)';
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
 function renderAll() { renderTabs(); renderPanels(); updateHeader(); }
 
 function renderTabs() {
   document.getElementById('scTabs').innerHTML = SC.map(s => {
-    const active = ALL_TICKERS.filter(t => !excluded[s.id].has(t.t)).length;
-    return `<button class="sc-tab ${s.id === activeId ? 'active' : ''}" data-s="${s.id}" onclick="switchTab('${s.id}')">
-      <span class="sc-tab-label">${s.label}</span>
-      <span class="sc-tab-meta">${s.sub}</span>
-      <span class="sc-tab-count">${active}</span>
-    </button>`;
+    const active = TICKERS.filter(t => !excluded[s.id].has(t.t)).length;
+    return `<button class="sc-tab ${s.id === activeId ? 'active' : ''}" data-s="${s.id}" onclick="switchTab('${s.id}')"><span class="sc-tab-label">${s.label}</span><span class="sc-tab-meta">${s.sub}</span><span class="sc-tab-count">${active}</span></button>`;
   }).join('');
 }
 
 function renderPanels() {
-  document.getElementById('panels').innerHTML = SC.map(s => `
-    <div class="sc-panel ${s.id === activeId ? 'active' : ''}" id="panel-${s.id}">
-      ${renderPanelBar(s)}
-      ${renderFilterBar(s)}
-      <div class="ticker-list" id="list-${s.id}">${renderTickerList(s)}</div>
-    </div>`).join('');
+  document.getElementById('panels').innerHTML = SC.map(s => `<div class="sc-panel ${s.id === activeId ? 'active' : ''}" id="panel-${s.id}">${renderPanelBar(s)}${renderFilterBar(s)}<div class="ticker-list" id="list-${s.id}">${renderTickerList(s)}</div>${renderAddRow(s)}</div>`).join('');
 }
 
 function renderPanelBar(s) {
-  const active = ALL_TICKERS.filter(t => !excluded[s.id].has(t.t)).length;
+  const active = TICKERS.filter(t => !excluded[s.id].has(t.t)).length;
   const excl = excluded[s.id].size;
-  return `<div class="panel-bar">
-    <div class="panel-params">
-      <div class="param-item"><span class="param-label">Take Profit</span><span class="param-val good">${s.tp}</span></div>
-      <div class="param-item"><span class="param-label">Stop Loss</span><span class="param-val warn">${s.sl}</span></div>
-      <div class="param-item"><span class="param-label">Break-Even WR</span><span class="param-val">${s.be}%</span></div>
-      <div class="param-item"><span class="param-label">Bet Size</span><span class="param-val" style="color:var(--accent)">${s.bet}</span></div>
-    </div>
-    <div class="stats-row">
-      <span><span class="stat-val">${active}</span> active</span>
-      <span style="color:var(--dim)">·</span>
-      <span><span class="stat-val">${excl}</span> excluded</span>
-      <span style="color:var(--dim)">·</span>
-      <span><span class="stat-val">${ALL_TICKERS.length}</span> total</span>
-    </div>
-  </div>`;
+  return `<div class="panel-bar"><div class="panel-params"><div class="param-item"><span class="param-label">Take Profit</span><span class="param-val good">${s.tp}</span></div><div class="param-item"><span class="param-label">Stop Loss</span><span class="param-val warn">${s.sl}</span></div><div class="param-item"><span class="param-label">Break-Even WR</span><span class="param-val">${s.be}%</span></div><div class="param-item"><span class="param-label">Bet Size</span><span class="param-val" style="color:var(--accent)">${s.bet}</span></div></div><div class="stats-row"><span><span class="stat-val">${active}</span> active</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${excl}</span> excluded</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${TICKERS.length}</span> total</span></div></div>`;
 }
 
 function renderFilterBar(s) {
   const f = filters[s.id];
-  return `<div class="filter-bar" id="fbar-${s.id}">
-    <div class="search-wrap">
-      <span class="search-icon">⌕</span>
-      <input class="search-input" placeholder="Search tickers…" value="${f.search}"
-             oninput="setSearch('${s.id}', this.value)">
-    </div>
-    <div class="filter-btns">
-      <button class="fbtn ${f.show==='all'?'active':''}"    onclick="setFilter('${s.id}','all')">All</button>
-      <button class="fbtn ${f.show==='active'?'active':''}" onclick="setFilter('${s.id}','active')">Active</button>
-      <button class="fbtn ${f.show==='excl'?'active':''}"   onclick="setFilter('${s.id}','excl')">Excluded</button>
-      <button class="fbtn ${f.show==='nodata'?'active':''}" onclick="setFilter('${s.id}','nodata')">No Data</button>
-      <button class="fbtn red ${f.show==='below'?'active':''}" onclick="setFilter('${s.id}','below')">Below BE</button>
-    </div>
-  </div>`;
+  return `<div class="filter-bar" id="fbar-${s.id}"><div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" placeholder="Search tickers…" value="${f.search}" oninput="setSearch('${s.id}', this.value)"></div><div class="filter-btns"><button class="fbtn ${f.show==='all'?'active':''}" onclick="setFilter('${s.id}','all')">All</button><button class="fbtn ${f.show==='active'?'active':''}" onclick="setFilter('${s.id}','active')">Active</button><button class="fbtn ${f.show==='nodata'?'active':''}" onclick="setFilter('${s.id}','nodata')">No Data</button><button class="fbtn red ${f.show==='below'?'active':''}" onclick="setFilter('${s.id}','below')">Below BE</button></div></div>`;
 }
 
 function renderTickerList(s) {
   const f = filters[s.id];
-  const groups = [
-    { key:'Lg', label:'Large Cap' },
-    { key:'Mid', label:'Mid Cap' },
-    { key:'SM', label:'Small / Micro Cap' },
-  ];
-  let html = `<div class="ticker-row header-row">
-    <div>Ticker</div><div>Backtest Edge</div><div style="text-align:center">Active</div><div></div>
-  </div>`;
-  let total = 0;
+  const groups = [{ key:'SM', label:'Small / Micro Cap' },{ key:'Mid', label:'Mid Cap' },{ key:'Lg', label:'Large Cap' }];
+  let html = `<div class="ticker-row header-row"><div>Ticker</div><div>6-Month Backtest Edge</div><div style="text-align:center">Signals</div><div style="text-align:center">Active</div><div style="text-align:center">—</div></div>`;
+  let visibleCount = 0;
   groups.forEach(grp => {
-    let tks = ALL_TICKERS.filter(t => t.g === grp.key);
-    if (f.search) tks = tks.filter(t => t.t.includes(f.search.toUpperCase()) || (t.seg||'').toLowerCase().includes(f.search.toLowerCase()));
-    if (f.show === 'active')  tks = tks.filter(t => !excluded[s.id].has(t.t));
-    if (f.show === 'excl')    tks = tks.filter(t =>  excluded[s.id].has(t.t));
-    if (f.show === 'nodata')  tks = tks.filter(t => !getPerf(t.t, s.id));
-    if (f.show === 'below')   tks = tks.filter(t => { const p = getPerf(t.t,s.id); return p && p.wr < s.be; });
+    let tks = TICKERS.filter(t => t.g === grp.key);
+    if (f.search) tks = tks.filter(t => t.t.includes(f.search.toUpperCase()));
+    if (f.show === 'active') tks = tks.filter(t => !excluded[s.id].has(t.t));
+    if (f.show === 'nodata') tks = tks.filter(t => !getPerf(t.t, s.id));
+    if (f.show === 'below') tks = tks.filter(t => { const p = getPerf(t.t, s.id); return p && p.wr < s.be; });
     if (!tks.length) return;
-    total += tks.length;
-    html += `<div class="group-sep">${grp.label} · ${tks.length}</div>`;
+    visibleCount += tks.length;
+    html += `<div class="group-sep">${grp.label} · ${tks.length} tickers</div>`;
     html += tks.map(t => renderRow(t, s)).join('');
   });
-  if (!total) html += `<div class="empty"><div class="empty-icon">◎&nbsp;</div>No tickers match this filter</div>`;
+  if (visibleCount === 0) html += `<div class="empty"><div class="empty-icon">◎</div>No tickers match this filter</div>`;
   return html;
 }
 
@@ -458,79 +746,24 @@ function renderRow(t, s) {
   const wr = p ? `${p.wr}%` : '—';
   const n = p ? p.n : 0;
   const barW = p ? Math.min(100, p.wr) : 0;
-  const sigText = n > 0 ? `${n} signals` : 'no backtest data';
-  return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}">
-    <div class="tk-sym">${t.t}<span class="grp-badge">${t.g}</span></div>
-    <div><div class="perf-wrap">
-      <span class="wr-label ${cls}">${wr}</span>
-      <div class="perf-bar-wrap">
-        <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div>
-        <span class="sig-label">${sigText}</span>
-      </div>
-    </div></div>
-    <div><div class="toggle-wrap"><label class="toggle">
-      <input type="checkbox" ${!isExcl?'checked':''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)">
-      <div class="toggle-track"></div><div class="toggle-thumb"></div>
-    </label></div></div>
-    <div style="text-align:center;font-size:9px;color:var(--dim)">${t.seg||''}</div>
-  </div>`;
+  const grpLabel = {SM:'S/M', Mid:'Mid', Lg:'Lg'}[t.g] || t.g;
+  return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}"><div class="tk-sym">${t.t}<span class="grp-badge">${grpLabel}</span></div><div><div class="perf-wrap"><span class="wr-label ${cls}">${wr}</span><div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div><span class="sig-label">${n>0?`${n} signals · 6mo`:'no signals in 6mo backtest'}</span></div></div></div><div style="text-align:center"><span class="pill pill-muted" style="font-size:9px">${n}</span></div><div><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${!isExcl?'checked':''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div><div><button class="btn-x" onclick="excludeTicker('${s.id}','${t.t}')" title="Exclude from scenario">✕</button></div></div>`;
 }
 
-// ── Actions ───────────────────────────────────────────────────────────────────
-function switchTab(id) {
-  activeId = id;
-  renderTabs();
-  document.querySelectorAll('.sc-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById(`panel-${id}`)?.classList.add('active');
+function renderAddRow(s) {
+  return `<div class="add-row"><input class="add-input" id="add-${s.id}" placeholder="+ Add ticker" maxlength="6" onkeydown="if(event.key==='Enter') addTicker('${s.id}')"><button class="btn btn-outline" onclick="addTicker('${s.id}')">Add to ${s.id}</button><span style="margin-left:auto;font-size:10px;color:var(--dim);font-family:'IBM Plex Sans',sans-serif">Toggle = disable for this scenario · ✕ = exclude permanently</span></div>`;
 }
 
-function setSearch(scId, val) {
-  filters[scId].search = val;
-  document.getElementById(`list-${scId}`).innerHTML = renderTickerList(SC.find(s=>s.id===scId));
-}
-
-function setFilter(scId, val) {
-  filters[scId].show = val;
-  const s = SC.find(x => x.id === scId);
-  document.getElementById(`fbar-${scId}`).outerHTML = renderFilterBar(s);
-  document.getElementById(`list-${scId}`).innerHTML = renderTickerList(s);
-}
-
-function toggleTicker(scId, tk, enabled) {
-  if (!enabled) excluded[scId].add(tk);
-  else excluded[scId].delete(tk);
-  const row = document.getElementById(`row-${scId}-${tk}`);
-  if (row) row.classList.toggle('disabled', !enabled);
-  updateCounts(scId);
-  markDirty();
-}
-
-function updateCounts(scId) {
-  const active = ALL_TICKERS.filter(t => !excluded[scId].has(t.t)).length;
-  const excl = excluded[scId].size;
-  const s = SC.find(x => x.id === scId);
-  const bar = document.querySelector(`#panel-${scId} .stats-row`);
-  if (bar) bar.innerHTML = `<span><span class="stat-val">${active}</span> active</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${excl}</span> excluded</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${ALL_TICKERS.length}</span> total</span>`;
-  const tab = document.querySelector(`.sc-tab[data-s="${scId}"] .sc-tab-count`);
-  if (tab) tab.textContent = active;
-}
-
-function updateHeader() {
-  const withStats = ALL_TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length;
-  document.getElementById('statsCount').textContent = withStats + ' with stats';
-}
-
-function markDirty() {
-  dirty = true;
-  document.getElementById('saveBar').classList.add('visible');
-  document.getElementById('saveBar').querySelector('.save-msg').innerHTML = '<div class="pulse"></div>Unsaved changes';
-}
-
-function togglePanel() {
-  document.getElementById('wm').classList.toggle('open');
-}
-
-// ── Init ──────────────────────────────────────────────────────────────────────
+function switchTab(id) { activeId = id; renderTabs(); document.querySelectorAll('.sc-panel').forEach(p => p.classList.remove('active')); document.getElementById(`panel-${id}`)?.classList.add('active'); }
+function setSearch(scId, val) { filters[scId].search = val; document.getElementById(`list-${scId}`).innerHTML = renderTickerList(SC.find(s => s.id === scId)); }
+function setFilter(scId, val) { filters[scId].show = val; const s = SC.find(x => x.id === scId); document.getElementById(`fbar-${scId}`).outerHTML = renderFilterBar(s); document.getElementById(`list-${scId}`).innerHTML = renderTickerList(s); }
+function toggleTicker(scId, tk, enabled) { if (!enabled) excluded[scId].add(tk); else excluded[scId].delete(tk); const row = document.getElementById(`row-${scId}-${tk}`); if (row) row.classList.toggle('disabled', !enabled); updateCounts(scId); markDirty(); }
+function excludeTicker(scId, tk) { excluded[scId].add(tk); const row = document.getElementById(`row-${scId}-${tk}`); if (row) row.style.display = 'none'; updateCounts(scId); markDirty(); }
+function addTicker(scId) { const input = document.getElementById(`add-${scId}`); const sym = input.value.trim().toUpperCase(); if (!sym) return; if (!TICKERS.find(t => t.t === sym)) TICKERS.push({ t: sym, g: 'Mid' }); excluded[scId].delete(sym); input.value = ''; document.getElementById(`list-${scId}`).innerHTML = renderTickerList(SC.find(s => s.id === scId)); updateCounts(scId); markDirty(); }
+function updateCounts(scId) { const active = TICKERS.filter(t => !excluded[scId].has(t.t)).length; const excl = excluded[scId].size; const bar = document.querySelector(`#panel-${scId} .stats-row`); if (bar) bar.innerHTML = `<span><span class="stat-val">${active}</span> active</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${excl}</span> excluded</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${TICKERS.length}</span> total</span>`; const tab = document.querySelector(`.sc-tab[data-s="${scId}"] .sc-tab-count`); if (tab) tab.textContent = active; }
+function updateHeader() { const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; }
+function markDirty() { dirty = true; const bar = document.getElementById('saveBar'); bar.classList.add('visible'); bar.querySelector('.save-msg').innerHTML = '<div class="pulse"></div>Unsaved changes — not yet committed to config'; }
+function toggle() { document.getElementById('wm').classList.toggle('open'); }
 loadState();
 renderAll();
 </script>
