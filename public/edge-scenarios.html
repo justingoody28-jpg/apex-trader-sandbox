@@ -616,6 +616,26 @@ function renderBatch(){
   document.getElementById('batchTbody').innerHTML=s.map(function(r){
     return '<tr><td><b>'+r.tk+'</b></td><td>'+gb(r.grp)+'</td>'+'<td>'+(r.a?r.a.n:0)+'</td><td>'+cWR(r.a,20)+'</td><td>'+cPF(r.a)+'</td><td>'+cRet(r.a)+'</td>'+'<td>'+(r.b?r.b.n:0)+'</td><td>'+cWR(r.b,14.3)+'</td><td>'+cPF(r.b)+'</td><td>'+cRet(r.b)+'</td>'+'<td>'+(r.c?r.c.n:0)+'</td><td>'+cWR(r.c,11.1)+'</td><td>'+cPF(r.c)+'</td><td>'+cRet(r.c)+'</td>'+'<td>'+(r.d?r.d.n:0)+'</td><td>'+cWR(r.d,20)+'</td><td>'+cPF(r.d)+'</td><td>'+cRet(r.d)+'</td>'+'<td>'+(r.e?r.e.n:0)+'</td><td>'+cWR(r.e,50)+'</td><td>'+cPF(r.e)+'</td>'+'<td>'+(r.e2?r.e2.n:0)+'</td><td>'+cWR(r.e2,50)+'</td><td>'+cPF(r.e2)+'</td>'+'<td>'+(r.e3?r.e3.n:0)+'</td><td>'+cWR(r.e3,50)+'</td><td>'+cPF(r.e3)+'</td>'+'<td>'+(r.e4?r.e4.n:0)+'</td><td>'+cWR(r.e4,50)+'</td><td>'+cPF(r.e4)+'</td>'+'<td>'+(r.f?r.f.n:0)+'</td><td>'+cWR(r.f,50)+'</td><td>'+cPF(r.f)+'</td>'+'<td>'+(r.g?r.g.n:0)+'</td><td>'+cWR(r.g,57.1)+'</td><td>'+cPF(r.g)+'</td>'+'<td>'+(r.h?r.h.n:0)+'</td><td>'+cWR(r.h,62.5)+'</td><td>'+cPF(r.h)+'</td>'+'</tr>';
   }).join('');
+  saveBacktestStats();
+}
+function saveBacktestStats() {
+  try {
+    var stored = JSON.parse(localStorage.getItem('apex_backtest_stats') || '{}');
+    batchResults.forEach(function(r) {
+      var sym = r.ticker;
+      if (!sym) return;
+      if (!stored[sym]) stored[sym] = {};
+      var map = [['A',r.a],['B',r.b],['C',r.c],['D',r.d],['E',r.e],['F',r.f],['G',r.g],['H',r.h]];
+      map.forEach(function(pair) {
+        var sc = pair[0], d = pair[1];
+        if (!d || !d.n) return;
+        if (!stored[sym][sc]) stored[sym][sc] = {w:0,n:0};
+        stored[sym][sc].w += (d.w || 0);
+        stored[sym][sc].n += (d.n || 0);
+      });
+    });
+    localStorage.setItem('apex_backtest_stats', JSON.stringify(stored));
+  } catch(e) { console.warn('saveBacktestStats failed:', e); }
 }
 function bsrt(c){bCol===c?bDir*=-1:(bCol=c,bDir=-1);renderBatch();}
 
