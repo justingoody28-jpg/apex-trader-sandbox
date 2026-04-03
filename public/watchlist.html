@@ -108,7 +108,7 @@
   </div>
   <div class="header-right">
     <div class="count-badge">Active: <b id="activeCount">0</b> / <b id="totalCount">0</b></div>
-    <span class="save-indicator" id="saveIndicator">✓ Saved</span>
+    <span class="save-indicator" id="saveIndicator">â Saved</span>
     <button class="save-btn" onclick="saveState()">Save</button>
   </div>
 </div>
@@ -142,9 +142,9 @@
   <table id="mainTable">
     <thead>
       <tr>
-        <th onclick="setSort('t')" class="col-sym">Symbol <span class="sort-icon" id="sort-t">↕</span></th>
-        <th onclick="setSort('cap')">Cap <span class="sort-icon" id="sort-cap">↕</span></th>
-        <th onclick="setSort('seg')">Segment <span class="sort-icon" id="sort-seg">↕</span></th>
+        <th onclick="setSort('t')" class="col-sym">Symbol <span class="sort-icon" id="sort-t">â</span></th>
+        <th onclick="setSort('cap')">Cap <span class="sort-icon" id="sort-cap">â</span></th>
+        <th onclick="setSort('seg')">Segment <span class="sort-icon" id="sort-seg">â</span></th>
         <th class="col-active">Active</th>
       </tr>
     </thead>
@@ -154,7 +154,7 @@
 
 <script>
 const ALL_TICKERS = [
-  // ── Large Cap ──────────────────────────────────────────────
+  // ââ Large Cap ââââââââââââââââââââââââââââââââââââââââââââââ
   {t:'AMD',  grp:'Large', seg:'Semiconductors'},
   {t:'NVDA', grp:'Large', seg:'Semiconductors'},
   {t:'INTC', grp:'Large', seg:'Semiconductors'},
@@ -170,7 +170,7 @@ const ALL_TICKERS = [
   {t:'LLY',  grp:'Large', seg:'Pharma'},
   {t:'PFE',  grp:'Large', seg:'Pharma'},
   {t:'UNH',  grp:'Large', seg:'Managed Care'},
-  // ── Mid Cap ────────────────────────────────────────────────
+  // ââ Mid Cap ââââââââââââââââââââââââââââââââââââââââââââââââ
   {t:'TWLO', grp:'Mid', seg:'SaaS'},
   {t:'COIN', grp:'Mid', seg:'Fintech'},
   {t:'HUBS', grp:'Mid', seg:'SaaS'},
@@ -270,7 +270,7 @@ const ALL_TICKERS = [
   {t:'STWD', grp:'Mid', seg:'Mortgage REIT'},
   {t:'BXMT', grp:'Mid', seg:'Mortgage REIT'},
   {t:'TRTX', grp:'Mid', seg:'Mortgage REIT'},
-  // ── Small / Micro Cap ──────────────────────────────────────
+  // ââ Small / Micro Cap ââââââââââââââââââââââââââââââââââââââ
   {t:'ATER', grp:'Small/Micro', seg:'Consumer Products'},
   {t:'LAZR', grp:'Small/Micro', seg:'Lidar / Tech'},
   {t:'MRNA', grp:'Small/Micro', seg:'Biotech'},
@@ -382,7 +382,6 @@ const ALL_TICKERS = [
   {t:'NAPA', grp:'Small/Micro', seg:'Winery / Beverage'},
 ];
 
-const LS_KEY = 'apex_watchlist_active';
 const CAP_ORDER = { 'Large': 0, 'Mid': 1, 'Small/Micro': 2 };
 
 let activeSet = new Set();
@@ -402,12 +401,15 @@ function capClass(grp) {
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem('apex_tickers');
     if (raw) {
-      const arr = JSON.parse(raw);
-      activeSet = new Set(arr);
+      const data = JSON.parse(raw);
+      if (data.approved) {
+        activeSet = new Set(data.approved.split(',').filter(Boolean));
+      } else {
+        activeSet = new Set(ALL_TICKERS.map(t => t.t));
+      }
     } else {
-      // Default: all active
       activeSet = new Set(ALL_TICKERS.map(t => t.t));
     }
   } catch(e) {
@@ -416,7 +418,12 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(LS_KEY, JSON.stringify([...activeSet]));
+  try {
+    const existing = JSON.parse(localStorage.getItem('apex_tickers') || '{}');
+    existing.list = ALL_TICKERS.map(t => ({ t: t.t, grp: t.grp }));
+    existing.approved = [...activeSet].join(',');
+    localStorage.setItem('apex_tickers', JSON.stringify(existing));
+  } catch(e) {}
   const ind = document.getElementById('saveIndicator');
   ind.classList.add('show');
   setTimeout(() => ind.classList.remove('show'), 2000);
@@ -468,7 +475,7 @@ function setSort(col) {
   const icon = document.getElementById('sort-' + col);
   if (icon) {
     icon.closest('th').classList.add('sorted');
-    icon.textContent = sortDir === 1 ? '↓' : '↑';
+    icon.textContent = sortDir === 1 ? 'â' : 'â';
   }
   renderTable();
 }
@@ -501,7 +508,7 @@ function renderTable() {
       <td><span class="cap-pill ${capClass(tk.grp)}">${capLabel(tk.grp)}</span></td>
       <td class="col-seg">${tk.seg}</td>
       <td class="col-active">
-        <label class="toggle" title="${isActive ? 'Active — click to disable' : 'Inactive — click to enable'}">
+        <label class="toggle" title="${isActive ? 'Active â click to disable' : 'Inactive â click to enable'}">
           <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleTicker('${tk.t}', this.checked)">
           <span class="slider"></span>
         </label>
