@@ -23,10 +23,30 @@ export default async function handler(req, res) {
     if(_tod.length > 0){
       return res.status(200).json({timestamp:new Date().toISOString(),status:'already_ran',
         message:`Dedup guard: ${_tod.length} orders already placed today (${_todayEDT}). Skipping.`,
-        symbols:_tod.map(o=>o.symbol)});
+        symbols:_tod.map(o=>o.symbol||(Array.isArray(o.leg)?o.leg[0]?.symbol:o.leg?.symbol)||'?')});
     }
   } catch(_e){ /* dedup check failed — proceed normally */ }
   // ── End dedup guard ──────────────────────────────────────────────────────
+
+
+  // ── Market hours guard ────────────────────────────────────────────────────
+  try {
+    const _mktR = await fetch('https://api.tradier.com/v1/markets/clock', {
+      headers: { 'Authorization': `Bearer ${process.env.TRADIER_TOKEN}`, 'Accept': 'application/json' }
+    });
+    if (_mktR.ok) {
+      const _mktJ = await _mktR.json();
+      if (_mktJ?.clock?.state === 'closed') {
+        return res.status(200).json({
+          timestamp: new Date().toISOString(),
+          status: 'market_closed',
+          message: 'Market closed (holiday or weekend). No trades placed.',
+          trades: []
+        });
+      }
+    }
+  } catch(_me) { /* non-fatal — proceed if market clock check fails */ }
+  // ── End market hours guard ─────────────────────────────────────────────────
 
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN;
   const TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
@@ -45,23 +65,6 @@ export default async function handler(req, res) {
 
   if (!config.scenarios || !config.scenarios.G)
     return res.status(200).json({ message: 'Scenario G disabled', trades: [] });
-
-  // ── Market hours guard: block on holidays and non-trading days ──────────
-  try {
-    const _mk = await fetch('https://api.tradier.com/v1/markets/clock', {
-      headers: { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' }
-    });
-    const _mj = await _mk.json();
-    if (_mj?.clock?.state === 'closed') {
-      return res.status(200).json({
-        timestamp: new Date().toISOString(),
-        status: 'market_closed',
-        message: 'Market is closed today (holiday or non-trading day). No trades placed.',
-        trades: []
-      });
-    }
-  } catch(_me) { /* non-fatal — proceed if clock check fails */ }
-  // ── End market hours guard ───────────────────────────────────────────────
 
   const tickers = (config.tickers || []).filter(t => t.symbol && t.bet > 0);
   if (!tickers.length) return res.status(200).json({ message: 'No tickers', trades: [] });
