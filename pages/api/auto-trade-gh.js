@@ -1,4 +1,4 @@
-// pages/api/auto-trade-gh.js — Scenarios G (Honed Fade Long) + H (Panic Reversal)
+// pages/api/auto-trade-gh.js â Scenarios G (Honed Fade Long) + H (Panic Reversal)
 // Cron: 9:29 AM EDT weekdays
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
@@ -9,7 +9,7 @@
 // VIX floor: only fires when VIX > 20 (panic/volatility regime required)
 //
 // Uses q.bid for pre-market price (updates live).
-// q.last only updates when a trade prints — stays at prev close pre-market.
+// q.last only updates when a trade prints â stays at prev close pre-market.
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
 
-  // ── Dedup guard: prevent double-execution on same trading day ────────────
+  // ââ Dedup guard: prevent double-execution on same trading day ââââââââââââ
   const _todayEDT = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).toISOString().slice(0,10);
   try {
     const _pt = process.env.TRADIER_PAPER_TOKEN || process.env.TRADIER_TOKEN;
@@ -30,10 +30,29 @@ export default async function handler(req, res) {
     if(_tod.length > 0){
       return res.status(200).json({timestamp:new Date().toISOString(),status:'already_ran',
         message:`Dedup guard: ${_tod.length} orders already placed today (${_todayEDT}). Skipping.`,
-        symbols:_tod.map(o=>o.symbol)});
+        symbols:_tod.map(o=>o.symbol||(Array.isArray(o.leg)?o.leg[0]?.symbol:o.leg?.symbol)||'?')});
     }
-  } catch(_e){ /* dedup check failed — proceed normally */ }
-  // ── End dedup guard ──────────────────────────────────────────────────────
+  } catch(_e){ /* dedup check failed â proceed normally */ }
+  // ââ End dedup guard ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+  // ── Market hours guard ────────────────────────────────────────────────────
+  try {
+    const _mktR = await fetch('https://api.tradier.com/v1/markets/clock', {
+      headers: { 'Authorization': `Bearer ${process.env.TRADIER_TOKEN}`, 'Accept': 'application/json' }
+    });
+    if (_mktR.ok) {
+      const _mktJ = await _mktR.json();
+      if (_mktJ?.clock?.state === 'closed') {
+        return res.status(200).json({
+          timestamp: new Date().toISOString(),
+          status: 'market_closed',
+          message: 'Market closed (holiday or weekend). No trades placed.',
+          trades: []
+        });
+      }
+    }
+  } catch(_me) { /* non-fatal */ }
+  // ── End market hours guard ─────────────────────────────────────────────────
 
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN;
   const TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
@@ -113,7 +132,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       timestamp: new Date().toISOString(),
       status: 'dry_run',
-      message: 'Dry run — no orders placed. Scan complete.',
+      message: 'Dry run â no orders placed. Scan complete.',
       vix,
       variant: 'GH-Tradier-9:29'
     });
@@ -125,7 +144,7 @@ export default async function handler(req, res) {
     const sym = ticker.symbol.toUpperCase();
     const bet = ticker.bet;
 
-    // WOLF excluded from G/H — consistently underperforms on gap-down reversal
+    // WOLF excluded from G/H â consistently underperforms on gap-down reversal
     if (sym === 'WOLF') {
       results.push({ symbol: sym, status: 'skipped', reason: 'WOLF excluded from G/H' });
       continue;
@@ -157,7 +176,7 @@ export default async function handler(req, res) {
 
     if (!scenario) {
       results.push({ symbol: sym, status: 'skipped',
-        reason: `Gap ${gap.toFixed(2)}% RVOL ${rvol || '?'}x — no G/H signal`,
+        reason: `Gap ${gap.toFixed(2)}% RVOL ${rvol || '?'}x â no G/H signal`,
         gap: +gap.toFixed(2), rvol_logged: rvol, priceSource: bidPrice ? 'bid' : 'last' });
       continue;
     }
