@@ -1,14 +1,14 @@
-// pages/api/auto-trade-b.js — Variant B: Tradier data + Alpaca execution — TIERED
+// pages/api/auto-trade-b.js â Variant B: Tradier data + Alpaca execution â TIERED
 // TIERED EXIT STRATEGY (backtest validated):
-// Tier 1: gap 10-13% → TP 2% / SL 2%  (88.9% WR, PF 8.0)
-// Tier 2: gap 13-15% → TP 3% / SL 3%  (100% WR, PF infinity)
-// Tier 3: gap 15%+   → TP 5% / SL 5%  (87.5% WR, PF 7.0)
+// Tier 1: gap 10-13% â TP 2% / SL 2%  (88.9% WR, PF 8.0)
+// Tier 2: gap 13-15% â TP 3% / SL 3%  (100% WR, PF infinity)
+// Tier 3: gap 15%+   â TP 5% / SL 5%  (87.5% WR, PF 7.0)
 // Breakeven = 50% on all tiers (symmetric TP/SL)
 
 export default async function handler(req, res) {
   const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
 
-  // ── Dedup guard: prevent double-execution on same trading day ────────────
+  // ââ Dedup guard: prevent double-execution on same trading day ââââââââââââ
   const _todayEDT = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).toISOString().slice(0,10);
   try {
     const _pt  = process.env.TRADIER_PAPER_TOKEN || process.env.TRADIER_TOKEN;
@@ -22,10 +22,29 @@ export default async function handler(req, res) {
     if(_tod.length > 0){
       return res.status(200).json({timestamp:new Date().toISOString(),status:'already_ran',
         message:`Dedup guard: ${_tod.length} orders already placed today (${_todayEDT}). Skipping.`,
-        symbols:_tod.map(o=>o.symbol)});
+        symbols:_tod.map(o=>o.symbol||(Array.isArray(o.leg)?o.leg[0]?.symbol:o.leg?.symbol)||'?')});
     }
-  } catch(_e){ /* dedup check failed — proceed normally */ }
-  // ── End dedup guard ──────────────────────────────────────────────────────
+  } catch(_e){ /* dedup check failed â proceed normally */ }
+  // ââ End dedup guard ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+  // ── Market hours guard ────────────────────────────────────────────────────
+  try {
+    const _mktR = await fetch('https://api.tradier.com/v1/markets/clock', {
+      headers: { 'Authorization': `Bearer ${process.env.TRADIER_TOKEN}`, 'Accept': 'application/json' }
+    });
+    if (_mktR.ok) {
+      const _mktJ = await _mktR.json();
+      if (_mktJ?.clock?.state === 'closed') {
+        return res.status(200).json({
+          timestamp: new Date().toISOString(),
+          status: 'market_closed',
+          message: 'Market closed (holiday or weekend). No trades placed.',
+          trades: []
+        });
+      }
+    }
+  } catch(_me) { /* non-fatal */ }
+  // ── End market hours guard ─────────────────────────────────────────────────
 
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN;
