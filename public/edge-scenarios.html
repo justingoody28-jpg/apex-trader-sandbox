@@ -504,13 +504,13 @@ function evalShort(intra,ep,wp,sp){
   var last=intra[intra.length-1];return{r:'TIMEOUT',p:last?parseFloat(((ep-last.c)/ep*100).toFixed(2)):0};
 }
 function calcStats(trades){
-  if(!trades.length)return{n:0,w:0,l:0,t:0,wr:0,pf:0,ret:0};
-  var ws=trades.filter(function(t){return t.r==='WIN'||(t.r==='TIMEOUT'&&t.p>0);}),ls=trades.filter(function(t){return t.r==='LOSS'||(t.r==='TIMEOUT'&&t.p<=0);});
+  if(!trades.length)return{n:0,w:0,l:0,t:0,wr:0,pf:0,ret:0,tret:0};
+  var ws=trades.filter(function(t){return t.r==='WIN';}),ls=trades.filter(function(t){return t.r==='LOSS';});
   var ts=trades.filter(function(t){return t.r==='TIMEOUT';});
   var aw=ws.length?ws.reduce(function(s,t){return s+t.p;},0)/ws.length:0;
   var al=ls.length?ls.reduce(function(s,t){return s+t.p;},0)/ls.length:0;
   var pf=(ls.length&&al)?Math.abs(ws.length*aw/(ls.length*al)):ws.length?99:0;
-  return{n:trades.length,w:ws.length,l:ls.length,t:ts.length,wr:ws.length/trades.length*100,pf:pf,ret:trades.reduce(function(s,t){return s+t.p;},0),tret:ts.reduce(function(s,t){return s+t.p;},0)};
+  return{n:trades.length,w:ws.length,l:ls.length,t:ts.length,wr:(ws.length+ls.length)?ws.length/(ws.length+ls.length)*100:0,pf:pf,ret:trades.reduce(function(s,t){return s+t.p;},0),tret:ts.reduce(function(s,t){return s+t.p;},0)};
 }
 
 async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,runC,runD,runE,runF,gfmF,runG,gWinP,gStopP,gfmG,runH,hWinP,hStopP,gfmH,runE2,e2GapV,e2WinP,e2StopP,runE3,e3GapV,e3WinP,e3StopP,runE4,e4GapV,e4WinP,e4StopP){
