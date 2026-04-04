@@ -745,9 +745,10 @@ async function runAll(){
   document.getElementById('batchSection').style.display='block';
   document.getElementById('batchTbody').innerHTML='';
   lg('Batch started: '+tickers.length+' tickers, '+delayMs/1000+'s delay, ~'+Math.round(tickers.length*delayMs/60000)+'min total','inf');
-  for(var i=0;i<tickers.length;i++){
+  for(const [i,ticker] of tickers.entries()){
     if(!running)break;
-    var tk=tickers[i].t,grp=tickers[i].grp;
+    await new Promise(r=>setTimeout(r,0));
+    var tk=ticker.t,grp=ticker.grp;
     var pct=Math.round(i/tickers.length*100);
     document.getElementById('bar').style.width=pct+'%';
     document.getElementById('plab').textContent='Batch: '+(i+1)+'/'+tickers.length+' -- '+tk+' ('+pct+'%)';
