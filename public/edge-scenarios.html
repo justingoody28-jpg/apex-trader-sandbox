@@ -699,12 +699,11 @@ async function runOne(){
 }
 
 
-async function safeFetch(url){var _ac=new AbortController();setTimeout(function(){_ac.abort();},20000);return fetch(url,{signal:_ac.signal});}
-function buildVixMap(from,to){
+async function buildVixMap(from,to){
   var KEY='Bnm35KUdSdLOFv37f6NyfUcQdc1aH5IF';
   var map={};
   try{
-    var bars=(await safeFetch('https://api.polygon.io/v2/aggs/ticker/I:VIX/range/1/day/'+from+'/'+to+'?adjusted=false&sort=asc&limit=500&apiKey='+KEY).then(function(r){return r.json();})).results||[];
+    var bars=(await fetch('https://api.polygon.io/v2/aggs/ticker/I:VIX/range/1/day/'+from+'/'+to+'?adjusted=false&sort=asc&limit=500&apiKey='+KEY).then(function(r){return r.json();})).results||[];
     bars.forEach(function(b){ var d=new Date(b.t).toISOString().slice(0,10); map[d]=b.c; });
   }catch(e){console.warn('VIX map failed',e);}
   return map;
@@ -715,10 +714,10 @@ async function buildSpyPmMap(from,to){
   var map900={};
   var map929={};
   try{
-    var daily=(await safeFetch('https://api.polygon.io/v2/aggs/ticker/SPY/range/1/day/'+from+'/'+to+'?adjusted=true&sort=asc&limit=500&apiKey='+KEY).then(function(r){return r.json();})).results||[];
+    var daily=(await fetch('https://api.polygon.io/v2/aggs/ticker/SPY/range/1/day/'+from+'/'+to+'?adjusted=true&sort=asc&limit=500&apiKey='+KEY).then(function(r){return r.json();})).results||[];
     var prevCloseMap={};
     daily.forEach(function(b,i){if(i>0){var dt=new Date(b.t).toISOString().slice(0,10);prevCloseMap[dt]=daily[i-1].c;}});
-    var bars=(await safeFetch('https://api.polygon.io/v2/aggs/ticker/SPY/range/1/minute/'+from+'/'+to+'?adjusted=true&sort=asc&limit=50000&apiKey='+KEY).then(function(r){return r.json();})).results||[];
+    var bars=(await fetch('https://api.polygon.io/v2/aggs/ticker/SPY/range/1/minute/'+from+'/'+to+'?adjusted=true&sort=asc&limit=50000&apiKey='+KEY).then(function(r){return r.json();})).results||[];
     bars.forEach(function(b){
       var dt=new Date(b.t);
       if((dt.getUTCHours()===13||dt.getUTCHours()===14)&&dt.getUTCMinutes()===0){var d0=dt.toISOString().slice(0,10);map900[d0]=b.c;}
