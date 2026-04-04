@@ -519,6 +519,7 @@ async function processTicker(tk,from,to,gfm,eWinP,eStopP,fWinP,fStopP,runA,runB,
   var dmap=byDate(bars),tdays=tradingDays(from,to),prevC=null;
   var trades={a:[],b:[],c:[],d:[],e:[],f:[],g:[],h:[],e1:[],e2:[],e3:[],e4:[]},dayRows=[];
   for(var j=0;j<tdays.length;j++){
+    if(j%10===0)await new Promise(r=>setTimeout(r,0));
     var date=tdays[j],db=dmap[date]||[];
     if(!db.length)continue;
     if(!prevC&&j>0){var pb=dmap[tdays[j-1]]||[];pb=pb.filter(isReg);if(pb.length)prevC=pb[pb.length-1].c;}
