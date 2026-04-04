@@ -737,8 +737,8 @@ async function runAll(){
   var from=document.getElementById('s0').value,to=document.getElementById('s1').value;
   var gfm=+document.getElementById('gapFade').value,delayMs=+document.getElementById('delay').value*1000;
   var tickers=getActiveTickers();window.batchResults=[];
-  window.spyPmMap=await buildSpyPmMap(from,to);
-  window.vixMap=await buildVixMap(from,to);
+  window.spyPmMap=await Promise.race([buildSpyPmMap(from,to),new Promise(r=>setTimeout(()=>r({}),20000))]);
+  window.vixMap=await Promise.race([buildVixMap(from,to),new Promise(r=>setTimeout(()=>r({}),20000))]);
   console.log('SPY pm map:',Object.keys(window.spyPmMap).length,'days');
   running=true;batchResults=[];
   setBtn(true);document.getElementById('expAllBtn').disabled=true;
