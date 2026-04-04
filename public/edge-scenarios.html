@@ -960,6 +960,7 @@ async function execTrade(scenario, side, stopPct) {
 
 // === TICKER MANAGER ===
 function toggleTickerMgr(){
+  if(running)return;
   var body=document.getElementById("tickerMgrBody");
   body.classList.toggle("open");
   renderTickerMgr();
