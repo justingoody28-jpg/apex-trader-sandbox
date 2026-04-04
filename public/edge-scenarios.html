@@ -502,7 +502,7 @@ function evalShort(intra,ep,wp,sp){
 }
 function calcStats(trades){
   if(!trades.length)return{n:0,w:0,l:0,t:0,wr:0,pf:0,ret:0};
-  var ws=trades.filter(function(t){return t.r==='WIN';}),ls=trades.filter(function(t){return t.r==='LOSS';});
+  var ws=trades.filter(function(t){return t.r==='WIN'||(t.r==='TIMEOUT'&&t.p>0);}),ls=trades.filter(function(t){return t.r==='LOSS'||(t.r==='TIMEOUT'&&t.p<=0);});
   var ts=trades.filter(function(t){return t.r==='TIMEOUT';});
   var aw=ws.length?ws.reduce(function(s,t){return s+t.p;},0)/ws.length:0;
   var al=ls.length?ls.reduce(function(s,t){return s+t.p;},0)/ls.length:0;
