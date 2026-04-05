@@ -792,10 +792,11 @@ async function loadSnapshotData(){
         });
       });
     });
-    window._perfIdx=idx;
+    window._snaps=data;window._perfIdx=idx;
     const curTab=document.querySelector('.sc-tab.active')?.dataset?.s||'A';
     renderAll();
     switchTab(curTab);
+    injectQuarterColumns(document.getElementById('panel-'+curTab),curTab);
   }catch(e){console.error('snapshots load failed',e);}
 }
 document.addEventListener('click',function(e){
@@ -822,6 +823,38 @@ document.addEventListener('click',function(e){
   });
   row.after(div);
 });
+const _origST=window.switchTab;
+window.switchTab=function(s){
+  window._activeTab=s;
+  const r=_origST.call(this,s);
+  if(window._snaps)injectQuarterColumns(document.getElementById('panel-'+s),s);
+  return r;
+};
+window._activeTab='A';
+function injectQuarterColumns(panel,scId){
+  if(!panel||!window._snaps||!window._snaps.length)return;
+  const scKey=(SC_KEY||{})[scId]||scId.toLowerCase();
+  const list=panel.querySelector('.ticker-list');
+  if(!list||list.dataset.qtrDone)return;
+  list.dataset.qtrDone='1';
+  const qs=window._snaps;
+  const hdr=list.querySelector('.ticker-row.header-row');
+  if(hdr&&hdr.children[1]){
+    hdr.children[1].innerHTML='<div style="display:flex;gap:1px">'+qs.map(q=>'<div style="flex:1;text-align:center;font-size:10px;min-width:42px">'+q.label.replace(' ','<br>')+'</div>').join('')+'</div>';
+    if(hdr.children[2])hdr.children[2].style.display='none';
+  }
+  Array.from(list.querySelectorAll('.ticker-row:not(.header-row)')).forEach(row=>{
+    const tk=row.querySelector('.tk-sym')?.firstChild?.textContent?.trim();
+    if(!tk||!row.children[1])return;
+    const qMap={};
+    (((window._perfIdx||{})[tk]||{})[scKey]||[]).forEach(q=>{qMap[q.q]=q;});
+    row.children[1].innerHTML='<div style="display:flex;gap:1px">'+qs.map(q=>{
+      const d=qMap[q.label];const wr=d?Math.round(d.w/d.n*100):null;
+      return '<div style="flex:1;text-align:center;min-width:42px;font-size:11px;font-family:IBM Plex Mono,monospace">'+(wr!==null?'<span style="font-weight:700;color:'+(wr>=50?'var(--accent)':'var(--dim)')+'">'+wr+'%</span><br><span style="color:var(--muted);font-size:9px">'+d.n+'s</span>':'<span style="color:var(--border)">—</span>')+'</div>';
+    }).join('')+'</div>';
+    if(row.children[2])row.children[2].style.display='none';
+  });
+}
 loadSnapshotData();
 renderAll();
 switchTab('A');
