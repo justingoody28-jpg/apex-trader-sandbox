@@ -243,6 +243,7 @@ function updateSummary(){
   document.getElementById('sumNotes').innerHTML=notes.join('<br>');
 }
 
+renderCards();updateSummary();
 fetch('/api/snapshots').then(r=>r.json()).then(data=>{
   allSnaps=data;
   const sel=document.getElementById('qtrSel');
