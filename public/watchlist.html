@@ -801,7 +801,7 @@ document.addEventListener('click',function(e){
   if(!row||e.target.closest('button'))return;
   const existing=row.nextElementSibling;
   if(existing&&existing.classList.contains('qtr-breakdown')){existing.remove();return;}
-  const tk=row.querySelector('.tk-sym')?.textContent?.split('/')[0]?.trim();
+  const tk=row.querySelector('.tk-sym')?.firstChild?.textContent?.trim();
   const scId=row.closest('.sc-panel')?.id?.replace('panel-','');
   if(!tk||!scId)return;
   const qs=getQuarterPerf(tk,scId);
