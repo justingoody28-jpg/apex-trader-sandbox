@@ -125,9 +125,7 @@ const SCENS=[
   {id:'E2', label:'E2', side:'SHORT', tp:2.5, sl:1.5, be:37.5, live:true, wr:78, pct:10, group:'Scenario E — Gap Fade (live)'},
   {id:'E3', label:'E3', side:'SHORT', tp:3, sl:1.5, be:33.3, live:true, wr:75, pct:10, group:'Scenario E — Gap Fade (live)'},
   {id:'E4', label:'E4', side:'SHORT', tp:5, sl:3, be:37.5, live:true, wr:70, pct:10, group:'Scenario E — Gap Fade (live)'},
-  {id:'F', label:'F', side:'LONG', tp:2, sl:2, be:50.0, live:false, wr:42, pct:5, group:'Other'},
-  {id:'G', label:'G', side:'LONG', tp:1.5, sl:2, be:57.1, live:true, wr:55, pct:8, group:'Other'},
-  {id:'H', label:'H', side:'LONG', tp:1.5, sl:2.5, be:62.5, live:true, wr:50, pct:8, group:'Other'},
+  {id:'F', label:'F', side:'LONG', tp:2, sl:2, be:50.0, live:false, wr:42, pct:5, group:'Gap-Down (paper)'},
 ];
 const state={acct:50000,kfrac:50,scs:SCENS.map(s=>({...s}))};
 function kFull(wr,rr){const w=wr/100;return Math.max(0,w-(1-w)/rr)*100;}
@@ -214,7 +212,7 @@ document.getElementById('kfrac').addEventListener('input',e=>{
   document.getElementById('kfracOut').textContent=v===100?'Full Kelly':v===50?'½ Kelly':v===25?'¼ Kelly':(v/100).toFixed(2)+'× Kelly';
   refreshRows();refreshSummary();updateChart();
 });
-const SC_KEY={A:'a',B:'b',C:'c',D:'d',E1:'e',E2:'e2',E3:'e3',E4:'e4',F:'f',G:'g',H:'h'};
+const SC_KEY={A:'a',B:'b',C:'c',D:'d',E1:'e',E2:'e2',E3:'e3',E4:'e4',F:'f'};
 function applyRealData(totals){
   state.scs.forEach(sc=>{
     const key=SC_KEY[sc.id];const t=totals[key];
@@ -253,7 +251,7 @@ fetch('/api/snapshots').then(r=>r.json()).then(data=>{
 
 function buildTotals(snaps){
   const totals={};
-  const SCS=['a','b','c','d','e','e2','e3','e4','f','g','h'];
+  const SCS=['a','b','c','d','e','e2','e3','e4','f'];
   snaps.forEach(snap=>{snap.rows.forEach(row=>{SCS.forEach(sc=>{
     const d=row[sc];if(!d||!d.n)return;
     if(!totals[sc])totals[sc]={w:0,l:0,n:0,ret_total:0,gross_wins:0,gross_losses:0};
