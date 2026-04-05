@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelly Criterion — APEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0d;--surface:#141414;--surface2:#1a1a1a;--border:#252525;
+  --text:#e8e8e8;--muted:#666;--dim:#444;
+  --accent:#f59e0b;--accent-dim:rgba(245,158,11,0.12);
+  --green:#4caf7d;--red:#e05252;--yellow:#c9a227;
+}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh}
+.mono{font-family:'IBM Plex Mono',monospace}
+.page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:16px}
+.logo{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.1em;color:var(--accent)}
+.page-title{font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.page-sub{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.header-sep{flex:1}
+.nav-link{font-size:11px;color:var(--muted);text-decoration:none;font-family:'IBM Plex Mono',monospace;border:1px solid var(--border);padding:5px 12px;border-radius:4px;transition:color .15s,border-color .15s}
+.nav-link:hover{color:var(--accent);border-color:var(--accent)}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.ctrl-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px}
+.ctrl-label{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+.acct-input{display:flex;align-items:center;gap:8px}
+.acct-input span{font-size:16px;color:var(--muted)}
+input[type=number]{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:15px;padding:6px 10px;width:100%;outline:none}
+input[type=number]:focus{border-color:var(--accent)}
+.kfrac-row{display:flex;align-items:center;gap:12px;margin-top:4px}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);cursor:pointer}
+.kfrac-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);min-width:70px;text-align:right}
+.kfrac-note{font-size:10px;color:var(--muted);margin-top:6px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px}
+.scard-label{font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.scard-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700}
+.sc-table{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:20px}
+.sc-thead{display:grid;grid-template-columns:100px 54px 90px 1fr 1fr 72px 68px 76px;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.sc-thead span{font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.grp-label{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;padding:8px 16px 4px;border-top:1px solid var(--border);background:var(--surface2)}
+.sc-row{display:grid;grid-template-columns:100px 54px 90px 1fr 1fr 72px 68px 76px;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border)}
+.sc-row:last-child{border-bottom:none}
+.sc-name{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;line-height:1.3}
+.sc-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.05em;display:inline-block;margin-top:2px}
+.badge-live{background:rgba(245,158,11,0.15);color:var(--accent);border:1px solid rgba(245,158,11,0.3)}
+.badge-paper{background:rgba(80,80,80,0.2);color:#666;border:1px solid #333}
+.sc-side{font-size:11px;color:var(--muted)}
+.sc-tpsl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.5}
+.slider-wrap{display:flex;align-items:center;gap:6px}
+.slider-wrap input[type=range]{flex:1}
+.slider-out{font-family:'IBM Plex Mono',monospace;font-size:11px;min-width:34px;text-align:right}
+.sc-dollar,.sc-kelly,.sc-ev{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px}
+.chart-title{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.chart-legend{display:flex;gap:20px;margin:8px 0 16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.legend-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.legend-line-dash{width:20px;height:0;border-top:2px dashed;flex-shrink:0}
+.legend-line-solid{width:20px;height:0;border-top:2px solid;flex-shrink:0}
+.chart-wrap{position:relative;height:280px}
+.hint-bar{min-height:28px;padding:8px 0 0;font-size:11px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border);margin-top:16px}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="logo">APEX</div>
+  <div><div class="page-title">Kelly Criterion — Position Sizing</div><div class="page-sub">Optimal allocation vs risk per scenario</div></div>
+  <div class="header-sep"></div>
+  <a href="/watchlist.html" class="nav-link">Watchlist →</a>
+</div>
+<div class="container">
+  <div class="controls">
+    <div class="ctrl-card">
+      <div class="ctrl-label">Account Equity</div>
+      <div class="acct-input"><span>$</span><input type="number" id="acct" value="50000" step="5000" min="1000"></div>
+    </div>
+    <div class="ctrl-card">
+      <div class="ctrl-label">Kelly Fraction — aggression dial</div>
+      <div class="kfrac-row"><input type="range" id="kfrac" min="10" max="100" step="5" value="50"><span class="kfrac-val" id="kfracOut">½ Kelly</span></div>
+      <div class="kfrac-note">Full Kelly = max EV. Half Kelly = ~75% EV at half the variance.</div>
+    </div>
+  </div>
+  <div class="summary">
+    <div class="scard"><div class="scard-label">Live Capital Deployed</div><div class="scard-val" id="s-live">—</div></div>
+    <div class="scard"><div class="scard-label">Worst-Case Stop-Out</div><div class="scard-val" id="s-loss">—</div></div>
+    <div class="scard"><div class="scard-label">Expected EV / Day</div><div class="scard-val" id="s-ev">—</div></div>
+    <div class="scard"><div class="scard-label">Total Simultaneous Exposure</div><div class="scard-val" id="s-exp">—</div></div>
+  </div>
+  <div class="sc-table">
+    <div class="sc-thead"><span>Scenario</span><span>Side</span><span>TP / SL</span><span>Win rate %</span><span>% of account</span><span>$ / trade</span><span>Kelly %</span><span>EV / trade</span></div>
+    <div id="scRows"></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Allocation vs Kelly Optimal</div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:#f59e0b"></div>Live</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#555"></div>Paper</div>
+      <div class="legend-item"><div class="legend-line-solid" style="border-color:#4caf7d"></div>Kelly target</div>
+      <div class="legend-item"><div class="legend-line-dash" style="border-color:#e05252"></div>Full Kelly</div>
+    </div>
+    <div class="chart-wrap"><canvas id="kellyChart"></canvas></div>
+    <div class="hint-bar" id="hintBar"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const SCENS=[
+  {id:'A', label:'A', side:'LONG', tp:2, sl:0.5, be:20.0, live:false, wr:45, pct:5, group:'Gap-Up Longs (paper)'},
+  {id:'B', label:'B', side:'LONG', tp:3, sl:1, be:25.0, live:false, wr:40, pct:5, group:'Gap-Up Longs (paper)'},
+  {id:'C', label:'C', side:'LONG', tp:4, sl:1, be:20.0, live:false, wr:35, pct:5, group:'Gap-Up Longs (paper)'},
+  {id:'D', label:'D', side:'SHORT', tp:2, sl:0.5, be:20.0, live:false, wr:45, pct:5, group:'Gap-Up Longs (paper)'},
+  {id:'E1', label:'E1', side:'SHORT', tp:2, sl:1, be:33.3, live:true, wr:80, pct:10, group:'Scenario E — Gap Fade (live)'},
+  {id:'E2', label:'E2', side:'SHORT', tp:2.5, sl:1.5, be:37.5, live:true, wr:78, pct:10, group:'Scenario E — Gap Fade (live)'},
+  {id:'E3', label:'E3', side:'SHORT', tp:3, sl:1.5, be:33.3, live:true, wr:75, pct:10, group:'Scenario E — Gap Fade (live)'},
+  {id:'E4', label:'E4', side:'SHORT', tp:5, sl:3, be:37.5, live:true, wr:70, pct:10, group:'Scenario E — Gap Fade (live)'},
+  {id:'F', label:'F', side:'LONG', tp:2, sl:2, be:50.0, live:false, wr:42, pct:5, group:'Other'},
+  {id:'G', label:'G', side:'LONG', tp:1.5, sl:2, be:57.1, live:true, wr:55, pct:8, group:'Other'},
+  {id:'H', label:'H', side:'LONG', tp:1.5, sl:2.5, be:62.5, live:true, wr:50, pct:8, group:'Other'},
+];
+const state={acct:50000,kfrac:50,scs:SCENS.map(s=>({...s}))};
+function kFull(wr,rr){const w=wr/100;return Math.max(0,w-(1-w)/rr)*100;}
+function kTgt(wr,rr,f){return kFull(wr,rr)*f/100;}
+function evT(sc){const pos=state.acct*sc.pct/100;const w=sc.wr/100;return pos*(w*sc.tp/100-(1-w)*sc.sl/100);}
+function fmt$(n,sign){if(n===null||n===undefined)return'—';const pre=sign&&n>0?'+':n<0?'−':'';return pre+'$'+Math.abs(Math.round(n)).toLocaleString('en-US');}
+function kColor(sc){const k=kTgt(sc.wr,sc.tp/sc.sl,state.kfrac);if(!k)return'var(--muted)';if(sc.pct>k+1)return'var(--red)';if(sc.pct<k-2)return'var(--green)';return'var(--muted)';}
+function buildRows(){
+  const cont=document.getElementById('scRows');cont.innerHTML='';
+  let lastG='';
+  state.scs.forEach((sc,i)=>{
+    if(sc.group!==lastG){const g=document.createElement('div');g.className='grp-label';g.textContent=sc.group.toUpperCase();cont.appendChild(g);lastG=sc.group;}
+    const row=document.createElement('div');row.className='sc-row';
+    const rr=sc.tp/sc.sl;const k=kTgt(sc.wr,rr,state.kfrac);
+    const pos=state.acct*sc.pct/100;const ev=evT(sc);
+    const kc=kColor(sc);const ec=ev>=0?'var(--green)':'var(--red)';
+    row.innerHTML=`<div><div class="sc-name">${sc.label}</div><span class="sc-badge ${sc.live?'badge-live':'badge-paper'}">${sc.live?'LIVE':'PAPER'}</span></div>
+      <div class="sc-side">${sc.side}</div>
+      <div class="sc-tpsl">+${sc.tp}%<br>−${sc.sl}%</div>
+      <div class="slider-wrap"><input type="range" min="20" max="95" step="1" value="${sc.wr}" data-i="${i}" data-f="wr"><span class="slider-out" id="wr${i}">${sc.wr}%</span></div>
+      <div class="slider-wrap"><input type="range" min="1" max="50" step="1" value="${sc.pct}" data-i="${i}" data-f="pct"><span class="slider-out" id="pct${i}">${sc.pct}%</span></div>
+      <div class="sc-dollar" id="pos${i}">${fmt$(pos)}</div>
+      <div class="sc-kelly" id="kly${i}" style="color:${kc}">${k>0?k.toFixed(1)+'%':'—'}</div>
+      <div class="sc-ev" id="ev${i}" style="color:${ec}">${fmt$(ev,true)}</div>`;
+    cont.appendChild(row);
+  });
+  cont.querySelectorAll('input[type=range]').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      state.scs[+e.target.dataset.i][e.target.dataset.f]=+e.target.value;
+      refreshRows();refreshSummary();updateChart();
+    });
+  });
+}
+function refreshRows(){
+  state.scs.forEach((sc,i)=>{
+    const rr=sc.tp/sc.sl;const k=kTgt(sc.wr,rr,state.kfrac);
+    const pos=state.acct*sc.pct/100;const ev=evT(sc);
+    const kc=kColor(sc);const ec=ev>=0?'var(--green)':'var(--red)';
+    const g=id=>document.getElementById(id+i);
+    if(g('wr'))g('wr').textContent=sc.wr+'%';
+    if(g('pct'))g('pct').textContent=sc.pct+'%';
+    if(g('pos'))g('pos').textContent=fmt$(pos);
+    if(g('kly')){g('kly').textContent=k>0?k.toFixed(1)+'%':'—';g('kly').style.color=kc;}
+    if(g('ev')){g('ev').textContent=fmt$(ev,true);g('ev').style.color=ec;}
+  });
+}
+function refreshSummary(){
+  const live=state.scs.filter(s=>s.live);
+  const liveExp=live.reduce((a,s)=>a+state.acct*s.pct/100,0);
+  const maxLoss=live.reduce((a,s)=>a+state.acct*s.pct/100*s.sl/100,0);
+  const totalEV=state.scs.reduce((a,s)=>a+evT(s),0);
+  const totalExp=state.scs.reduce((a,s)=>a+state.acct*s.pct/100,0);
+  document.getElementById('s-live').textContent=fmt$(liveExp);
+  document.getElementById('s-loss').textContent='−$'+Math.abs(Math.round(maxLoss)).toLocaleString();
+  const evEl=document.getElementById('s-ev');
+  evEl.textContent=fmt$(totalEV,true);evEl.style.color=totalEV>=0?'var(--green)':'var(--red)';
+  document.getElementById('s-exp').textContent=fmt$(totalExp);
+  const over=state.scs.filter(s=>s.pct>kTgt(s.wr,s.tp/s.sl,state.kfrac)+1).map(s=>s.label);
+  const under=state.scs.filter(s=>{const k=kTgt(s.wr,s.tp/s.sl,state.kfrac);return k>0&&s.pct<k-2;}).map(s=>s.label);
+  const hints=[];
+  if(over.length)hints.push('<span style="color:var(--red)">'+over.join(', ')+' above Kelly — consider trimming</span>');
+  if(under.length)hints.push('<span style="color:var(--green)">'+under.join(', ')+' have room to size up</span>');
+  if(liveExp>state.acct*0.5)hints.push('<span style="color:var(--yellow)">Live exposure '+((liveExp/state.acct)*100).toFixed(0)+'% of account if all fire simultaneously</span>');
+  document.getElementById('hintBar').innerHTML=hints.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+}
+let chart;
+function updateChart(){
+  const labels=state.scs.map(s=>s.label);
+  const alloc=state.scs.map(s=>+s.pct.toFixed(1));
+  const kt=state.scs.map(s=>+kTgt(s.wr,s.tp/s.sl,state.kfrac).toFixed(1));
+  const kf=state.scs.map(s=>+kFull(s.wr,s.tp/s.sl).toFixed(1));
+  const cols=state.scs.map(s=>s.live?'#f59e0b':'#444');
+  if(chart){chart.data.datasets[0].data=alloc;chart.data.datasets[0].backgroundColor=cols;chart.data.datasets[1].data=kt;chart.data.datasets[2].data=kf;chart.update('none');}
+  else{chart=new Chart(document.getElementById('kellyChart'),{type:'bar',data:{labels,datasets:[
+    {label:'Allocation %',data:alloc,backgroundColor:cols,borderRadius:3},
+    {label:'Kelly target',data:kt,type:'line',borderColor:'#4caf7d',backgroundColor:'transparent',pointBackgroundColor:'#4caf7d',pointRadius:4,borderWidth:2,tension:0},
+    {label:'Full Kelly',data:kf,type:'line',borderColor:'#e05252',backgroundColor:'transparent',borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#e05252',borderWidth:1.5,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%'}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%',color:'#555',font:{size:11,family:'IBM Plex Mono'}},grid:{color:'rgba(255,255,255,0.04)'}},x:{ticks:{color:'#888',font:{size:11}},grid:{display:false}}}}});}
+}
+document.getElementById('acct').addEventListener('input',e=>{state.acct=+e.target.value||50000;refreshRows();refreshSummary();updateChart();});
+document.getElementById('kfrac').addEventListener('input',e=>{
+  state.kfrac=+e.target.value;
+  const v=+e.target.value;
+  document.getElementById('kfracOut').textContent=v===100?'Full Kelly':v===50?'½ Kelly':v===25?'¼ Kelly':(v/100).toFixed(2)+'× Kelly';
+  refreshRows();refreshSummary();updateChart();
+});
+buildRows();refreshSummary();updateChart();
+</script>
+</body>
+</html>
