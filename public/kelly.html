@@ -146,7 +146,7 @@ function buildRows(){
     const kc=kColor(sc);const ec=ev>=0?'var(--green)':'var(--red)';
     row.innerHTML=`<div><div class="sc-name">${sc.label}</div><span class="sc-badge ${sc.live?'badge-live':'badge-paper'}">${sc.live?'LIVE':'PAPER'}</span></div>
       <div class="sc-side">${sc.side}</div>
-      <div class="sc-tpsl">+${sc.tp}%<br>−${sc.sl}%</div>
+      <div class="sc-tpsl" style="line-height:1.6">${sc.actualPF!=null?'PF '+sc.actualPF.toFixed(2):'PF —'}<br>${sc.avgRet!=null?(sc.avgRet>=0?'+':'')+sc.avgRet.toFixed(2)+'% avg':'+'+sc.tp+'%/−'+sc.sl+'%'}</div>
       <div class="slider-wrap"><input type="range" min="20" max="95" step="1" value="${sc.wr}" data-i="${i}" data-f="wr"><span class="slider-out" id="wr${i}">${sc.wr}%</span></div>
       <div class="slider-wrap"><input type="range" min="1" max="50" step="1" value="${sc.pct}" data-i="${i}" data-f="pct"><span class="slider-out" id="pct${i}">${sc.pct}%</span></div>
       <div class="sc-dollar" id="pos${i}">${fmt$(pos)}</div>
