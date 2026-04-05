@@ -517,6 +517,8 @@ body {
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.7);} }
 .save-actions { display: flex; gap: 8px; }
+.nav-link{font-size:11px;color:var(--muted);text-decoration:none;font-family:'IBM Plex Mono',monospace;border:1px solid var(--border);padding:4px 10px;border-radius:4px;transition:color .15s,border-color .15s}
+.nav-link:hover{color:var(--accent);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -543,6 +545,8 @@ body {
       <span class="pill pill-accent" id="totalCount">223 tickers</span>
       <span class="pill pill-muted" id="statsCount">— with stats</span>
       <span class="pill pill-muted">8 scenarios</span>
+      <a href="/daily.html" class="nav-link" onclick="event.stopPropagation()">Daily</a>
+      <a href="/kelly.html" class="nav-link" onclick="event.stopPropagation()">Kelly</a>
       <span class="chevron">▼</span>
     </div>
   </div>
