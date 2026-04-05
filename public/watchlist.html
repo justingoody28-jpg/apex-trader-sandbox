@@ -793,7 +793,9 @@ async function loadSnapshotData(){
       });
     });
     window._perfIdx=idx;
+    const curTab=document.querySelector('.sc-tab.active')?.dataset?.s||'A';
     renderAll();
+    switchTab(curTab);
   }catch(e){console.error('snapshots load failed',e);}
 }
 document.addEventListener('click',function(e){
@@ -822,6 +824,7 @@ document.addEventListener('click',function(e){
 });
 loadSnapshotData();
 renderAll();
+switchTab('A');
 </script>
 </body>
 </html>
