@@ -72,6 +72,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <div class="logo">APEX</div>
   <div><div class="page-title">Kelly Criterion — Position Sizing</div><div class="page-sub">Optimal allocation vs risk per scenario</div></div>
   <div class="header-sep"></div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <label style="font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace">Quarter</label>
+    <select id="qtrSel" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 10px;outline:none;cursor:pointer">
+      <option value="all">All quarters</option>
+    </select>
+  </div>
   <a href="/watchlist.html" class="nav-link">Watchlist →</a>
 </div>
 <div class="container">
@@ -212,15 +218,37 @@ const SC_KEY={A:'a',B:'b',C:'c',D:'d',E1:'e',E2:'e2',E3:'e3',E4:'e4',F:'f',G:'g'
 function applyRealWR(totals){state.scs.forEach(sc=>{const key=SC_KEY[sc.id];const t=totals[key];if(t&&t.n>=10){sc.wr=Math.round(t.w/t.n*100);sc.signals=t.n;}});}
 function updateSliders(){state.scs.forEach((sc,i)=>{const sl=document.querySelector('input[data-i="'+i+'"][data-f="wr"]');const out=document.getElementById('wr'+i);if(sl)sl.value=sc.wr;if(out){out.textContent=sc.wr+'%'+(sc.signals?' · '+sc.signals.toLocaleString()+' sig':'');out.style.minWidth='90px';}});}
 fetch('/api/snapshots').then(r=>r.json()).then(data=>{
-  window._snapCount=data.length;
+  window._allSnaps=data;
+  // Populate quarter selector
+  const sel=document.getElementById('qtrSel');
+  data.forEach(snap=>{
+    const opt=document.createElement('option');
+    opt.value=snap.label;opt.textContent=snap.label;
+    sel.appendChild(opt);
+  });
+  // Default to most recent quarter
+  if(data.length){sel.value=data[data.length-1].label;}
+  applyQuarter(sel.value);
+  sel.addEventListener('change',()=>applyQuarter(sel.value));
+}).catch(()=>{buildRows();refreshSummary();updateChart();});
+
+function buildTotals(snaps){
   const totals={};
-  data.forEach(snap=>{snap.rows.forEach(row=>{['a','b','c','d','e','e2','e3','e4','f','g','h'].forEach(sc=>{const d=row[sc];if(!d||!d.n)return;if(!totals[sc])totals[sc]={w:0,n:0};totals[sc].w+=d.w;totals[sc].n+=d.n;});});});
+  snaps.forEach(snap=>{snap.rows.forEach(row=>{['a','b','c','d','e','e2','e3','e4','f','g','h'].forEach(sc=>{const d=row[sc];if(!d||!d.n)return;if(!totals[sc])totals[sc]={w:0,n:0};totals[sc].w+=d.w;totals[sc].n+=d.n;});});});
+  return totals;
+}
+
+function applyQuarter(qtr){
+  const data=window._allSnaps||[];
+  const filtered=qtr==='all'?data:data.filter(s=>s.label===qtr);
+  const totals=buildTotals(filtered);
   applyRealWR(totals);
   buildRows();updateSliders();refreshSummary();updateChart();
   const total=Object.values(totals).reduce((a,t)=>a+t.n,0);
+  const label=qtr==='all'?'All '+data.length+' quarters':qtr;
   const sub=document.querySelector('.page-sub');
-  if(sub)sub.textContent='Live Supabase data — '+total.toLocaleString()+' signals across '+data.length+' quarters';
-}).catch(()=>{buildRows();refreshSummary();updateChart();});
+  if(sub)sub.textContent=label+' — '+total.toLocaleString()+' signals';
+}
 </script>
 </body>
 </html>
