@@ -802,7 +802,7 @@ document.addEventListener('click',function(e){
   const existing=row.nextElementSibling;
   if(existing&&existing.classList.contains('qtr-breakdown')){existing.remove();return;}
   const tk=row.querySelector('.tk-sym')?.textContent?.split('/')[0]?.trim();
-  const scId=document.querySelector('.sc-tab.active')?.dataset?.s;
+  const scId=row.closest('.sc-panel')?.id?.replace('panel-','');
   if(!tk||!scId)return;
   const qs=getQuarterPerf(tk,scId);
   if(!qs.length)return;
