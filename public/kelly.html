@@ -99,7 +99,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
     <div class="scard"><div class="scard-label">Total Simultaneous Exposure</div><div class="scard-val" id="s-exp">—</div></div>
   </div>
   <div class="sc-table">
-    <div class="sc-thead"><span>Scenario</span><span>Side</span><span>TP / SL</span><span>Win rate %</span><span>% of account</span><span>$ / trade</span><span>Kelly %</span><span>EV / trade</span></div>
+    <div class="sc-thead"><span>Scenario</span><span>Side</span><span>PF / Avg Ret</span><span>Win rate %</span><span>% of account</span><span>$ / trade</span><span>Kelly %</span><span>EV / trade</span></div>
     <div id="scRows"></div>
   </div>
   <div class="chart-card">
@@ -132,16 +132,16 @@ const SCENS=[
 const state={acct:50000,kfrac:50,scs:SCENS.map(s=>({...s}))};
 function kFull(wr,rr){const w=wr/100;return Math.max(0,w-(1-w)/rr)*100;}
 function kTgt(wr,rr,f){return kFull(wr,rr)*f/100;}
-function evT(sc){const pos=state.acct*sc.pct/100;const w=sc.wr/100;return pos*(w*sc.tp/100-(1-w)*sc.sl/100);}
+function evT(sc){const pos=state.acct*sc.pct/100;if(sc.avgRet!==undefined)return pos*sc.avgRet/100;const w2=sc.wr/100;return pos*(w2*sc.tp/100-(1-w2)*sc.sl/100);}
 function fmt$(n,sign){if(n===null||n===undefined)return'—';const pre=sign&&n>0?'+':n<0?'−':'';return pre+'$'+Math.abs(Math.round(n)).toLocaleString('en-US');}
-function kColor(sc){const k=kTgt(sc.wr,sc.tp/sc.sl,state.kfrac);if(!k)return'var(--muted)';if(sc.pct>k+1)return'var(--red)';if(sc.pct<k-2)return'var(--green)';return'var(--muted)';}
+function kColor(sc){const k=kTgt(sc.wr,(sc.b!=null?sc.b:sc.tp/sc.sl),state.kfrac);if(!k)return'var(--muted)';if(sc.pct>k+1)return'var(--red)';if(sc.pct<k-2)return'var(--green)';return'var(--muted)';}
 function buildRows(){
   const cont=document.getElementById('scRows');cont.innerHTML='';
   let lastG='';
   state.scs.forEach((sc,i)=>{
     if(sc.group!==lastG){const g=document.createElement('div');g.className='grp-label';g.textContent=sc.group.toUpperCase();cont.appendChild(g);lastG=sc.group;}
     const row=document.createElement('div');row.className='sc-row';
-    const rr=sc.tp/sc.sl;const k=kTgt(sc.wr,rr,state.kfrac);
+    const rr=(sc.b!=null?sc.b:sc.tp/sc.sl);const k=kTgt(sc.wr,rr,state.kfrac);
     const pos=state.acct*sc.pct/100;const ev=evT(sc);
     const kc=kColor(sc);const ec=ev>=0?'var(--green)':'var(--red)';
     row.innerHTML=`<div><div class="sc-name">${sc.label}</div><span class="sc-badge ${sc.live?'badge-live':'badge-paper'}">${sc.live?'LIVE':'PAPER'}</span></div>
@@ -163,7 +163,7 @@ function buildRows(){
 }
 function refreshRows(){
   state.scs.forEach((sc,i)=>{
-    const rr=sc.tp/sc.sl;const k=kTgt(sc.wr,rr,state.kfrac);
+    const rr=(sc.b!=null?sc.b:sc.tp/sc.sl);const k=kTgt(sc.wr,rr,state.kfrac);
     const pos=state.acct*sc.pct/100;const ev=evT(sc);
     const kc=kColor(sc);const ec=ev>=0?'var(--green)':'var(--red)';
     const g=id=>document.getElementById(id+i);
@@ -185,8 +185,8 @@ function refreshSummary(){
   const evEl=document.getElementById('s-ev');
   evEl.textContent=fmt$(totalEV,true);evEl.style.color=totalEV>=0?'var(--green)':'var(--red)';
   document.getElementById('s-exp').textContent=fmt$(totalExp);
-  const over=state.scs.filter(s=>s.pct>kTgt(s.wr,s.tp/s.sl,state.kfrac)+1).map(s=>s.label);
-  const under=state.scs.filter(s=>{const k=kTgt(s.wr,s.tp/s.sl,state.kfrac);return k>0&&s.pct<k-2;}).map(s=>s.label);
+  const over=state.scs.filter(s=>s.pct>kTgt(s.wr,(s.b!=null?s.b:s.tp/s.sl),state.kfrac)+1).map(s=>s.label);
+  const under=state.scs.filter(s=>{const k=kTgt(s.wr,(s.b!=null?s.b:s.tp/s.sl),state.kfrac);return k>0&&s.pct<k-2;}).map(s=>s.label);
   const hints=[];
   if(over.length)hints.push('<span style="color:var(--red)">'+over.join(', ')+' above Kelly — consider trimming</span>');
   if(under.length)hints.push('<span style="color:var(--green)">'+under.join(', ')+' have room to size up</span>');
@@ -197,8 +197,8 @@ let chart;
 function updateChart(){
   const labels=state.scs.map(s=>s.label);
   const alloc=state.scs.map(s=>+s.pct.toFixed(1));
-  const kt=state.scs.map(s=>+kTgt(s.wr,s.tp/s.sl,state.kfrac).toFixed(1));
-  const kf=state.scs.map(s=>+kFull(s.wr,s.tp/s.sl).toFixed(1));
+  const kt=state.scs.map(s=>+kTgt(s.wr,(s.b!=null?s.b:s.tp/s.sl),state.kfrac).toFixed(1));
+  const kf=state.scs.map(s=>+kFull(s.wr,(s.b!=null?s.b:s.tp/s.sl)).toFixed(1));
   const cols=state.scs.map(s=>s.live?'#f59e0b':'#444');
   if(chart){chart.data.datasets[0].data=alloc;chart.data.datasets[0].backgroundColor=cols;chart.data.datasets[1].data=kt;chart.data.datasets[2].data=kf;chart.update('none');}
   else{chart=new Chart(document.getElementById('kellyChart'),{type:'bar',data:{labels,datasets:[
@@ -215,7 +215,26 @@ document.getElementById('kfrac').addEventListener('input',e=>{
   refreshRows();refreshSummary();updateChart();
 });
 const SC_KEY={A:'a',B:'b',C:'c',D:'d',E1:'e',E2:'e2',E3:'e3',E4:'e4',F:'f',G:'g',H:'h'};
-function applyRealWR(totals){state.scs.forEach(sc=>{const key=SC_KEY[sc.id];const t=totals[key];if(t&&t.n>=10){sc.wr=Math.round(t.w/t.n*100);sc.signals=t.n;}});}
+function applyRealData(totals){
+  state.scs.forEach(sc=>{
+    const key=SC_KEY[sc.id];const t=totals[key];
+    if(!t||t.n<5)return;
+    const wr=t.w/(t.w+t.l);
+    sc.wr=Math.round(wr*100);
+    sc.signals=t.n;
+    sc.avgRet=t.n>0?+(t.ret_total/t.n).toFixed(3):0;
+    // Compute actual odds ratio b from aggregated profit factor
+    if(t.gross_losses>0&&t.gross_wins>0&&wr>0&&wr<1){
+      const agg_pf=t.gross_wins/t.gross_losses;
+      sc.b=+(agg_pf*(1-wr)/wr).toFixed(3);
+      sc.actualPF=+agg_pf.toFixed(2);
+    } else if(t.l===0&&t.w>0){
+      sc.b=null;sc.actualPF=99; // no losses, uncapped
+    } else {
+      sc.b=null;sc.actualPF=null;
+    }
+  });
+}
 function updateSliders(){state.scs.forEach((sc,i)=>{const sl=document.querySelector('input[data-i="'+i+'"][data-f="wr"]');const out=document.getElementById('wr'+i);if(sl)sl.value=sc.wr;if(out){out.textContent=sc.wr+'%'+(sc.signals?' · '+sc.signals.toLocaleString()+' sig':'');out.style.minWidth='90px';}});}
 fetch('/api/snapshots').then(r=>r.json()).then(data=>{
   window._allSnaps=data;
@@ -234,7 +253,25 @@ fetch('/api/snapshots').then(r=>r.json()).then(data=>{
 
 function buildTotals(snaps){
   const totals={};
-  snaps.forEach(snap=>{snap.rows.forEach(row=>{['a','b','c','d','e','e2','e3','e4','f','g','h'].forEach(sc=>{const d=row[sc];if(!d||!d.n)return;if(!totals[sc])totals[sc]={w:0,n:0};totals[sc].w+=d.w;totals[sc].n+=d.n;});});});
+  const SCS=['a','b','c','d','e','e2','e3','e4','f','g','h'];
+  snaps.forEach(snap=>{snap.rows.forEach(row=>{SCS.forEach(sc=>{
+    const d=row[sc];if(!d||!d.n)return;
+    if(!totals[sc])totals[sc]={w:0,l:0,n:0,ret_total:0,gross_wins:0,gross_losses:0};
+    totals[sc].w+=d.w||0;
+    totals[sc].l+=d.l||0;
+    totals[sc].n+=d.n||0;
+    totals[sc].ret_total+=d.ret||0;
+    // Aggregate gross wins/losses: gross_loss=ret/(pf-1), gross_win=pf*gross_loss
+    const pf=d.pf||0;const ret=d.ret||0;
+    if(Math.abs(pf-1)>0.05&&pf<90){
+      const gl=ret/(pf-1);
+      totals[sc].gross_losses+=gl;
+      totals[sc].gross_wins+=pf*gl;
+    } else if(pf>=90&&d.w>0){
+      // No losses — use win count as proxy for gross wins
+      totals[sc].gross_wins+=d.ret||0;
+    }
+  });});});
   return totals;
 }
 
@@ -242,7 +279,7 @@ function applyQuarter(qtr){
   const data=window._allSnaps||[];
   const filtered=qtr==='all'?data:data.filter(s=>s.label===qtr);
   const totals=buildTotals(filtered);
-  applyRealWR(totals);
+  applyRealData(totals);
   buildRows();updateSliders();refreshSummary();updateChart();
   const total=Object.values(totals).reduce((a,t)=>a+t.n,0);
   const label=qtr==='all'?'All '+data.length+' quarters':qtr;
