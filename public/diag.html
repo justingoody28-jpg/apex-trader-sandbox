@@ -55,42 +55,12 @@ h1 { font-size:16px; font-weight:700; letter-spacing:.06em; text-transform:upper
 .summary-val.red { color:var(--red); }
 .summary-val.yellow { color:var(--yellow); }
 .summary-lbl { font-size:10px; color:var(--muted); font-family:'IBM Plex Sans',sans-serif; }
-
-/* ── Trading Controls ───────────────────────────────────────────────────── */
-.ctrl-panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:24px;}
-.ctrl-title{font-size:11px;color:var(--muted);font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;letter-spacing:.06em;text-transform:uppercase;}
-.ctrl-live-row{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.live-badge{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.06em;border:1px solid;transition:all .2s;}
-.live-badge.paper{background:var(--surface2);border-color:var(--border2);color:var(--muted);}
-.live-badge.live{background:rgba(255,68,68,.15);border-color:var(--red);color:var(--red);}
-.big-toggle{position:relative;width:52px;height:28px;flex-shrink:0;}
-.big-toggle input{opacity:0;width:0;height:0;}
-.big-toggle-track{position:absolute;inset:0;background:var(--border2);border-radius:14px;cursor:pointer;transition:background .2s;}
-.big-toggle input:checked+.big-toggle-track{background:var(--red);}
-.big-toggle-thumb{position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none;}
-.big-toggle input:checked~.big-toggle-thumb{transform:translateX(24px);}
-.live-label{font-size:13px;font-weight:700;}
-.ctrl-knobs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
-.ctrl-knob{display:flex;flex-direction:column;gap:6px;}
-.ctrl-knob label{font-size:10px;color:var(--muted);font-family:'IBM Plex Sans',sans-serif;}
-.ctrl-knob input{background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;padding:7px 10px;width:100%;outline:none;transition:border-color .2s;}
-.ctrl-knob input:focus{border-color:var(--accent);}
-.ctrl-save-row{display:flex;align-items:center;gap:12px;}
-.ctrl-save-btn{padding:8px 20px;border-radius:4px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em;transition:opacity .2s;}
-.ctrl-save-btn:hover{opacity:.8;}
-.ctrl-save-btn:disabled{opacity:.4;cursor:not-allowed;}
-.ctrl-status{font-size:11px;font-family:'IBM Plex Sans',sans-serif;}
-.ctrl-status.ok{color:var(--green);}
-.ctrl-status.err{color:var(--red);}
-.ctrl-status.loading{color:var(--accent);}
 </style>
 </head>
 <body>
 <div class="breadcrumb">
-  <a href="/edge-scenarios.html">Edge</a> · <a href="/watchlist.html">Watchlist</a> · <a href="/kelly.html">Kelly</a> · <a href="/daily.html">Daily</a> · <span>Diagnostics</span>
+  <a href="/edge-scenarios.html">Edge</a> · <a href="/watchlist.html">Watchlist</a> · <a href="/kelly.html">Kelly</a> · <a href="/daily.html">Daily</a> · <a href="/controls.html">Controls</a> · <span>Diagnostics</span>
 </div>
-<div class="ctrl-panel">
-  <div class="ctrl-title">Trading Controls</div>
   <div class="ctrl-live-row">
     <label class="big-toggle">
       <input type="checkbox" id="liveToggle" onchange="onLiveToggle()">
@@ -327,49 +297,6 @@ async function runAll(){
   document.getElementById('summary').classList.add('show');
   btn.disabled=false;btn.textContent='▶ Run All Tests';
 }
-
-async function loadControls(){
-  try{
-    const r=await fetch('/api/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({_read:true,riskControls:{}})});
-    // _read flag not supported — just load via snapshots proxy
-    // Instead fetch config directly
-    const cr=await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json?t='+Date.now());
-    const cfg=await cr.json();
-    const rc=cfg.riskControls||{};
-    document.getElementById('liveToggle').checked=rc.live===true;
-    document.getElementById('maxTrades').value=rc.maxTradesPerDay||5;
-    document.getElementById('maxBet').value=(rc.maxBetOverride!==null&&rc.maxBetOverride!==undefined)?rc.maxBetOverride:'null';
-    document.getElementById('maxExposure').value=rc.maxDailyExposure||1250;
-    onLiveToggle();
-  }catch(e){setCtrlStatus('Could not load current config','err');}
-}
-function onLiveToggle(){
-  const live=document.getElementById('liveToggle').checked;
-  const badge=document.getElementById('liveBadge');
-  badge.textContent=live?'LIVE ⚠':'PAPER';
-  badge.className='live-badge '+(live?'live':'paper');
-}
-async function saveControls(){
-  const btn=document.getElementById('ctrlSaveBtn');
-  btn.disabled=true;
-  setCtrlStatus('Saving…','loading');
-  try{
-    const betRaw=document.getElementById('maxBet').value.trim();
-    const rc={
-      live:document.getElementById('liveToggle').checked,
-      maxTradesPerDay:parseInt(document.getElementById('maxTrades').value)||5,
-      maxBetOverride:(betRaw==='null'||betRaw==='')?null:parseFloat(betRaw),
-      maxDailyExposure:parseFloat(document.getElementById('maxExposure').value)||1250
-    };
-    const r=await fetch('/api/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({riskControls:rc})});
-    const d=await r.json();
-    if(d.ok){setCtrlStatus('✓ Committed '+d.sha.slice(0,8)+' — Mode: '+d.mode+' — Vercel deploying (~60s)','ok');}
-    else{setCtrlStatus('Error: '+(d.error||JSON.stringify(d)),'err');}
-  }catch(e){setCtrlStatus('Error: '+e.message,'err');}
-  btn.disabled=false;
-}
-function setCtrlStatus(msg,cls){const s=document.getElementById('ctrlStatus');s.textContent=msg;s.className='ctrl-status '+cls;}
-window.addEventListener('DOMContentLoaded',loadControls);
 
 </script>
 </body>
