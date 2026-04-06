@@ -785,7 +785,7 @@ function renderRow(t, s) {
   const barW = p ? Math.min(100, p.wr) : 0;
   const grpLabel = {SM:'S/M', Mid:'Mid', Lg:'Lg'}[t.g] || t.g;
   return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}"><div class="tk-sym">${t.t}<span class="grp-badge">${grpLabel}</span></div><div><div class="perf-wrap"><span class="wr-label ${cls}">${wr}</span><div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div><span class="sig-label">${n>0?`${n} signals · 6mo`:'no signals in 6mo backtest'}</span></div></div></div><div style="text-align:center"><span class="pill pill-muted" style="font-size:9px">${n}</span></div><div><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${!isExcl?'checked':''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div><div><button class="btn-x" onclick="excludeTicker('${s.id}','${t.t}')" title="Exclude from scenario">✕</button></div></div>`;
-let _saveTimer = null;
+window._saveTimer = null;
 }
 
 function renderAddRow(s) {
@@ -823,6 +823,7 @@ async function loadSnapshotData(){
     });
     window._snaps=data;window._perfIdx=idx;
     const curTab=document.querySelector('.sc-tab.active')?.dataset?.s||'A';
+    await loadState();
     renderAll();
     switchTab(curTab);
     injectQuarterColumns(document.getElementById('panel-'+curTab),curTab);
