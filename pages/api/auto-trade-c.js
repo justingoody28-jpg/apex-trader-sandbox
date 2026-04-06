@@ -82,7 +82,7 @@ export default async function handler(req, res) {
   // Load active tickers from Supabase watchlist + Kelly bets from most recent snapshot
   let tickers = [];
   try {
-    const _sbUrl = process.env.SUPABASE_URL;
+    const _sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const _sbKey = process.env.SUPABASE_SERVICE_KEY;
     const _sbH = { apikey: _sbKey, Authorization: `Bearer ${_sbKey}` };
     // Get active ticker list
