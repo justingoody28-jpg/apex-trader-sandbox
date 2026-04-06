@@ -84,6 +84,7 @@ export default async function handler(req, res) {
   if (!config.scenarios || !config.scenarios.E) return res.status(200).json({ message: 'Scenario E disabled', trades: [] });
   // Load active tickers from Supabase watchlist + Kelly bets from most recent snapshot
   let tickers = [];
+  let _excl = {};
   try {
     const _sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const _sbKey = process.env.SUPABASE_SERVICE_KEY;
@@ -92,6 +93,8 @@ export default async function handler(req, res) {
     const _wlR = await fetch(`${_sbUrl}/rest/v1/apex_watchlist?id=eq.default`, { headers: _sbH });
     const _wlD = await _wlR.json();
     const _active = new Set(_wlD[0]?.active || []);
+    const _exclRaw = _wlD[0]?.excluded;
+    _excl = (_exclRaw && !Array.isArray(_exclRaw)) ? _exclRaw : {};
     // Get most recent snapshot for Kelly sizing
     const _snR = await fetch(`${_sbUrl}/rest/v1/apex_backtest_snapshots?select=rows,label&order=saved_at.desc&limit=1`, { headers: _sbH });
     const _snD = await _snR.json();
@@ -180,7 +183,7 @@ export default async function handler(req, res) {
 
 
     // Scenario D: Short gap-up >=2% | TP -2% / SL +0.5%
-    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20)) {
+    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D||[]).includes(sym)) {
       const tpD = +(price * 0.98).toFixed(2);
       const slD = +(price * 1.005).toFixed(2);
       const qtyD = Math.max(1, Math.floor(bet / price));
@@ -199,7 +202,7 @@ export default async function handler(req, res) {
     }
 
     // Scenario A: Long gap-up >=2% ONLY when SPY gap >0.5% | TP +2% / SL -0.5%
-    if (gap >= 2 && spyGap > 0.5 && spyRecovering && (vix === null || vix <= 25)) {
+    if (gap >= 2 && spyGap > 0.5 && spyRecovering && (vix === null || vix <= 25) && !(_excl.A||[]).includes(sym)) {
       const tpA = +(price * 1.02).toFixed(2);
       const slA = +(price * 0.995).toFixed(2);
       const qtyA = Math.max(1, Math.floor(bet / price));
@@ -218,7 +221,7 @@ export default async function handler(req, res) {
     }
 
         // Scenario F: Long gap-down <=-5% | TP +2% / SL -2%
-    if (gap <= -5 && gap > -25) {
+    if (gap <= -5 && gap > -25 && !(_excl.F||[]).includes(sym)) {
       const tpF = +(price * 1.02).toFixed(2);
       const slF = +(price * 0.98).toFixed(2);
       const qtyF = Math.max(1, Math.floor(bet / price));
@@ -241,6 +244,7 @@ export default async function handler(req, res) {
       continue;
     }
 
+    if ((_excl[tier.tier]||[]).includes(sym)) { results.push({ symbol: sym, status: 'skipped', reason: `Excluded from ${tier.tier}`, gap: +gap.toFixed(2), tier: tier.tier }); continue; }
     const eBet = tier.bet || bet; const qty = Math.max(1, Math.floor(eBet / price));
     if (qty < 1) {
       results.push({ symbol: sym, status: 'skipped', reason: `Bet too small at $${price.toFixed(2)}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
