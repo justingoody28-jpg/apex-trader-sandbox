@@ -561,7 +561,7 @@ body {
       </div>
       <div class="save-actions">
         <button class="btn btn-outline" onclick="discard()">Discard</button>
-        <button class="btn btn-primary" onclick="saveState()">Save Watchlist</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveState()">Save to Supabase</button>
       </div>
     </div>
   </div>
@@ -651,31 +651,40 @@ SC.forEach(s => {
 });
 
 // ── Load / Save ───────────────────────────────────────────────────────────────
-function loadState() {
+async function loadState() {
   try {
-    const d = JSON.parse(localStorage.getItem('apex_tickers') || '{}');
-    const excl = d.excluded || {};
-    SC.forEach(s => { excluded[s.id] = new Set(excl[s.id] || []); });
+    const r = await fetch('/api/watchlist');
+    const d = await r.json();
+    if (d && Array.isArray(d.active) && d.active.length > 0) {
+      approved = new Set(d.active);
+      excluded = new Set(d.excluded || []);
+      return;
+    }
+  } catch(e) { console.warn('Supabase load failed, trying localStorage fallback', e); }
+  try {
+    const raw = localStorage.getItem('apex_tickers');
+    if (raw) { const t = JSON.parse(raw); approved = new Set(t.list?.map(x=>x.t)||[]); }
   } catch(e) {}
-  try {
-    stats = JSON.parse(localStorage.getItem('apex_backtest_stats') || '{}');
-  } catch(e) { stats = {}; }
 }
 
-function saveState() {
+async function saveState() {
   try {
-    const d = JSON.parse(localStorage.getItem('apex_tickers') || '{}');
-    d.list = TICKERS.map(t => ({ t: t.t, grp: t.g }));
-    d.approved = TICKERS.map(t => t.t).filter(sym => SC.some(s => !excluded[s.id].has(sym))).join(',');
-    const excl = {};
-    SC.forEach(s => { excl[s.id] = [...excluded[s.id]]; });
-    d.excluded = excl;
-    localStorage.setItem('apex_tickers', JSON.stringify(d));
-  } catch(e) {}
-  dirty = false;
-  const bar = document.getElementById('saveBar');
-  bar.querySelector('.save-msg').innerHTML = '✓ Saved to localStorage';
-  setTimeout(() => bar.classList.remove('visible'), 1800);
+    const activeArr = [...approved];
+    const excludedArr = [...excluded];
+    const r = await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: activeArr, excluded: excludedArr })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error('Save failed');
+    // Also push updated active list to auto-trade-config via API
+    await fetch('/api/watchlist-sync', { method: 'POST' });
+    markDirty(false);
+  } catch(e) {
+    console.error('Supabase save failed:', e);
+    alert('Save failed: ' + e.message);
+  }
 }
 
 function discard() {
