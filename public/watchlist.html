@@ -806,6 +806,7 @@ function toggle() { document.getElementById('wm').classList.toggle('open'); }
 loadState();
 window._perfIdx={};
 async function loadSnapshotData(){
+  if(!approved){try{await loadState();}catch(e){}}
   try{
     const r=await fetch('/api/snapshots');
     const data=await r.json();
@@ -890,8 +891,7 @@ function injectQuarterColumns(panel,scId){
   });
 }
 loadSnapshotData();
-renderAll();
-switchTab('A');
+loadState().then(()=>{renderAll();switchTab('A');});
 </script>
 </body>
 </html>
