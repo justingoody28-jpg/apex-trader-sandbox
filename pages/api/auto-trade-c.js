@@ -79,7 +79,36 @@ export default async function handler(req, res) {
   } catch (e) { return res.status(500).json({ error: e.message }); }
 
   if (!config.scenarios || !config.scenarios.E) return res.status(200).json({ message: 'Scenario E disabled', trades: [] });
-  const tickers = (config.tickers || []).filter(t => t.symbol && t.bet > 0);
+  // Load active tickers from Supabase watchlist + Kelly bets from most recent snapshot
+  let tickers = [];
+  try {
+    const _sbUrl = process.env.SUPABASE_URL;
+    const _sbKey = process.env.SUPABASE_SERVICE_KEY;
+    const _sbH = { apikey: _sbKey, Authorization: `Bearer ${_sbKey}` };
+    // Get active ticker list
+    const _wlR = await fetch(`${_sbUrl}/rest/v1/apex_watchlist?id=eq.default`, { headers: _sbH });
+    const _wlD = await _wlR.json();
+    const _active = new Set(_wlD[0]?.active || []);
+    // Get most recent snapshot for Kelly sizing
+    const _snR = await fetch(`${_sbUrl}/rest/v1/apex_backtest_snapshots?select=rows,label&order=saved_at.desc&limit=1`, { headers: _sbH });
+    const _snD = await _snR.json();
+    const _rows = _snD[0]?.rows || [];
+    // Build tickers with Kelly bets
+    tickers = [..._active].map(sym => {
+      const row = _rows.find(r => r.tk === sym);
+      const e = row?.e;
+      if (e && e.n >= 5 && e.pf > 0) {
+        const wr = e.w / (e.w + e.l);
+        const k = Math.max(0, wr - (1 - wr) / e.pf);
+        const bet = Math.round(Math.max(250, Math.min(2000, k * 0.5 * 50000)) / 50) * 50;
+        return { symbol: sym, bet };
+      }
+      return { symbol: sym, bet: 500 };
+    });
+  } catch(_sbErr) {
+    // Fallback to config tickers if Supabase unavailable
+    tickers = (config.tickers || []).filter(t => t.symbol && t.bet > 0);
+  }
   if (!tickers.length) return res.status(200).json({ message: 'No tickers', trades: [] });
 
   const symbols = [...new Set([...tickers.map(t => t.symbol.toUpperCase()), 'SPY'])];
