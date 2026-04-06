@@ -715,8 +715,8 @@ function getPerf(tk,scId){
   const key=SC_KEY[scId]||scId.toLowerCase();
   const qs=(window._perfIdx||{})[tk]?.[key];
   if(!qs||!qs.length)return null;
-  let w=0,n=0;qs.forEach(q=>{w+=(q.w||0);n+=(q.n||0);});
-  return n?{wr:Math.round(w/n*100),n}:null;
+  let w=0,l=0,n=0,t=0,tw=0,tl=0;qs.forEach(q=>{w+=(q.w||0);l+=(q.l||0);n+=(q.n||0);t+=(q.t||0);tw+=(q.tw||0);tl+=(q.tl||0);});
+  return n?{wr:Math.round((w+l)?w/(w+l)*100:0),n,w,l,t,tw,tl}:null;
 }
 function getQuarterPerf(tk,scId){
   const key=SC_KEY[scId]||scId.toLowerCase();
@@ -785,8 +785,9 @@ function renderRow(t, s) {
   const wr = p ? `${p.wr}%` : '—';
   const n = p ? p.n : 0;
   const barW = p ? Math.min(100, p.wr) : 0;
+  const toStr = (p && p.t > 0) ? ' · ' + p.t + 'TO' + (((p.tw||0)+(p.tl||0)) > 0 ? ' +' + (p.tw||0) + '/-' + (p.tl||0) : '') : '';
   const grpLabel = {SM:'S/M', Mid:'Mid', Lg:'Lg'}[t.g] || t.g;
-  return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}"><div class="tk-sym">${t.t}<span class="grp-badge">${grpLabel}</span></div><div><div class="perf-wrap"><span class="wr-label ${cls}">${wr}</span><div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div><span class="sig-label">${n>0?`${n} signals · 6mo`:'no signals in 6mo backtest'}</span></div></div></div><div style="text-align:center"><span class="pill pill-muted" style="font-size:9px">${n}</span></div><div><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${!isExcl?'checked':''} ${isGlobalOff?'disabled':''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div><div><button class="btn-x" onclick="excludeTicker('${s.id}','${t.t}')" title="Exclude from scenario">✕</button></div></div>`;
+  return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}"><div class="tk-sym">${t.t}<span class="grp-badge">${grpLabel}</span></div><div><div class="perf-wrap"><span class="wr-label ${cls}">${wr}</span><div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div><span class="sig-label">${n>0?`${n} signals · 6mo${toStr}`:'no signals in 6mo backtest'}</span></div></div></div><div style="text-align:center"><span class="pill pill-muted" style="font-size:9px">${n}</span></div><div><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${!isExcl?'checked':''} ${isGlobalOff?'disabled':''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div><div><button class="btn-x" onclick="excludeTicker('${s.id}','${t.t}')" title="Exclude from scenario">✕</button></div></div>`;
 window._saveTimer = null;
 }
 
