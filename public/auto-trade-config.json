@@ -167,8 +167,10 @@
   ],
   "scenarios": {
     "E": true,
-    "G": true,
-    "H": true,
+    "D": true,
+    "F": true,
+    "G": false,
+    "H": false,
     "B": false,
     "C": false
   },
@@ -182,5 +184,5 @@
   "defaultBet": 500,
   "count": 41,
   "updated": "2026-03-30T12:50:52.575Z",
-  "_note": "E tiered, G: gapâ¤-10% RVOLâ¥5x TP1.5/SL1.5, H: gapâ¤-10% RVOLâ¥4x TP1.5/SL2.5 (baseline), WOLF excluded from G/H"
+  "_note": "Updated 2026-04-06T01:46:41.670Z — D/E/F active via auto-trade-c, G/H disabled (no workflow)"
 }
