@@ -642,7 +642,8 @@ const seen = new Set();
 const TICKERS = ALL_TICKERS.filter(t => { if(seen.has(t.t)){return false;} seen.add(t.t); return true; });
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let excluded = {};
+let approved = new Set();
+let excluded = new Set();
 let stats = {};
 let activeId = 'E';
 let dirty = false;
