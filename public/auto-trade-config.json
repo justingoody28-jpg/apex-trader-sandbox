@@ -916,7 +916,7 @@
   "riskControls": {
     "live": false,
     "maxTradesPerDay": 5,
-    "maxBetOverride": 250,
+    "maxBetOverride": null,
     "maxDailyExposure": 1250
   }
 }
