@@ -544,7 +544,7 @@ body {
     <div class="header-right">
       <span class="pill pill-accent" id="totalCount">223 tickers</span>
       <span class="pill pill-muted" id="statsCount">— with stats</span>
-      <span class="pill pill-muted">8 scenarios</span>
+      <span class="pill pill-muted">8 scenarios</span><button id="cap-btn-SM" onclick="event.stopPropagation();toggleCapTier('SM')" style="font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:700;padding:3px 9px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:all .2s">S/M</button><button id="cap-btn-Mid" onclick="event.stopPropagation();toggleCapTier('Mid')" style="font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:700;padding:3px 9px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:all .2s">Mid</button><button id="cap-btn-Lg" onclick="event.stopPropagation();toggleCapTier('Lg')" style="font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:700;padding:3px 9px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:all .2s">Lg</button>
       <button id="saveBtn" onclick="event.stopPropagation();saveState()" style="font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;padding:5px 14px;border-radius:4px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;letter-spacing:.04em;transition:opacity .2s">Save</button>
       <span id="saveStatus" style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:80px"></span>
       <a href="/daily.html" class="nav-link" onclick="event.stopPropagation()">Daily</a>
@@ -778,14 +778,15 @@ function renderTickerList(s) {
 }
 
 function renderRow(t, s) {
-  const isExcl = excluded[s.id].has(t.t);
+  const isGlobalOff = !approved.has(t.t);
+  const isExcl = isGlobalOff || excluded[s.id].has(t.t);
   const p = getPerf(t.t, s.id);
   const cls = p ? perfClass(p.wr, s.be) : 'none';
   const wr = p ? `${p.wr}%` : '—';
   const n = p ? p.n : 0;
   const barW = p ? Math.min(100, p.wr) : 0;
   const grpLabel = {SM:'S/M', Mid:'Mid', Lg:'Lg'}[t.g] || t.g;
-  return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}"><div class="tk-sym">${t.t}<span class="grp-badge">${grpLabel}</span></div><div><div class="perf-wrap"><span class="wr-label ${cls}">${wr}</span><div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div><span class="sig-label">${n>0?`${n} signals · 6mo`:'no signals in 6mo backtest'}</span></div></div></div><div style="text-align:center"><span class="pill pill-muted" style="font-size:9px">${n}</span></div><div><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${!isExcl?'checked':''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div><div><button class="btn-x" onclick="excludeTicker('${s.id}','${t.t}')" title="Exclude from scenario">✕</button></div></div>`;
+  return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}"><div class="tk-sym">${t.t}<span class="grp-badge">${grpLabel}</span></div><div><div class="perf-wrap"><span class="wr-label ${cls}">${wr}</span><div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div><span class="sig-label">${n>0?`${n} signals · 6mo`:'no signals in 6mo backtest'}</span></div></div></div><div style="text-align:center"><span class="pill pill-muted" style="font-size:9px">${n}</span></div><div><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${!isExcl?'checked':''} ${isGlobalOff?'disabled title="Enable cap tier to toggle":''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div><div><button class="btn-x" onclick="excludeTicker('${s.id}','${t.t}')" title="Exclude from scenario">✕</button></div></div>`;
 window._saveTimer = null;
 }
 
@@ -800,7 +801,24 @@ function toggleTicker(scId, tk, enabled) { if (!enabled) excluded[scId].add(tk);
 function excludeTicker(scId, tk) { excluded[scId].add(tk); const row = document.getElementById(`row-${scId}-${tk}`); if (row) row.style.display = 'none'; updateCounts(scId); markDirty(); }
 function addTicker(scId) { const input = document.getElementById(`add-${scId}`); const sym = input.value.trim().toUpperCase(); if (!sym) return; if (!TICKERS.find(t => t.t === sym)) TICKERS.push({ t: sym, g: 'Mid' }); excluded[scId].delete(sym); input.value = ''; document.getElementById(`list-${scId}`).innerHTML = renderTickerList(SC.find(s => s.id === scId)); updateCounts(scId); markDirty(); }
 function updateCounts(scId) { const active = TICKERS.filter(t => !excluded[scId].has(t.t)).length; const excl = excluded[scId].size; const bar = document.querySelector(`#panel-${scId} .stats-row`); if (bar) bar.innerHTML = `<span><span class="stat-val">${active}</span> active</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${excl}</span> excluded</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${TICKERS.length}</span> total</span>`; const tab = document.querySelector(`.sc-tab[data-s="${scId}"] .sc-tab-count`); if (tab) tab.textContent = active; }
-function updateHeader() { const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; }
+function toggleCapTier(g) {
+  const tks = ALL_TICKERS.filter(t => t.g === g);
+  const anyOn = tks.some(t => approved.has(t.t));
+  if (anyOn) { tks.forEach(t => approved.delete(t.t)); }
+  else { tks.forEach(t => approved.add(t.t)); }
+  updateCapButtons(); renderAll(); markDirty();
+}
+function updateCapButtons() {
+  ['SM','Mid','Lg'].forEach(g => {
+    const btn = document.getElementById('cap-btn-'+g);
+    if (!btn) return;
+    const on = ALL_TICKERS.filter(t=>t.g===g).some(t=>approved.has(t.t));
+    btn.style.background = on?'var(--accent-dim)':'transparent';
+    btn.style.borderColor = on?'var(--accent)':'var(--border2)';
+    btn.style.color = on?'var(--accent)':'var(--muted)';
+  });
+}
+function updateHeader() { updateCapButtons(); const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; }
 function markDirty() { dirty = true; const bar = document.getElementById('saveBar'); bar.classList.add('visible'); bar.querySelector('.save-msg').innerHTML = '<div class="pulse"></div>Unsaved changes — not yet committed to config'; }
   if(typeof v === 'undefined' || v === true){ clearTimeout(window._saveTimer); window._saveTimer = setTimeout(saveState, 800); }
 function toggle() { document.getElementById('wm').classList.toggle('open'); }
