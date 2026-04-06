@@ -65,6 +65,32 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .legend-line-solid{width:20px;height:0;border-top:2px solid;flex-shrink:0}
 .chart-wrap{position:relative;height:280px}
 .hint-bar{min-height:28px;padding:8px 0 0;font-size:11px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border);margin-top:16px}
+
+/* ── Trading Controls ───────────────────────────────────────────── */
+.tctrl{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px;margin:16px 20px;}
+.tctrl-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.tctrl-label{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+.live-badge{padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.06em;border:1px solid;transition:all .2s;white-space:nowrap;}
+.live-badge.paper{background:var(--surface2);border-color:var(--border2);color:var(--muted);}
+.live-badge.live{background:rgba(255,68,68,.15);border-color:var(--red);color:var(--red);}
+.tgl{position:relative;width:46px;height:24px;flex-shrink:0;}
+.tgl input{opacity:0;width:0;height:0;}
+.tgl-track{position:absolute;inset:0;background:var(--border2);border-radius:12px;cursor:pointer;transition:background .2s;}
+.tgl input:checked+.tgl-track{background:var(--red);}
+.tgl-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none;}
+.tgl input:checked~.tgl-thumb{transform:translateX(22px);}
+.tctrl-sep{width:1px;height:24px;background:var(--border);flex-shrink:0;}
+.tctrl-knob{display:flex;flex-direction:column;gap:3px;min-width:90px;}
+.tctrl-knob label{font-size:9px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;white-space:nowrap;}
+.tctrl-knob input{background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:5px 8px;width:100%;outline:none;transition:border-color .2s;}
+.tctrl-knob input:focus{border-color:var(--accent);}
+.tctrl-save{padding:6px 16px;border-radius:4px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.06em;white-space:nowrap;transition:opacity .2s;}
+.tctrl-save:hover{opacity:.8;}
+.tctrl-save:disabled{opacity:.4;cursor:not-allowed;}
+.tctrl-status{font-size:10px;font-family:'IBM Plex Sans',sans-serif;min-width:180px;}
+.tctrl-status.ok{color:var(--green);}
+.tctrl-status.err{color:var(--red);}
+.tctrl-status.spin{color:var(--accent);}
 </style>
 </head>
 <body>
@@ -79,6 +105,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
     </select>
   </div>
   <a href="/watchlist.html" class="nav-link">Watchlist →</a>
+</div>
+<div class="tctrl">
+  <div class="tctrl-row">
+    <span class="tctrl-label">Trading Mode</span>
+    <label class="tgl"><input type="checkbox" id="tcLive" onchange="tcOnToggle()"><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+    <span class="live-badge paper" id="tcBadge">PAPER</span>
+    <div class="tctrl-sep"></div>
+    <div class="tctrl-knob"><label>Max Trades/Day</label><input type="number" id="tcMaxTrades" min="1" max="20" value="5" style="width:80px"></div>
+    <div class="tctrl-knob"><label>Max Bet ($) — null=Kelly</label><input type="text" id="tcMaxBet" value="250" placeholder="null" style="width:90px"></div>
+    <div class="tctrl-knob"><label>Max Daily Exposure ($)</label><input type="number" id="tcMaxExp" min="100" value="1250" style="width:110px"></div>
+    <div class="tctrl-sep"></div>
+    <button class="tctrl-save" id="tcSaveBtn" onclick="tcSave()">Save &amp; Commit</button>
+    <span class="tctrl-status" id="tcStatus"></span>
+  </div>
 </div>
 <div class="container">
   <div class="controls">
@@ -114,7 +154,49 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
     <div class="hint-bar" id="hintBar"></div>
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+(function(){
+  async function tcLoad(){
+    try{
+      const r=await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json?t='+Date.now());
+      const c=await r.json();
+      const rc=c.riskControls||{};
+      document.getElementById('tcLive').checked=rc.live===true;
+      document.getElementById('tcMaxTrades').value=rc.maxTradesPerDay||5;
+      document.getElementById('tcMaxBet').value=(rc.maxBetOverride!=null)?rc.maxBetOverride:'null';
+      document.getElementById('tcMaxExp').value=rc.maxDailyExposure||1250;
+      tcOnToggle();
+    }catch(e){tcStat('Load error: '+e.message,'err');}
+  }
+  window.tcOnToggle=function(){
+    const live=document.getElementById('tcLive').checked;
+    const b=document.getElementById('tcBadge');
+    b.textContent=live?'LIVE ⚠':'PAPER';
+    b.className='live-badge '+(live?'live':'paper');
+  };
+  window.tcSave=async function(){
+    const btn=document.getElementById('tcSaveBtn');
+    btn.disabled=true;tcStat('Saving…','spin');
+    try{
+      const betRaw=document.getElementById('tcMaxBet').value.trim();
+      const rc={
+        live:document.getElementById('tcLive').checked,
+        maxTradesPerDay:parseInt(document.getElementById('tcMaxTrades').value)||5,
+        maxBetOverride:(betRaw==='null'||betRaw==='')?null:parseFloat(betRaw),
+        maxDailyExposure:parseFloat(document.getElementById('tcMaxExp').value)||1250
+      };
+      const r=await fetch('/api/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({riskControls:rc})});
+      const d=await r.json();
+      if(d.ok){tcStat('✓ '+d.sha.slice(0,8)+' — '+d.mode+' — deploying…','ok');}
+      else{tcStat('Error: '+(d.error||'?'),'err');}
+    }catch(e){tcStat('Error: '+e.message,'err');}
+    btn.disabled=false;
+  };
+  function tcStat(m,c){const s=document.getElementById('tcStatus');s.textContent=m;s.className='tctrl-status '+c;}
+  window.addEventListener('DOMContentLoaded',tcLoad);
+})();
+
+</script>
 <script>
 const SCENS=[
   {id:'A', label:'A', side:'LONG', tp:2, sl:0.5, be:20.0, live:false, wr:45, pct:5, group:'Gap-Up Longs (paper)'},
