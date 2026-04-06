@@ -545,6 +545,8 @@ body {
       <span class="pill pill-accent" id="totalCount">223 tickers</span>
       <span class="pill pill-muted" id="statsCount">— with stats</span>
       <span class="pill pill-muted">8 scenarios</span>
+      <button id="saveBtn" onclick="event.stopPropagation();saveState()" style="font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;padding:5px 14px;border-radius:4px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;letter-spacing:.04em;transition:opacity .2s">Save</button>
+      <span id="saveStatus" style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:80px"></span>
       <a href="/daily.html" class="nav-link" onclick="event.stopPropagation()">Daily</a>
       <a href="/kelly.html" class="nav-link" onclick="event.stopPropagation()">Kelly</a>
       <span class="chevron">▼</span>
@@ -668,9 +670,13 @@ async function loadState() {
 }
 
 async function saveState() {
+  const btn = document.getElementById('saveBtn');
+  const status = document.getElementById('saveStatus');
+  if(btn) { btn.textContent = 'Saving…'; btn.style.opacity = '.6'; }
+  if(status) status.textContent = '';
   try {
     const activeArr = [...approved];
-    const excludedArr = [...excluded];
+    const excludedArr = typeof excluded !== 'undefined' ? [...excluded] : [];
     const r = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -678,12 +684,20 @@ async function saveState() {
     });
     const d = await r.json();
     if (!d.ok) throw new Error('Save failed');
-    // Also push updated active list to auto-trade-config via API
-    await fetch('/api/watchlist-sync', { method: 'POST' });
+    // Push to auto-trade-config via sync API
+    const sr = await fetch('/api/watchlist-sync', { method: 'POST' });
+    const sd = await sr.json();
+    if(btn) { btn.textContent = 'Save'; btn.style.opacity = '1'; }
+    if(status) {
+      status.textContent = '✓ ' + activeArr.length + ' tickers synced';
+      status.style.color = 'var(--green)';
+      setTimeout(() => { if(status) { status.textContent = ''; } }, 3000);
+    }
     markDirty(false);
   } catch(e) {
-    console.error('Supabase save failed:', e);
-    alert('Save failed: ' + e.message);
+    console.error('Save failed:', e);
+    if(btn) { btn.textContent = 'Save'; btn.style.opacity = '1'; }
+    if(status) { status.textContent = '✗ ' + e.message.slice(0,30); status.style.color = 'var(--red)'; }
   }
 }
 
@@ -771,6 +785,7 @@ function renderRow(t, s) {
   const barW = p ? Math.min(100, p.wr) : 0;
   const grpLabel = {SM:'S/M', Mid:'Mid', Lg:'Lg'}[t.g] || t.g;
   return `<div class="ticker-row ${isExcl?'disabled':''}" id="row-${s.id}-${t.t}"><div class="tk-sym">${t.t}<span class="grp-badge">${grpLabel}</span></div><div><div class="perf-wrap"><span class="wr-label ${cls}">${wr}</span><div class="perf-bar-wrap"><div class="perf-bar-track"><div class="perf-bar-fill" style="width:${barW}%;background:${p?barColor(cls):'transparent'}"></div></div><span class="sig-label">${n>0?`${n} signals · 6mo`:'no signals in 6mo backtest'}</span></div></div></div><div style="text-align:center"><span class="pill pill-muted" style="font-size:9px">${n}</span></div><div><div class="toggle-wrap"><label class="toggle"><input type="checkbox" ${!isExcl?'checked':''} onchange="toggleTicker('${s.id}','${t.t}',this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div></div><div><button class="btn-x" onclick="excludeTicker('${s.id}','${t.t}')" title="Exclude from scenario">✕</button></div></div>`;
+let _saveTimer = null;
 }
 
 function renderAddRow(s) {
@@ -786,6 +801,7 @@ function addTicker(scId) { const input = document.getElementById(`add-${scId}`);
 function updateCounts(scId) { const active = TICKERS.filter(t => !excluded[scId].has(t.t)).length; const excl = excluded[scId].size; const bar = document.querySelector(`#panel-${scId} .stats-row`); if (bar) bar.innerHTML = `<span><span class="stat-val">${active}</span> active</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${excl}</span> excluded</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${TICKERS.length}</span> total</span>`; const tab = document.querySelector(`.sc-tab[data-s="${scId}"] .sc-tab-count`); if (tab) tab.textContent = active; }
 function updateHeader() { const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; }
 function markDirty() { dirty = true; const bar = document.getElementById('saveBar'); bar.classList.add('visible'); bar.querySelector('.save-msg').innerHTML = '<div class="pulse"></div>Unsaved changes — not yet committed to config'; }
+  if(typeof v === 'undefined' || v === true){ clearTimeout(_saveTimer); _saveTimer = setTimeout(saveState, 800); }
 function toggle() { document.getElementById('wm').classList.toggle('open'); }
 loadState();
 window._perfIdx={};
