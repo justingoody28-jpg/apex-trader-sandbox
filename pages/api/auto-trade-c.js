@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     const _od  = await _or.json();
     const _ol  = _od?.orders?.order;
     const _oArr = Array.isArray(_ol)?_ol:(_ol?[_ol]:[]);
-    const _tod  = _oArr.filter(o=>o.create_date?.startsWith(_todayEDT) && o.status !== "canceled" && o.status !== "cancelled");
+    const _tod  = _oArr.filter(o=>o.create_date?.startsWith(_todayEDT) && o.status !== "canceled" && o.status !== "cancelled" && o.status !== "rejected" && o.status !== "expired");
     if(_tod.length > 0){
       return res.status(200).json({timestamp:new Date().toISOString(),status:'already_ran',
         message:`Dedup guard: ${_tod.length} orders already placed today (${_todayEDT}). Skipping.`,
