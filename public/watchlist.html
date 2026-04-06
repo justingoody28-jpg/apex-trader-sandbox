@@ -864,12 +864,13 @@ document.addEventListener('click',function(e){
   div.className='qtr-breakdown';
   div.style.cssText='display:grid;grid-template-columns:repeat('+qs.length+',1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);font-size:11px;font-family:IBM Plex Mono,monospace;';
   qs.forEach(q=>{
-    const wr=q.n?Math.round(q.w/q.n*100):0;
+    const wr=(q.w+q.l)?Math.round(q.w/(q.w+q.l)*100):0;
     const col=document.createElement('div');
     col.style.cssText='background:var(--surface2);padding:6px 8px;text-align:center;';
     col.innerHTML='<div style="color:var(--muted);font-size:10px;margin-bottom:3px">'+q.q+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:'+(wr>=50?'var(--accent)':'var(--dim)')+'">'+wr+'%</div>'
-      +'<div style="color:var(--muted);margin-top:2px">'+q.n+' sig</div>';
+      +'<div style="color:var(--muted);margin-top:2px">'+q.n+' sig</div>'
+      +(q.t>0?'<div style="color:var(--dim);font-size:9px;margin-top:2px">'+q.t+' TO · avg '+(q.t?(q.tret/q.t>0?'+':'')+( q.tret/q.t).toFixed(1)+'%':'—')+'</div>':'');
     div.appendChild(col);
   });
   row.after(div);
