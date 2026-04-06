@@ -801,7 +801,7 @@ function addTicker(scId) { const input = document.getElementById(`add-${scId}`);
 function updateCounts(scId) { const active = TICKERS.filter(t => !excluded[scId].has(t.t)).length; const excl = excluded[scId].size; const bar = document.querySelector(`#panel-${scId} .stats-row`); if (bar) bar.innerHTML = `<span><span class="stat-val">${active}</span> active</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${excl}</span> excluded</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${TICKERS.length}</span> total</span>`; const tab = document.querySelector(`.sc-tab[data-s="${scId}"] .sc-tab-count`); if (tab) tab.textContent = active; }
 function updateHeader() { const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; }
 function markDirty() { dirty = true; const bar = document.getElementById('saveBar'); bar.classList.add('visible'); bar.querySelector('.save-msg').innerHTML = '<div class="pulse"></div>Unsaved changes — not yet committed to config'; }
-  if(typeof v === 'undefined' || v === true){ clearTimeout(_saveTimer); _saveTimer = setTimeout(saveState, 800); }
+  if(typeof v === 'undefined' || v === true){ clearTimeout(window._saveTimer); window._saveTimer = setTimeout(saveState, 800); }
 function toggle() { document.getElementById('wm').classList.toggle('open'); }
 loadState();
 window._perfIdx={};
