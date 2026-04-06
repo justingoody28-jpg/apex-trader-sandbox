@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const GITHUB_PAT = process.env.GITHUB_PAT;
 const REPO = 'justingoody28-jpg/apex-trader-sandbox';
 const CONFIG_PATH = 'public/auto-trade-config.json';
