@@ -643,7 +643,7 @@ const TICKERS = ALL_TICKERS.filter(t => { if(seen.has(t.t)){return false;} seen.
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let approved = new Set();
-let excluded = new Set();
+let excluded = Object.fromEntries(SC.map(s=>[s.id,new Set()]));
 let stats = {};
 let activeId = 'E';
 let dirty = false;
@@ -660,7 +660,7 @@ async function loadState() {
     const d = await r.json();
     if (d && Array.isArray(d.active) && d.active.length > 0) {
       approved = new Set(d.active);
-      excluded = new Set(d.excluded || []);
+      excluded = Object.fromEntries(SC.map(s=>[s.id,new Set(d.excluded||[])]));
       return;
     }
   } catch(e) { console.warn('Supabase load failed, trying localStorage fallback', e); }
@@ -677,7 +677,7 @@ async function saveState() {
   if(status) status.textContent = '';
   try {
     const activeArr = [...approved];
-    const excludedArr = typeof excluded !== 'undefined' ? [...excluded] : [];
+    const excludedArr = excluded && !excluded[Symbol.iterator] ? [...new Set(Object.values(excluded).flatMap(s=>[...s]))] : [];
     const r = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
