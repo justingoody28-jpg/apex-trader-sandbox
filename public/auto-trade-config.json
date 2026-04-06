@@ -912,5 +912,11 @@
   "defaultBet": 500,
   "count": 223,
   "updated": "2026-04-06T21:09:53.586Z",
-  "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q4 2025)"
+  "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q4 2025)",
+  "riskControls": {
+    "live": false,
+    "maxTradesPerDay": 5,
+    "maxBetOverride": 250,
+    "maxDailyExposure": 1250
+  }
 }
