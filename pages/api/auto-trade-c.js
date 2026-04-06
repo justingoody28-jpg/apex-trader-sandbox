@@ -62,8 +62,17 @@ export default async function handler(req, res) {
   const POLYGON_KEY = process.env.POLYGON_KEY;
   if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) return res.status(500).json({ error: 'Missing env vars' });
   const H = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
-  const PAPER_H = { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
-  const PAPER_BASE = 'https://sandbox.tradier.com/v1';
+  const PAPER_H = _live
+    ? { 'Authorization': `Bearer ${TRADIER_LIVE_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
+    : { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
+  const _rc = config.riskControls || {};
+  const _live = _rc.live === true;
+  const _maxTrades = _rc.maxTradesPerDay || 999;
+  const _maxExposure = _rc.maxDailyExposure || 999999;
+  const _betOverride = _rc.maxBetOverride || null;
+  const PAPER_BASE = _live ? 'https://api.tradier.com/v1' : 'https://sandbox.tradier.com/v1';
+  const TRADIER_LIVE_TOKEN = process.env.TRADIER_TOKEN;
+  const TRADIER_LIVE_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
   const BASE = 'https://api.tradier.com/v1';
 
   function getTier(gap) {
@@ -85,6 +94,8 @@ export default async function handler(req, res) {
   // Load active tickers from Supabase watchlist + Kelly bets from most recent snapshot
   let tickers = [];
   let _excl = {};
+  let _tradesPlaced = 0;
+  let _exposureUsed = 0;
   try {
     const _sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const _sbKey = process.env.SUPABASE_SERVICE_KEY;
@@ -115,6 +126,7 @@ export default async function handler(req, res) {
     // Fallback to config tickers if Supabase unavailable
     tickers = (config.tickers || []).filter(t => t.symbol && t.bet > 0);
   }
+  if (_betOverride) tickers = tickers.map(t => ({...t, bet: Math.min(t.bet, _betOverride)}));
   if (!tickers.length) return res.status(200).json({ message: 'No tickers', trades: [] });
 
   const symbols = [...new Set([...tickers.map(t => t.symbol.toUpperCase()), 'SPY'])];
@@ -129,6 +141,12 @@ export default async function handler(req, res) {
   } catch(_) {}
 
   const results = [];
+  // Risk guard helper — checked before each order
+  function _riskOk(betAmt) {
+    if (_tradesPlaced >= _maxTrades) return false;
+    if (_exposureUsed + betAmt > _maxExposure) return false;
+    return true;
+  }
 
   // SPY gap filter: if SPY is gapping up >0.5%, skip D shorts (gap-ups likely to hold)
   const spyQ = quoteMap['SPY'];
@@ -183,7 +201,7 @@ export default async function handler(req, res) {
 
 
     // Scenario D: Short gap-up >=2% | TP -2% / SL +0.5%
-    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D||[]).includes(sym)) {
+    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D||[]).includes(sym) && _riskOk(bet)) {
       const tpD = +(price * 0.98).toFixed(2);
       const slD = +(price * 1.005).toFixed(2);
       const qtyD = Math.max(1, Math.floor(bet / price));
@@ -195,14 +213,14 @@ export default async function handler(req, res) {
           'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qtyD), 'type[2]': 'stop', 'stop[2]': String(slD),
         });
         if (DRY_RUN) return res.status(200).json({ timestamp: new Date().toISOString(), status: 'dry_run', message: 'Dry run â no orders placed. Scan complete.', variant: variant||'unknown' });
-        const rdD = await fetch(PAPER_BASE + '/accounts/' + TRADIER_PAPER_ACCOUNT_ID + '/orders', { method: 'POST', headers: PAPER_H, body: paramsD });
+        const rdD = await fetch(PAPER_BASE + '/accounts/' + (_live ? TRADIER_LIVE_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID) + '/orders', { method: 'POST', headers: PAPER_H, body: paramsD });
         const jD = await rdD.json();
-        results.push({ symbol: sym, scenario: 'D', status: rdD.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD, order: jD?.order });
+        if(rdD.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'D', status: rdD.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD, order: jD?.order });
       } catch(eD) { results.push({ symbol: sym, scenario: 'D', status: 'error', error: eD.message }); }
     }
 
     // Scenario A: Long gap-up >=2% ONLY when SPY gap >0.5% | TP +2% / SL -0.5%
-    if (gap >= 2 && spyGap > 0.5 && spyRecovering && (vix === null || vix <= 25) && !(_excl.A||[]).includes(sym)) {
+    if (gap >= 2 && spyGap > 0.5 && spyRecovering && (vix === null || vix <= 25) && !(_excl.A||[]).includes(sym) && _riskOk(bet)) {
       const tpA = +(price * 1.02).toFixed(2);
       const slA = +(price * 0.995).toFixed(2);
       const qtyA = Math.max(1, Math.floor(bet / price));
@@ -213,15 +231,15 @@ export default async function handler(req, res) {
           'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyA), 'type[1]': 'limit', 'price[1]': String(tpA),
           'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qtyA), 'type[2]': 'stop', 'stop[2]': String(slA),
         });
-        const rdA = await fetch(PAPER_BASE + '/accounts/' + TRADIER_PAPER_ACCOUNT_ID + '/orders', { method: 'POST', headers: PAPER_H, body: paramsA });
+        const rdA = await fetch(PAPER_BASE + '/accounts/' + (_live ? TRADIER_LIVE_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID) + '/orders', { method: 'POST', headers: PAPER_H, body: paramsA });
         const rawA = await rdA.text();
         const jA = rdA.ok ? JSON.parse(rawA) : { _status: rdA.status, _body: rawA.slice(0,200) };
-        results.push({ symbol: sym, scenario: 'A', status: rdA.ok ? 'filled' : 'error', gap: gap.toFixed(2), spyGap: spyGap.toFixed(2), price, qty: qtyA, tp: tpA, sl: slA, order: jA?.order });
+        if(rdA.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'A', status: rdA.ok ? 'filled' : 'error', gap: gap.toFixed(2), spyGap: spyGap.toFixed(2), price, qty: qtyA, tp: tpA, sl: slA, order: jA?.order });
       } catch(eA) { results.push({ symbol: sym, scenario: 'A', status: 'error', error: eA.message }); }
     }
 
         // Scenario F: Long gap-down <=-5% | TP +2% / SL -2%
-    if (gap <= -5 && gap > -25 && !(_excl.F||[]).includes(sym)) {
+    if (gap <= -5 && gap > -25 && !(_excl.F||[]).includes(sym) && _riskOk(bet)) {
       const tpF = +(price * 1.02).toFixed(2);
       const slF = +(price * 0.98).toFixed(2);
       const qtyF = Math.max(1, Math.floor(bet / price));
@@ -232,10 +250,10 @@ export default async function handler(req, res) {
           'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'limit', 'price[1]': String(tpF),
           'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qtyF), 'type[2]': 'stop', 'stop[2]': String(slF),
         });
-        const rdF = await fetch(PAPER_BASE + '/accounts/' + TRADIER_PAPER_ACCOUNT_ID + '/orders', { method: 'POST', headers: PAPER_H, body: paramsF });
+        const rdF = await fetch(PAPER_BASE + '/accounts/' + (_live ? TRADIER_LIVE_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID) + '/orders', { method: 'POST', headers: PAPER_H, body: paramsF });
         const rawF = await rdF.text();
         const jF = rdF.ok ? JSON.parse(rawF) : { _status: rdF.status, _body: rawF.slice(0,200) };
-        results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order, tradierRaw: rdF.ok ? undefined : jF });
+        if(rdF.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order, tradierRaw: rdF.ok ? undefined : jF });
       } catch(eF) { results.push({ symbol: sym, scenario: 'F', status: 'error', error: eF.message }); }
     }
 
@@ -245,6 +263,7 @@ export default async function handler(req, res) {
     }
 
     if ((_excl[tier.tier]||[]).includes(sym)) { results.push({ symbol: sym, status: 'skipped', reason: `Excluded from ${tier.tier}`, gap: +gap.toFixed(2), tier: tier.tier }); continue; }
+    if (!_riskOk(tier.bet || bet)) { results.push({ symbol: sym, status: 'skipped', reason: 'Risk cap reached', gap: +gap.toFixed(2), tier: tier.tier }); continue; }
     const eBet = tier.bet || bet; const qty = Math.max(1, Math.floor(eBet / price));
     if (qty < 1) {
       results.push({ symbol: sym, status: 'skipped', reason: `Bet too small at $${price.toFixed(2)}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
@@ -261,14 +280,14 @@ export default async function handler(req, res) {
         'symbol[1]': sym, 'side[1]': 'buy_to_cover', 'quantity[1]': String(qty), 'type[1]': 'limit', 'price[1]': String(tp),
         'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qty), 'type[2]': 'stop', 'stop[2]': String(sl),
       });
-      const or = await fetch(`${PAPER_BASE}/accounts/${TRADIER_PAPER_ACCOUNT_ID}/orders`, {
+      const or = await fetch(`${PAPER_BASE}/accounts/${_live ? TRADIER_LIVE_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID}/orders`, {
         method: 'POST', headers: { ...PAPER_H, 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString()
       });
       const od = await or.json();
       if (!or.ok || (od.order && od.order.status === 'error')) {
         results.push({ symbol: sym, status: 'error', reason: od.order?.partner_error_description || od.fault?.faultstring || `Tradier ${or.status}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
       } else {
-        results.push({ symbol: sym, status: 'traded', scenario: 'E', variant: 'C-Tradier-tiered', side: 'sell_short', qty, entryPrice: +price.toFixed(2), priceSource: bidPrice ? 'bid' : 'last', tier: tier.tier, tpPct: tier.tpPct, slPct: tier.slPct, takeProfitPrice: tp, stopLossPrice: sl, gap: +gap.toFixed(2), rvol_logged: rvol, orderId: od.order?.id, orderStatus: od.order?.status });
+        _tradesPlaced++; _exposureUsed+=eBet; results.push({ symbol: sym, status: 'traded', scenario: 'E', variant: 'C-Tradier-tiered', side: 'sell_short', qty, entryPrice: +price.toFixed(2), priceSource: bidPrice ? 'bid' : 'last', tier: tier.tier, tpPct: tier.tpPct, slPct: tier.slPct, takeProfitPrice: tp, stopLossPrice: sl, gap: +gap.toFixed(2), rvol_logged: rvol, orderId: od.order?.id, orderStatus: od.order?.status });
       }
     } catch(e) { results.push({ symbol: sym, status: 'error', reason: e.message }); }
   }
