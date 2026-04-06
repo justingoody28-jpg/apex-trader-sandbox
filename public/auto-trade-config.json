@@ -1,468 +1,12 @@
 {
   "tickers": [
     {
-      "symbol": "AMD",
-      "bet": 500
-    },
-    {
-      "symbol": "NVDA",
-      "bet": 500
-    },
-    {
-      "symbol": "INTC",
-      "bet": 500
-    },
-    {
-      "symbol": "TSLA",
-      "bet": 500
-    },
-    {
-      "symbol": "AMZN",
-      "bet": 500
-    },
-    {
-      "symbol": "AAPL",
-      "bet": 500
-    },
-    {
-      "symbol": "GOOGL",
-      "bet": 500
-    },
-    {
-      "symbol": "META",
-      "bet": 500
-    },
-    {
-      "symbol": "NFLX",
-      "bet": 500
-    },
-    {
-      "symbol": "MSFT",
-      "bet": 500
-    },
-    {
-      "symbol": "JPM",
-      "bet": 500
-    },
-    {
-      "symbol": "GS",
-      "bet": 500
-    },
-    {
-      "symbol": "LLY",
-      "bet": 500
-    },
-    {
-      "symbol": "PFE",
-      "bet": 500
-    },
-    {
-      "symbol": "UNH",
-      "bet": 500
-    },
-    {
-      "symbol": "TWLO",
-      "bet": 500
-    },
-    {
-      "symbol": "COIN",
-      "bet": 500
-    },
-    {
-      "symbol": "HUBS",
-      "bet": 500
-    },
-    {
-      "symbol": "OKTA",
-      "bet": 500
-    },
-    {
-      "symbol": "SNAP",
-      "bet": 500
-    },
-    {
-      "symbol": "HOOD",
-      "bet": 500
-    },
-    {
-      "symbol": "CRWD",
-      "bet": 500
-    },
-    {
-      "symbol": "DDOG",
-      "bet": 500
-    },
-    {
-      "symbol": "SOFI",
-      "bet": 500
-    },
-    {
-      "symbol": "GLOB",
-      "bet": 500
-    },
-    {
-      "symbol": "EXLS",
-      "bet": 500
-    },
-    {
-      "symbol": "PEGA",
-      "bet": 500
-    },
-    {
-      "symbol": "NCNO",
-      "bet": 500
-    },
-    {
-      "symbol": "ALRM",
-      "bet": 500
-    },
-    {
-      "symbol": "JAMF",
-      "bet": 500
-    },
-    {
-      "symbol": "TNET",
-      "bet": 500
-    },
-    {
-      "symbol": "ATEN",
-      "bet": 500
-    },
-    {
-      "symbol": "LPSN",
-      "bet": 500
-    },
-    {
-      "symbol": "DOMO",
-      "bet": 500
-    },
-    {
-      "symbol": "QTWO",
-      "bet": 500
-    },
-    {
-      "symbol": "EVBG",
-      "bet": 500
-    },
-    {
-      "symbol": "BRZE",
-      "bet": 500
-    },
-    {
-      "symbol": "ASAN",
-      "bet": 500
-    },
-    {
-      "symbol": "UMBF",
-      "bet": 500
-    },
-    {
-      "symbol": "WTFC",
-      "bet": 500
-    },
-    {
-      "symbol": "SNV",
-      "bet": 500
-    },
-    {
-      "symbol": "IBOC",
-      "bet": 500
-    },
-    {
-      "symbol": "PRSP",
-      "bet": 500
-    },
-    {
-      "symbol": "CATY",
-      "bet": 500
-    },
-    {
-      "symbol": "FFIN",
-      "bet": 500
-    },
-    {
-      "symbol": "WSBC",
-      "bet": 500
-    },
-    {
-      "symbol": "CVBF",
-      "bet": 500
-    },
-    {
-      "symbol": "FULT",
-      "bet": 500
-    },
-    {
-      "symbol": "INVA",
-      "bet": 500
-    },
-    {
-      "symbol": "PRGO",
-      "bet": 500
-    },
-    {
-      "symbol": "HALO",
-      "bet": 500
-    },
-    {
-      "symbol": "NTRA",
-      "bet": 500
-    },
-    {
-      "symbol": "MDRX",
-      "bet": 500
-    },
-    {
-      "symbol": "OMCL",
-      "bet": 500
-    },
-    {
-      "symbol": "PINC",
-      "bet": 500
-    },
-    {
-      "symbol": "ADUS",
-      "bet": 500
-    },
-    {
-      "symbol": "AMSF",
-      "bet": 500
-    },
-    {
-      "symbol": "ACAD",
-      "bet": 500
-    },
-    {
-      "symbol": "NVCR",
-      "bet": 500
-    },
-    {
-      "symbol": "RYTM",
-      "bet": 500
-    },
-    {
-      "symbol": "RARE",
-      "bet": 500
-    },
-    {
-      "symbol": "FOLD",
-      "bet": 500
-    },
-    {
-      "symbol": "CRDF",
-      "bet": 500
-    },
-    {
-      "symbol": "ARQT",
-      "bet": 500
-    },
-    {
-      "symbol": "XNCR",
-      "bet": 500
-    },
-    {
-      "symbol": "IMVT",
-      "bet": 500
-    },
-    {
-      "symbol": "PRAX",
-      "bet": 500
-    },
-    {
-      "symbol": "KYMR",
-      "bet": 500
-    },
-    {
-      "symbol": "BOOT",
-      "bet": 500
-    },
-    {
-      "symbol": "WING",
-      "bet": 500
-    },
-    {
-      "symbol": "FRPT",
-      "bet": 500
-    },
-    {
-      "symbol": "CAVA",
-      "bet": 500
-    },
-    {
-      "symbol": "SG",
-      "bet": 500
-    },
-    {
-      "symbol": "TACO",
-      "bet": 500
-    },
-    {
-      "symbol": "TXRH",
-      "bet": 500
-    },
-    {
-      "symbol": "FAT",
-      "bet": 500
-    },
-    {
-      "symbol": "RRGB",
-      "bet": 500
-    },
-    {
-      "symbol": "JACK",
-      "bet": 500
-    },
-    {
-      "symbol": "ACVA",
-      "bet": 500
-    },
-    {
-      "symbol": "PRTY",
-      "bet": 500
-    },
-    {
-      "symbol": "VSCO",
-      "bet": 500
-    },
-    {
-      "symbol": "JOANN",
-      "bet": 500
-    },
-    {
-      "symbol": "ODP",
-      "bet": 500
-    },
-    {
-      "symbol": "RCII",
-      "bet": 500
-    },
-    {
-      "symbol": "ASTE",
-      "bet": 500
-    },
-    {
-      "symbol": "HCSG",
-      "bet": 500
-    },
-    {
-      "symbol": "TREX",
-      "bet": 500
-    },
-    {
-      "symbol": "APOG",
-      "bet": 500
-    },
-    {
-      "symbol": "ARCB",
-      "bet": 500
-    },
-    {
-      "symbol": "MATX",
-      "bet": 500
-    },
-    {
-      "symbol": "MRTN",
-      "bet": 500
-    },
-    {
-      "symbol": "SAIA",
-      "bet": 500
-    },
-    {
-      "symbol": "LSTR",
-      "bet": 500
-    },
-    {
-      "symbol": "ECHO",
-      "bet": 500
-    },
-    {
-      "symbol": "CEIX",
-      "bet": 500
-    },
-    {
-      "symbol": "ARCH",
-      "bet": 500
-    },
-    {
-      "symbol": "SWN",
-      "bet": 500
-    },
-    {
-      "symbol": "RRC",
-      "bet": 500
-    },
-    {
-      "symbol": "CIVI",
-      "bet": 500
-    },
-    {
-      "symbol": "VTLE",
-      "bet": 500
-    },
-    {
-      "symbol": "SM",
-      "bet": 500
-    },
-    {
-      "symbol": "REX",
-      "bet": 500
-    },
-    {
-      "symbol": "HESM",
-      "bet": 500
-    },
-    {
-      "symbol": "SRLP",
-      "bet": 500
-    },
-    {
-      "symbol": "IOSP",
-      "bet": 500
-    },
-    {
-      "symbol": "KWR",
-      "bet": 500
-    },
-    {
-      "symbol": "TROX",
-      "bet": 500
-    },
-    {
-      "symbol": "MTRN",
-      "bet": 500
-    },
-    {
-      "symbol": "ASIX",
-      "bet": 500
-    },
-    {
-      "symbol": "KREF",
-      "bet": 500
-    },
-    {
-      "symbol": "GPMT",
-      "bet": 500
-    },
-    {
-      "symbol": "STWD",
-      "bet": 500
-    },
-    {
-      "symbol": "BXMT",
-      "bet": 500
-    },
-    {
-      "symbol": "TRTX",
-      "bet": 500
-    },
-    {
       "symbol": "ATER",
       "bet": 500
     },
     {
       "symbol": "LAZR",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "MRNA",
@@ -474,7 +18,7 @@
     },
     {
       "symbol": "GFAI",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "IONQ",
@@ -494,7 +38,7 @@
     },
     {
       "symbol": "HUT",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "WOLF",
@@ -530,7 +74,7 @@
     },
     {
       "symbol": "AMBR",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "CLBK",
@@ -566,7 +110,7 @@
     },
     {
       "symbol": "OPAD",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "VZIO",
@@ -586,7 +130,7 @@
     },
     {
       "symbol": "ARQQ",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "QUBT",
@@ -694,7 +238,7 @@
     },
     {
       "symbol": "NINE",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "BORR",
@@ -846,7 +390,7 @@
     },
     {
       "symbol": "GIPR",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "PKST",
@@ -910,7 +454,7 @@
     "hRvol": 4
   },
   "defaultBet": 500,
-  "count": 223,
-  "updated": "2026-04-06T12:50:39.087Z",
-  "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q4 2025)"
+  "count": 109,
+  "updated": "2026-04-06T13:01:21.146Z",
+  "_note": "Small/Micro only (109 tickers) — updated before market open 2026-04-06T13:01:21.146Z"
 }
