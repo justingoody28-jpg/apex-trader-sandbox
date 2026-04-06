@@ -660,7 +660,7 @@ async function loadState() {
     const d = await r.json();
     if (d && Array.isArray(d.active) && d.active.length > 0) {
       approved = new Set(d.active);
-      excluded = Object.fromEntries(SC.map(s=>[s.id,new Set(d.excluded||[])]));
+      excluded = Object.fromEntries(SC.map(s=>[s.id,new Set(Array.isArray(d.excluded)?d.excluded:(d.excluded&&d.excluded[s.id])||[])]));
       return;
     }
   } catch(e) { console.warn('Supabase load failed, trying localStorage fallback', e); }
@@ -677,11 +677,11 @@ async function saveState() {
   if(status) status.textContent = '';
   try {
     const activeArr = [...approved];
-    const excludedArr = excluded && !excluded[Symbol.iterator] ? [...new Set(Object.values(excluded).flatMap(s=>[...s]))] : [];
+    const excludedObj = Object.fromEntries(Object.entries(excluded||{}).map(([k,v])=>[k,[...v]]));
     const r = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: activeArr, excluded: excludedArr })
+      body: JSON.stringify({ active: activeArr, excluded: excludedObj })
     });
     const d = await r.json();
     if (!d.ok) throw new Error('Save failed');
