@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX Diagnostics</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117; --surface:#13181f; --surface2:#1a2030;
+  --border:#21272f; --accent:#00d4ff; --accent-dim:#004d5e;
+  --text:#e6edf3; --muted:#6e7a8a; --dim:#3d4a5a;
+  --green:#00e676; --green-dim:#003d1f;
+  --yellow:#ffb300; --yellow-dim:#3d2c00;
+  --red:#ff4444; --red-dim:#3d0000;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:13px; min-height:100vh; padding:20px; }
+.breadcrumb { font-size:11px; color:var(--muted); margin-bottom:20px; font-family:'IBM Plex Sans',sans-serif; }
+.breadcrumb a { color:var(--muted); text-decoration:none; }
+.breadcrumb a:hover { color:var(--accent); }
+.breadcrumb span { color:var(--accent); }
+h1 { font-size:16px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text); margin-bottom:4px; }
+.subtitle { font-size:11px; color:var(--muted); font-family:'IBM Plex Sans',sans-serif; margin-bottom:24px; }
+.run-btn { display:inline-flex; align-items:center; gap:8px; padding:8px 20px; border-radius:4px; border:1px solid var(--accent); background:var(--accent-dim); color:var(--accent); cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.06em; margin-bottom:28px; transition:opacity .2s; }
+.run-btn:hover { opacity:.8; }
+.run-btn:disabled { opacity:.4; cursor:not-allowed; }
+.phase { background:var(--surface); border:1px solid var(--border); border-radius:6px; margin-bottom:16px; overflow:hidden; }
+.phase-header { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border); font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
+.phase-num { width:22px; height:22px; border-radius:50%; border:1px solid var(--dim); color:var(--muted); display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; }
+.phase-title { flex:1; }
+.phase-status { font-size:11px; font-weight:700; letter-spacing:.04em; }
+.phase-status.pass { color:var(--green); }
+.phase-status.fail { color:var(--red); }
+.phase-status.warn { color:var(--yellow); }
+.phase-status.pending { color:var(--muted); }
+.phase-status.running { color:var(--accent); }
+.checks { padding:12px 16px; display:flex; flex-direction:column; gap:6px; }
+.check { display:flex; align-items:flex-start; gap:10px; padding:6px 10px; border-radius:4px; background:var(--surface2); }
+.check-icon { font-size:12px; flex-shrink:0; margin-top:1px; width:14px; }
+.check-label { flex:1; color:var(--text); font-size:12px; }
+.check-detail { font-size:10px; color:var(--muted); margin-top:2px; font-family:'IBM Plex Sans',sans-serif; }
+.check.pass .check-icon::before { content:'\2713'; color:var(--green); }
+.check.fail .check-icon::before { content:'\2717'; color:var(--red); }
+.check.warn .check-icon::before { content:'\26A0'; color:var(--yellow); }
+.check.pending .check-icon::before { content:'\00B7'; color:var(--dim); }
+.check.running .check-icon::before { content:'\2026'; color:var(--accent); }
+.summary { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:16px; display:none; margin-bottom:16px; }
+.summary.show { display:block; }
+.summary-title { font-size:11px; color:var(--muted); margin-bottom:8px; font-family:'IBM Plex Sans',sans-serif; }
+.summary-row { display:flex; gap:24px; }
+.summary-stat { display:flex; flex-direction:column; gap:2px; }
+.summary-val { font-size:20px; font-weight:700; }
+.summary-val.green { color:var(--green); }
+.summary-val.red { color:var(--red); }
+.summary-val.yellow { color:var(--yellow); }
+.summary-lbl { font-size:10px; color:var(--muted); font-family:'IBM Plex Sans',sans-serif; }
+</style>
+</head>
+<body>
+<div class="breadcrumb">
+  <a href="/edge-scenarios.html">Edge</a> · <a href="/watchlist.html">Watchlist</a> · <a href="/kelly.html">Kelly</a> · <a href="/daily.html">Daily</a> · <span>Diagnostics</span>
+</div>
+<h1>APEX System Diagnostics</h1>
+<p class="subtitle">Tests Supabase data integrity, watchlist structure, trader exclusion logic, and snapshot fields</p>
+<button class="run-btn" id="runBtn" onclick="runAll()">&#9654; Run All Tests</button>
+<div class="summary" id="summary">
+  <div class="summary-title">RESULTS</div>
+  <div class="summary-row">
+    <div class="summary-stat"><span class="summary-val green" id="s-pass">0</span><span class="summary-lbl">PASS</span></div>
+    <div class="summary-stat"><span class="summary-val red" id="s-fail">0</span><span class="summary-lbl">FAIL</span></div>
+    <div class="summary-stat"><span class="summary-val yellow" id="s-warn">0</span><span class="summary-lbl">WARN</span></div>
+  </div>
+</div>
+<div class="phase" id="phase1">
+  <div class="phase-header"><div class="phase-num">1</div><div class="phase-title">Supabase — Watchlist Data Structure</div><div class="phase-status pending" id="ph1-status">PENDING</div></div>
+  <div class="checks" id="ph1-checks"></div>
+</div>
+<div class="phase" id="phase2">
+  <div class="phase-header"><div class="phase-num">2</div><div class="phase-title">Supabase — Snapshot Data Integrity</div><div class="phase-status pending" id="ph2-status">PENDING</div></div>
+  <div class="checks" id="ph2-checks"></div>
+</div>
+<div class="phase" id="phase3">
+  <div class="phase-header"><div class="phase-num">3</div><div class="phase-title">Trader — Exclusion Logic (read-only)</div><div class="phase-status pending" id="ph3-status">PENDING</div></div>
+  <div class="checks" id="ph3-checks"></div>
+</div>
+<div class="phase" id="phase4">
+  <div class="phase-header"><div class="phase-num">4</div><div class="phase-title">API Round-Trip — Write, Read Back, Restore</div><div class="phase-status pending" id="ph4-status">PENDING</div></div>
+  <div class="checks" id="ph4-checks"></div>
+</div>
+<script>
+const SC_IDS=['A','B','C','D','E1','E2','E3','E4','F','G','H'];
+function addCheck(cid,label,status,detail){
+  const el=document.createElement('div');
+  el.className='check '+status;
+  el.innerHTML='<div class="check-icon"></div><div><div class="check-label">'+label+'</div>'+(detail?'<div class="check-detail">'+detail+'</div>':'')+'</div>';
+  document.getElementById(cid).appendChild(el);
+  return el;
+}
+function setPhaseStatus(id,status,text){
+  const el=document.getElementById(id);
+  el.className='phase-status '+status;
+  el.textContent=text;
+}
+function phaseResult(checks){
+  if(checks.every(c=>c==='pass'))return 'pass';
+  if(checks.some(c=>c==='fail'))return 'fail';
+  return 'warn';
+}
+async function runPhase1(){
+  const cid='ph1-checks';
+  document.getElementById(cid).innerHTML='';
+  setPhaseStatus('ph1-status','running','RUNNING…');
+  const results=[];
+  let wlData=null;
+  try{const r=await fetch('/api/watchlist');wlData=await r.json();}
+  catch(e){addCheck(cid,'Fetch /api/watchlist','fail',e.message);setPhaseStatus('ph1-status','fail','FAIL');return['fail'];}
+  const activeOk=Array.isArray(wlData.active);
+  results.push(activeOk?'pass':'fail');
+  addCheck(cid,'active is a flat array',activeOk?'pass':'fail',activeOk?wlData.active.length+' tickers':'Got: '+typeof wlData.active);
+  const hasActive=wlData.active&&wlData.active.length>0;
+  results.push(hasActive?'pass':'warn');
+  addCheck(cid,'active list is non-empty',hasActive?'pass':'warn',hasActive?wlData.active.length+' tickers loaded':'Empty — no tickers will trade');
+  const excl=wlData.excluded;
+  const exclIsObj=excl&&!Array.isArray(excl)&&typeof excl==='object';
+  results.push(exclIsObj?'pass':'fail');
+  addCheck(cid,'excluded is per-scenario object (not flat array)',exclIsObj?'pass':'fail',exclIsObj?'Keys: '+Object.keys(excl).join(', '):'Got: '+(Array.isArray(excl)?'flat array — old format, re-save from Watchlist Manager':typeof excl));
+  if(exclIsObj){
+    const missingKeys=SC_IDS.filter(id=>!Object.prototype.hasOwnProperty.call(excl,id));
+    const allKeys=missingKeys.length===0;
+    results.push(allKeys?'pass':'warn');
+    addCheck(cid,'excluded has all 11 scenario keys',allKeys?'pass':'warn',allKeys?'A B C D E1 E2 E3 E4 F G H ✓':'Missing: '+missingKeys.join(', ')+' — will default to empty');
+    const badVals=Object.entries(excl).filter(([k,v])=>!Array.isArray(v));
+    const valsOk=badVals.length===0;
+    results.push(valsOk?'pass':'fail');
+    addCheck(cid,'All scenario exclusion values are arrays',valsOk?'pass':'fail',valsOk?'OK':'Bad keys: '+badVals.map(([k])=>k).join(', '));
+    const totalExcl=Object.values(excl).reduce((s,v)=>s+(Array.isArray(v)?v.length:0),0);
+    results.push('pass');
+    addCheck(cid,'Total per-scenario exclusions','pass',totalExcl+' across all scenarios');
+  }
+  const res=phaseResult(results);
+  setPhaseStatus('ph1-status',res,res.toUpperCase());
+  return results;
+}
+async function runPhase2(){
+  const cid='ph2-checks';
+  document.getElementById(cid).innerHTML='';
+  setPhaseStatus('ph2-status','running','RUNNING…');
+  const results=[];
+  let snaps=null;
+  try{const r=await fetch('/api/snapshots');snaps=await r.json();}
+  catch(e){addCheck(cid,'Fetch /api/snapshots','fail',e.message);setPhaseStatus('ph2-status','fail','FAIL');return['fail'];}
+  const hasSnaps=Array.isArray(snaps)&&snaps.length>0;
+  results.push(hasSnaps?'pass':'fail');
+  addCheck(cid,'Snapshots loaded',hasSnaps?'pass':'fail',hasSnaps?snaps.map(s=>s.label).join(', '):'No snapshots found');
+  if(!hasSnaps){setPhaseStatus('ph2-status','fail','FAIL');return results;}
+  for(const snap of snaps){
+    const rows=snap.rows||[];
+    addCheck(cid,snap.label+' — row count',rows.length>0?'pass':'warn',rows.length+' tickers');
+    if(!rows.length)continue;
+    const sampleRow=rows.find(r=>r.d&&r.d.n>0)||rows.find(r=>r.e&&r.e.n>0)||rows[0];
+    const scKeys=['d','e','e2','e3','e4','f'];
+    const scWithData=scKeys.find(k=>sampleRow[k]&&sampleRow[k].n>0);
+    if(!scWithData){addCheck(cid,snap.label+' — sample row has signal data','warn','No scenario has n>0 in first row');continue;}
+    const scData=sampleRow[scWithData];
+    const fields=['n','w','l','t','wr','pf','ret','tret'];
+    const missingFields=fields.filter(f=>!(f in scData));
+    results.push(missingFields.length===0?'pass':'fail');
+    addCheck(cid,snap.label+' — required fields (n,w,l,t,wr,pf,ret,tret)',missingFields.length===0?'pass':'fail',missingFields.length===0?'Ticker: '+sampleRow.tk+' sc:'+scWithData:'Missing: '+missingFields.join(', '));
+    if(scData.n>0&&(scData.w+scData.l)>0){
+      const correctWR=scData.w/(scData.w+scData.l)*100;
+      const wrDiff=Math.abs(correctWR-scData.wr);
+      const wrOk=wrDiff<0.01||scData.t===0;
+      results.push(wrOk?'pass':'warn');
+      addCheck(cid,snap.label+' — WR stored as w/(w+l)',wrOk?'pass':'warn','stored:'+scData.wr.toFixed(1)+'% correct:'+correctWR.toFixed(1)+'% t:'+scData.t+(wrOk?'':' — re-run to correct'));
+    }
+    const tretOk='tret' in scData;
+    results.push(tretOk?'pass':'fail');
+    addCheck(cid,snap.label+' — tret field for timeout avg',tretOk?'pass':'fail',tretOk?(scData.t>0?scData.t+' TO · avg '+(scData.tret/scData.t).toFixed(1)+'%':'No timeouts in sample'):'tret missing');
+  }
+  const res=phaseResult(results);
+  setPhaseStatus('ph2-status',res,res.toUpperCase());
+  return results;
+}
+async function runPhase3(){
+  const cid='ph3-checks';
+  document.getElementById(cid).innerHTML='';
+  setPhaseStatus('ph3-status','running','RUNNING…');
+  const results=[];
+  let wlData=null;
+  try{const r=await fetch('/api/watchlist');wlData=await r.json();}
+  catch(e){addCheck(cid,'Load watchlist','fail',e.message);setPhaseStatus('ph3-status','fail','FAIL');return['fail'];}
+  const active=new Set(wlData.active||[]);
+  const excl=wlData.excluded;
+  const exclIsObj=excl&&!Array.isArray(excl)&&typeof excl==='object';
+  results.push(active.size>0?'pass':'fail');
+  addCheck(cid,'Active ticker pool non-empty',active.size>0?'pass':'fail',active.size+' tickers');
+  const traderCanRead=exclIsObj;
+  results.push(traderCanRead?'pass':'fail');
+  addCheck(cid,'Trader can read per-scenario excluded object',traderCanRead?'pass':'fail',traderCanRead?'Format {D:[...],E1:[...]} ✓ — (_excl[tier]||[]).includes(sym)':'flat array — exclusions NOT honored at 9:29, re-save from Watchlist Manager');
+  if(exclIsObj){
+    if(excl.D&&excl.D.length>0){
+      const exclD=excl.D[0];
+      const inActive=active.has(exclD);
+      results.push('pass');
+      addCheck(cid,'D-excluded ticker still in active pool (correct)',inActive?'pass':'warn',exclD+' in active:'+inActive+' — trader skips D, still trades E/F if threshold met');
+      const notInE1=!(excl.E1||[]).includes(exclD);
+      results.push(notInE1?'pass':'warn');
+      addCheck(cid,exclD+' exclusion isolated to D — not in E1',notInE1?'pass':'warn',notInE1?'E1 independent ✓':'Also excluded from E1 — may be intentional');
+    } else {
+      results.push('pass');
+      addCheck(cid,'D exclusion isolation check','pass','No D exclusions set — skipped');
+    }
+    const summary=SC_IDS.map(id=>{const arr=excl[id]||[];return arr.length>0?id+':'+arr.length:null;}).filter(Boolean);
+    results.push('pass');
+    addCheck(cid,'Per-scenario exclusion summary','pass',summary.length>0?summary.join(' · '):'None set — all tickers trade all scenarios');
+  }
+  const res=phaseResult(results);
+  setPhaseStatus('ph3-status',res,res.toUpperCase());
+  return results;
+}
+async function runPhase4(){
+  const cid='ph4-checks';
+  document.getElementById(cid).innerHTML='';
+  setPhaseStatus('ph4-status','running','RUNNING…');
+  const results=[];
+  let original=null;
+  try{const r=await fetch('/api/watchlist');original=await r.json();}
+  catch(e){addCheck(cid,'Load current state','fail',e.message);setPhaseStatus('ph4-status','fail','FAIL');return['fail'];}
+  addCheck(cid,'Current state loaded','pass','active:'+( original.active||[]).length+' tickers');
+  const testExcl=Object.assign({},original.excluded||{});
+  const SENTINEL='__DIAG_TEST__';
+  const origD=Array.isArray(testExcl.D)?[...testExcl.D]:[];
+  testExcl.D=[...origD,SENTINEL];
+  let writeOk=false;
+  try{const wr=await fetch('/api/watchlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:original.active||[],excluded:testExcl})});const wd=await wr.json();writeOk=wd.ok===true;}catch(e){}
+  results.push(writeOk?'pass':'fail');
+  addCheck(cid,'POST /api/watchlist — write succeeds',writeOk?'pass':'fail',writeOk?'Wrote test sentinel to D':'Write failed');
+  if(!writeOk){setPhaseStatus('ph4-status','fail','FAIL');return results;}
+  let readBack=null;
+  try{const rr=await fetch('/api/watchlist');readBack=await rr.json();}catch(e){}
+  const sentinelFound=readBack&&!Array.isArray(readBack.excluded)&&Array.isArray(readBack.excluded.D)&&readBack.excluded.D.includes(SENTINEL);
+  results.push(sentinelFound?'pass':'fail');
+  addCheck(cid,'GET reads back per-scenario object correctly',sentinelFound?'pass':'fail',sentinelFound?'Sentinel in D ✓ — per-scenario persist confirmed':'Sentinel not found — format incorrect');
+  const othersClean=readBack&&!Array.isArray(readBack.excluded)&&SC_IDS.filter(id=>id!=='D').every(id=>!(readBack.excluded[id]||[]).includes(SENTINEL));
+  results.push(othersClean?'pass':'fail');
+  addCheck(cid,'Sentinel isolated to D — other scenarios unaffected',othersClean?'pass':'fail',othersClean?'E1/E2/E3/E4/F/G/H clean ✓':'Sentinel leaked into other scenarios');
+  let restoreOk=false;
+  try{const rwr=await fetch('/api/watchlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:original.active||[],excluded:original.excluded||{}})});const rwd=await rwr.json();restoreOk=rwd.ok===true;}catch(e){}
+  results.push(restoreOk?'pass':'warn');
+  addCheck(cid,'Original state restored',restoreOk?'pass':'warn',restoreOk?'Watchlist restored ✓':'Restore failed — check Supabase manually');
+  const res=phaseResult(results);
+  setPhaseStatus('ph4-status',res,res.toUpperCase());
+  return results;
+}
+async function runAll(){
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true;btn.textContent='… Running';
+  ['ph1','ph2','ph3','ph4'].forEach(id=>{setPhaseStatus(id+'-status','pending','PENDING');document.getElementById(id+'-checks').innerHTML='';});
+  document.getElementById('summary').classList.remove('show');
+  const r1=await runPhase1();
+  const r2=await runPhase2();
+  const r3=await runPhase3();
+  const r4=await runPhase4();
+  const all=[...r1,...r2,...r3,...r4];
+  document.getElementById('s-pass').textContent=all.filter(r=>r==='pass').length;
+  document.getElementById('s-fail').textContent=all.filter(r=>r==='fail').length;
+  document.getElementById('s-warn').textContent=all.filter(r=>r==='warn').length;
+  document.getElementById('summary').classList.add('show');
+  btn.disabled=false;btn.textContent='▶ Run All Tests';
+}
+</script>
+</body>
+</html>
