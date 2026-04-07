@@ -154,60 +154,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
     <div class="hint-bar" id="hintBar"></div>
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
-(function(){
-  async function tcLoad(){
-    try{
-      const r=await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json?t='+Date.now());
-      const c=await r.json();
-      const rc=c.riskControls||{};
-      document.getElementById('tcLive').checked=rc.live===true;
-      document.getElementById('tcMaxTrades').value=rc.maxTradesPerDay||5;
-      document.getElementById('tcMaxBet').value=(rc.maxBetOverride!=null)?rc.maxBetOverride:'null';
-      document.getElementById('tcMaxExp').value=rc.maxDailyExposure||1250;
-      tcOnToggle();
-    }catch(e){tcStat('Load error: '+e.message,'err');}
-  }
-  window.tcOnToggle=function(){
-    const live=document.getElementById('tcLive').checked;
-    const b=document.getElementById('tcBadge');
-    b.textContent=live?'LIVE ⚠':'PAPER';
-    b.className='live-badge '+(live?'live':'paper');
-  };
-  window.tcSave=async function(){
-    const btn=document.getElementById('tcSaveBtn');
-    btn.disabled=true;tcStat('Saving…','spin');
-    try{
-      const betRaw=document.getElementById('tcMaxBet').value.trim();
-      // Build betByScenario from current kelly slider state
-      const SC_MAP={A:'A',B:'B',C:'C',D:'D',E1:'E1',E2:'E2',E3:'E3',E4:'E4',F:'F'};
-      const betByScenario={};
-      if(typeof state!=='undefined'&&state.scs){
-        state.scs.forEach(sc=>{
-          const dollarAmt=Math.round(state.acct*sc.pct/100);
-          // Round to nearest $50, minimum $50
-          betByScenario[SC_MAP[sc.id]||sc.id]=Math.max(50,Math.round(dollarAmt/50)*50);
-        });
-      }
-      const rc={
-        live:document.getElementById('tcLive').checked,
-        maxTradesPerDay:parseInt(document.getElementById('tcMaxTrades').value)||5,
-        maxBetOverride:(betRaw==='null'||betRaw==='')?null:parseFloat(betRaw),
-        maxDailyExposure:parseFloat(document.getElementById('tcMaxExp').value)||1250,
-        betByScenario
-      };
-      const r=await fetch('/api/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({riskControls:rc})});
-      const d=await r.json();
-      if(d.ok){tcStat('✓ '+d.sha.slice(0,8)+' — '+d.mode+' — deploying…','ok');}
-      else{tcStat('Error: '+(d.error||'?'),'err');}
-    }catch(e){tcStat('Error: '+e.message,'err');}
-    btn.disabled=false;
-  };
-  function tcStat(m,c){const s=document.getElementById('tcStatus');s.textContent=m;s.className='tctrl-status '+c;}
-  window.addEventListener('DOMContentLoaded',tcLoad);
-})();
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const SCENS=[
   {id:'A', label:'A', side:'LONG', tp:2, sl:0.5, be:20.0, live:false, wr:45, pct:5, group:'Gap-Up Longs (paper)'},
@@ -377,6 +324,62 @@ function applyQuarter(qtr){
   const sub=document.querySelector('.page-sub');
   if(sub)sub.textContent=label+' — '+total.toLocaleString()+' signals';
 }
+</script>
+<script>
+
+(function(){
+  async function tcLoad(){
+    try{
+      const r=await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json?t='+Date.now());
+      const c=await r.json();
+      const rc=c.riskControls||{};
+      document.getElementById('tcLive').checked=rc.live===true;
+      document.getElementById('tcMaxTrades').value=rc.maxTradesPerDay||5;
+      document.getElementById('tcMaxBet').value=(rc.maxBetOverride!=null)?rc.maxBetOverride:'null';
+      document.getElementById('tcMaxExp').value=rc.maxDailyExposure||1250;
+      tcOnToggle();
+    }catch(e){tcStat('Load error: '+e.message,'err');}
+  }
+  window.tcOnToggle=function(){
+    const live=document.getElementById('tcLive').checked;
+    const b=document.getElementById('tcBadge');
+    b.textContent=live?'LIVE ⚠':'PAPER';
+    b.className='live-badge '+(live?'live':'paper');
+  };
+  window.tcSave=async function(){
+    const btn=document.getElementById('tcSaveBtn');
+    btn.disabled=true;tcStat('Saving…','spin');
+    try{
+      const betRaw=document.getElementById('tcMaxBet').value.trim();
+      // Build betByScenario from current kelly slider state
+      const SC_MAP={A:'A',B:'B',C:'C',D:'D',E1:'E1',E2:'E2',E3:'E3',E4:'E4',F:'F'};
+      const betByScenario={};
+      if(typeof state!=='undefined'&&state.scs){
+        state.scs.forEach(sc=>{
+          const dollarAmt=Math.round(state.acct*sc.pct/100);
+          // Round to nearest $50, minimum $50
+          betByScenario[SC_MAP[sc.id]||sc.id]=Math.max(50,Math.round(dollarAmt/50)*50);
+        });
+      }
+      const rc={
+        live:document.getElementById('tcLive').checked,
+        maxTradesPerDay:parseInt(document.getElementById('tcMaxTrades').value)||5,
+        maxBetOverride:(betRaw==='null'||betRaw==='')?null:parseFloat(betRaw),
+        maxDailyExposure:parseFloat(document.getElementById('tcMaxExp').value)||1250,
+        betByScenario
+      };
+      const r=await fetch('/api/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({riskControls:rc})});
+      const d=await r.json();
+      if(d.ok){tcStat('✓ '+d.sha.slice(0,8)+' — '+d.mode+' — deploying…','ok');}
+      else{tcStat('Error: '+(d.error||'?'),'err');}
+    }catch(e){tcStat('Error: '+e.message,'err');}
+    btn.disabled=false;
+  };
+  function tcStat(m,c){const s=document.getElementById('tcStatus');s.textContent=m;s.className='tctrl-status '+c;}
+  window.addEventListener('DOMContentLoaded',tcLoad);
+})();
+
+
 </script>
 </body>
 </html>
