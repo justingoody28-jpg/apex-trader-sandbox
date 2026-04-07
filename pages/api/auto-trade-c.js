@@ -17,8 +17,7 @@ export default async function handler(req, res) {
   }
   const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
 
-  // ââ   /* DEDUP BYPASSED — restore after 9:29 AM EDT */
-
+  // ââ undefined
   // ── Market hours guard ────────────────────────────────────────────────────
   try {
     const _mktR = await fetch('https://api.tradier.com/v1/markets/clock', {
