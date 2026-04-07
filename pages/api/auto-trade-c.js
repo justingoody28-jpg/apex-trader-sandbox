@@ -12,9 +12,6 @@
 // q.last only updates when a trade prints, stays at prev close pre-market.
 
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    return res.status(200).json({ status: 'ok', message: 'auto-trade-c is live. Triggered by Vercel cron at 9:29 AM EDT.' });
-  }
   const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
 
   /* DEDUP BYPASSED */
