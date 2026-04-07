@@ -62,14 +62,7 @@ export default async function handler(req, res) {
   const POLYGON_KEY = process.env.POLYGON_KEY;
   if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) return res.status(500).json({ error: 'Missing env vars' });
   const H = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
-  const _rc = config.riskControls || {};
-  const _live = _rc.live === true;
-  const _maxTrades = _rc.maxTradesPerDay || 999;
-  const _maxExposure = _rc.maxDailyExposure || 999999;
-  const _betOverride = _rc.maxBetOverride || null;
-  const PAPER_BASE = _live ? 'https://api.tradier.com/v1' : 'https://sandbox.tradier.com/v1';
-  const TRADIER_LIVE_TOKEN = process.env.TRADIER_TOKEN;
-  const TRADIER_LIVE_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
+
   const PAPER_H = _live
     ? { 'Authorization': `Bearer ${TRADIER_LIVE_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
     : { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
@@ -89,6 +82,15 @@ export default async function handler(req, res) {
     if (!r.ok) throw new Error('Config fetch failed');
     config = await r.json();
   } catch (e) { return res.status(500).json({ error: e.message }); }
+
+  const _rc = config.riskControls || {};
+  const _live = _rc.live === true;
+  const _maxTrades = _rc.maxTradesPerDay || 999;
+  const _maxExposure = _rc.maxDailyExposure || 999999;
+  const _betOverride = _rc.maxBetOverride || null;
+  const PAPER_BASE = _live ? 'https://api.tradier.com/v1' : 'https://sandbox.tradier.com/v1';
+  const TRADIER_LIVE_TOKEN = process.env.TRADIER_TOKEN;
+  const TRADIER_LIVE_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
 
   if (!config.scenarios || !config.scenarios.E) return res.status(200).json({ message: 'Scenario E disabled', trades: [] });
   // Load active tickers from Supabase watchlist + Kelly bets from most recent snapshot
