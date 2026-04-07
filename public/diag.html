@@ -59,35 +59,7 @@ h1 { font-size:16px; font-weight:700; letter-spacing:.06em; text-transform:upper
 </head>
 <body>
 <div class="breadcrumb">
-  <a href="/edge-scenarios.html">Edge</a> · <a href="/watchlist.html">Watchlist</a> · <a href="/kelly.html">Kelly</a> · <a href="/daily.html">Daily</a> · <a href="/controls.html">Controls</a> · <span>Diagnostics</span>
-</div>
-  <div class="ctrl-live-row">
-    <label class="big-toggle">
-      <input type="checkbox" id="liveToggle" onchange="onLiveToggle()">
-      <div class="big-toggle-track"></div>
-      <div class="big-toggle-thumb"></div>
-    </label>
-    <span class="live-label">Mode:</span>
-    <span class="live-badge paper" id="liveBadge">PAPER</span>
-  </div>
-  <div class="ctrl-knobs">
-    <div class="ctrl-knob">
-      <label>Max Trades / Day</label>
-      <input type="number" id="maxTrades" min="1" max="20" value="5">
-    </div>
-    <div class="ctrl-knob">
-      <label>Max Bet Override ($) &mdash; "null" = use Kelly</label>
-      <input type="text" id="maxBet" value="250" placeholder="null">
-    </div>
-    <div class="ctrl-knob">
-      <label>Max Daily Exposure ($)</label>
-      <input type="number" id="maxExposure" min="100" value="1250">
-    </div>
-  </div>
-  <div class="ctrl-save-row">
-    <button class="ctrl-save-btn" id="ctrlSaveBtn" onclick="saveControls()">Save &amp; Commit</button>
-    <span class="ctrl-status" id="ctrlStatus"></span>
-  </div>
+  <a href="/edge-scenarios.html">Edge</a> · <a href="/watchlist.html">Watchlist</a> · <a href="/kelly.html">Kelly</a> · <a href="/daily.html">Daily</a> · <span>Diagnostics</span>
 </div>
 <h1>APEX System Diagnostics</h1>
 <p class="subtitle">Tests Supabase data integrity, watchlist structure, trader exclusion logic, and snapshot fields</p>
