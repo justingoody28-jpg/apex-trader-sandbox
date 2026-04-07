@@ -359,10 +359,15 @@ function applyQuarter(qtr){
       const SC_MAP={A:'A',B:'B',C:'C',D:'D',E1:'E1',E2:'E2',E3:'E3',E4:'E4',F:'F'};
       const betByScenario={};
       if(typeof state!=='undefined'&&state.scs){
-        state.scs.forEach(sc=>{
-          const dollarAmt=Math.round(state.acct*sc.pct/100);
-          // Round to nearest $50, minimum $50
-          betByScenario[SC_MAP[sc.id]||sc.id]=Math.max(50,Math.round(dollarAmt/50)*50);
+        // Scale proportionally: highest Kelly% maps to maxExp/maxTrades, others scale down
+        const _maxExp=parseFloat(document.getElementById('tcMaxExp').value)||5000;
+        const _maxTrades=parseInt(document.getElementById('tcMaxTrades').value)||5;
+        const _perTrade=Math.floor(_maxExp/_maxTrades);
+        const _activeScs=state.scs.filter(s=>s.pct>0);
+        const _maxPct=Math.max(..._activeScs.map(s=>s.pct),1);
+        _activeScs.forEach(sc=>{
+          const scaled=Math.round((sc.pct/_maxPct)*_perTrade);
+          betByScenario[SC_MAP[sc.id]||sc.id]=Math.max(50,Math.round(scaled/50)*50);
         });
       }
       const rc={
