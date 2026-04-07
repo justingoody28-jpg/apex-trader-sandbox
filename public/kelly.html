@@ -170,7 +170,16 @@ const SCENS=[
 const state={acct:50000,kfrac:50,scs:SCENS.map(s=>({...s}))};
 function kFull(wr,rr){const w=wr/100;return Math.max(0,w-(1-w)/rr)*100;}
 function kTgt(wr,rr,f){return kFull(wr,rr)*f/100;}
-function evT(sc){const pos=state.acct*sc.pct/100;if(sc.avgRet!==undefined)return pos*sc.avgRet/100;const w2=sc.wr/100;return pos*(w2*sc.tp/100-(1-w2)*sc.sl/100);}
+function scDollar(sc){
+  const _maxExp=parseFloat(document.getElementById('tcMaxExp')?.value)||5000;
+  const _maxTrades=parseInt(document.getElementById('tcMaxTrades')?.value)||5;
+  const _perTrade=Math.floor(_maxExp/_maxTrades);
+  const _activeScs=state.scs.filter(s=>s.pct>0);
+  const _maxPct=Math.max(..._activeScs.map(s=>s.pct),1);
+  const scaled=Math.round((sc.pct/_maxPct)*_perTrade);
+  return Math.max(50,Math.round(scaled/50)*50);
+}
+function evT(sc){const pos=scDollar(sc);if(sc.avgRet!==undefined)return pos*sc.avgRet/100;const w2=sc.wr/100;return pos*(w2*sc.tp/100-(1-w2)*sc.sl/100);}
 function fmt$(n,sign){if(n===null||n===undefined)return'—';const pre=sign&&n>0?'+':n<0?'−':'';return pre+'$'+Math.abs(Math.round(n)).toLocaleString('en-US');}
 function kColor(sc){const k=kTgt(sc.wr,(sc.b!=null?sc.b:sc.tp/sc.sl),state.kfrac);if(!k)return'var(--muted)';if(sc.pct>k+1)return'var(--red)';if(sc.pct<k-2)return'var(--green)';return'var(--muted)';}
 function buildRows(){
@@ -180,7 +189,7 @@ function buildRows(){
     if(sc.group!==lastG){const g=document.createElement('div');g.className='grp-label';g.textContent=sc.group.toUpperCase();cont.appendChild(g);lastG=sc.group;}
     const row=document.createElement('div');row.className='sc-row';
     const rr=(sc.b!=null?sc.b:sc.tp/sc.sl);const k=kTgt(sc.wr,rr,state.kfrac);
-    const pos=state.acct*sc.pct/100;const ev=evT(sc);
+    const pos=scDollar(sc);const ev=evT(sc);
     const kc=kColor(sc);const ec=ev>=0?'var(--green)':'var(--red)';
     row.innerHTML=`<div><div class="sc-name">${sc.label}</div><span class="sc-badge ${sc.live?'badge-live':'badge-paper'}">${sc.live?'LIVE':'PAPER'}</span></div>
       <div class="sc-side">${sc.side}</div>
@@ -202,7 +211,7 @@ function buildRows(){
 function refreshRows(){
   state.scs.forEach((sc,i)=>{
     const rr=(sc.b!=null?sc.b:sc.tp/sc.sl);const k=kTgt(sc.wr,rr,state.kfrac);
-    const pos=state.acct*sc.pct/100;const ev=evT(sc);
+    const pos=scDollar(sc);const ev=evT(sc);
     const kc=kColor(sc);const ec=ev>=0?'var(--green)':'var(--red)';
     const g=id=>document.getElementById(id+i);
     if(g('wr'))g('wr').textContent=sc.wr+'%';
@@ -214,10 +223,10 @@ function refreshRows(){
 }
 function refreshSummary(){
   const live=state.scs.filter(s=>s.live);
-  const liveExp=live.reduce((a,s)=>a+state.acct*s.pct/100,0);
+  const liveExp=live.reduce((a,s)=>a+scDollar(s),0);
   const maxLoss=live.reduce((a,s)=>a+state.acct*s.pct/100*s.sl/100,0);
   const totalEV=state.scs.reduce((a,s)=>a+evT(s),0);
-  const totalExp=state.scs.reduce((a,s)=>a+state.acct*s.pct/100,0);
+  const totalExp=state.scs.reduce((a,s)=>a+scDollar(s),0);
   document.getElementById('s-live').textContent=fmt$(liveExp);
   document.getElementById('s-loss').textContent='−$'+Math.abs(Math.round(maxLoss)).toLocaleString();
   const evEl=document.getElementById('s-ev');
