@@ -915,7 +915,7 @@
   "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q4 2025)",
   "riskControls": {
     "live": false,
-    "maxTradesPerDay": 5,
+    "maxTradesPerDay": 10,
     "maxBetOverride": null,
     "maxDailyExposure": 1250,
     "betByScenario": {
