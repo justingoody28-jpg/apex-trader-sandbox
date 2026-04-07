@@ -36,7 +36,24 @@ export default async function handler(req, res) {
   } catch(_e){ /* dedup check failed â proceed normally */ }
   // ââ End dedup guard ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-  /* CLOCK GUARD BYPASSED FOR DRY RUN TEST */
+  // ── Market hours guard ────────────────────────────────────────────────────
+  try {
+    const _mktR = await fetch('https://api.tradier.com/v1/markets/clock', {
+      headers: { 'Authorization': `Bearer ${process.env.TRADIER_TOKEN}`, 'Accept': 'application/json' }
+    });
+    if (_mktR.ok) {
+      const _mktJ = await _mktR.json();
+      if (_mktJ?.clock?.state === 'closed') {
+        return res.status(200).json({
+          timestamp: new Date().toISOString(),
+          status: 'market_closed',
+          message: 'Market closed (holiday or weekend). No trades placed.',
+          trades: []
+        });
+      }
+    }
+  } catch(_me) { /* non-fatal */ }
+  // ── End market hours guard ─────────────────────────────────────────────────
 
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN, TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
@@ -218,7 +235,7 @@ export default async function handler(req, res) {
         const rdA = await fetch(PAPER_BASE + '/accounts/' + (_live ? TRADIER_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID) + '/orders', { method: 'POST', headers: PAPER_H, body: paramsA });
         const rawA = await rdA.text();
         const jA = rdA.ok ? JSON.parse(rawA) : { _status: rdA.status, _body: rawA.slice(0,200) };
-        if(rdA.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'A', status: rdA.ok ? 'filled' : 'error', gap: gap.toFixed(2), spyGap: spyGap.toFixed(2), price, qty: qtyA, tp: tpA, sl: slA, order: jA?.order });
+        if(DRY_RUN){results.push({symbol:sym,scenario:'A',status:'dry_run',gap:+gap.toFixed(2),price,qty:qtyA,tp:tpA,sl:slA});} else { if(rdA.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'A', status: rdA.ok ? 'filled' : 'error', gap: gap.toFixed(2), spyGap: spyGap.toFixed(2), price, qty: qtyA, tp: tpA, sl: slA, order: jA?.order });
       } catch(eA) { results.push({ symbol: sym, scenario: 'A', status: 'error', error: eA.message }); }
     }
 
@@ -237,7 +254,7 @@ export default async function handler(req, res) {
         const rdF = await fetch(PAPER_BASE + '/accounts/' + (_live ? TRADIER_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID) + '/orders', { method: 'POST', headers: PAPER_H, body: paramsF });
         const rawF = await rdF.text();
         const jF = rdF.ok ? JSON.parse(rawF) : { _status: rdF.status, _body: rawF.slice(0,200) };
-        if(rdF.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order, tradierRaw: rdF.ok ? undefined : jF });
+        if(DRY_RUN){results.push({symbol:sym,scenario:'F',status:'dry_run',gap:+gap.toFixed(2),price,qty:qtyF,tp:tpF,sl:slF});} else { if(rdF.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order, tradierRaw: rdF.ok ? undefined : jF });
       } catch(eF) { results.push({ symbol: sym, scenario: 'F', status: 'error', error: eF.message }); }
     }
 
@@ -271,7 +288,7 @@ export default async function handler(req, res) {
       if (!or.ok || (od.order && od.order.status === 'error')) {
         results.push({ symbol: sym, status: 'error', reason: od.order?.partner_error_description || od.fault?.faultstring || `Tradier ${or.status}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
       } else {
-        _tradesPlaced++; _exposureUsed+=eBet; results.push({ symbol: sym, status: 'traded', scenario: 'E', variant: 'C-Tradier-tiered', side: 'sell_short', qty, entryPrice: +price.toFixed(2), priceSource: bidPrice ? 'bid' : 'last', tier: tier.tier, tpPct: tier.tpPct, slPct: tier.slPct, takeProfitPrice: tp, stopLossPrice: sl, gap: +gap.toFixed(2), rvol_logged: rvol, orderId: od.order?.id, orderStatus: od.order?.status });
+        if(DRY_RUN){results.push({symbol:sym,scenario:'E',status:'dry_run',gap:+gap.toFixed(2),tier:tier.tier,price:+price.toFixed(2),qty,tp,sl});} else { _tradesPlaced++; _exposureUsed+=eBet; results.push({ symbol: sym, status: 'traded', scenario: 'E', variant: 'C-Tradier-tiered', side: 'sell_short', qty, entryPrice: +price.toFixed(2), priceSource: bidPrice ? 'bid' : 'last', tier: tier.tier, tpPct: tier.tpPct, slPct: tier.slPct, takeProfitPrice: tp, stopLossPrice: sl, gap: +gap.toFixed(2), rvol_logged: rvol, orderId: od.order?.id, orderStatus: od.order?.status });
       }
     } catch(e) { results.push({ symbol: sym, status: 'error', reason: e.message }); }
   }
