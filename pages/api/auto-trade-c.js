@@ -213,10 +213,11 @@ export default async function handler(req, res) {
           'symbol[1]': sym, 'side[1]': 'buy_to_cover', 'quantity[1]': String(qtyD), 'type[1]': 'limit', 'price[1]': String(tpD),
           'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qtyD), 'type[2]': 'stop', 'stop[2]': String(slD),
         });
-        if (DRY_RUN) return res.status(200).json({ timestamp: new Date().toISOString(), status: 'dry_run', message: 'Dry run â no orders placed. Scan complete.', variant: variant||'unknown' });
+        if (DRY_RUN) { results.push({ symbol: sym, scenario: 'D', status: 'dry_run', gap: +gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD }); } else {
         const rdD = await fetch(PAPER_BASE + '/accounts/' + (_live ? TRADIER_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID) + '/orders', { method: 'POST', headers: PAPER_H, body: paramsD });
         const jD = await rdD.json();
         if(rdD.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'D', status: rdD.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD, order: jD?.order });
+      }
       } catch(eD) { results.push({ symbol: sym, scenario: 'D', status: 'error', error: eD.message }); }
     }
 
@@ -236,6 +237,7 @@ export default async function handler(req, res) {
         const rawA = await rdA.text();
         const jA = rdA.ok ? JSON.parse(rawA) : { _status: rdA.status, _body: rawA.slice(0,200) };
         if(DRY_RUN){results.push({symbol:sym,scenario:'A',status:'dry_run',gap:+gap.toFixed(2),price,qty:qtyA,tp:tpA,sl:slA});} else { if(rdA.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'A', status: rdA.ok ? 'filled' : 'error', gap: gap.toFixed(2), spyGap: spyGap.toFixed(2), price, qty: qtyA, tp: tpA, sl: slA, order: jA?.order });
+      }
       } catch(eA) { results.push({ symbol: sym, scenario: 'A', status: 'error', error: eA.message }); }
     }
 
@@ -255,6 +257,7 @@ export default async function handler(req, res) {
         const rawF = await rdF.text();
         const jF = rdF.ok ? JSON.parse(rawF) : { _status: rdF.status, _body: rawF.slice(0,200) };
         if(DRY_RUN){results.push({symbol:sym,scenario:'F',status:'dry_run',gap:+gap.toFixed(2),price,qty:qtyF,tp:tpF,sl:slF});} else { if(rdF.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order, tradierRaw: rdF.ok ? undefined : jF });
+      }
       } catch(eF) { results.push({ symbol: sym, scenario: 'F', status: 'error', error: eF.message }); }
     }
 
@@ -289,6 +292,7 @@ export default async function handler(req, res) {
         results.push({ symbol: sym, status: 'error', reason: od.order?.partner_error_description || od.fault?.faultstring || `Tradier ${or.status}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
       } else {
         if(DRY_RUN){results.push({symbol:sym,scenario:'E',status:'dry_run',gap:+gap.toFixed(2),tier:tier.tier,price:+price.toFixed(2),qty,tp,sl});} else { _tradesPlaced++; _exposureUsed+=eBet; results.push({ symbol: sym, status: 'traded', scenario: 'E', variant: 'C-Tradier-tiered', side: 'sell_short', qty, entryPrice: +price.toFixed(2), priceSource: bidPrice ? 'bid' : 'last', tier: tier.tier, tpPct: tier.tpPct, slPct: tier.slPct, takeProfitPrice: tp, stopLossPrice: sl, gap: +gap.toFixed(2), rvol_logged: rvol, orderId: od.order?.id, orderStatus: od.order?.status });
+      }
       }
     } catch(e) { results.push({ symbol: sym, status: 'error', reason: e.message }); }
   }
