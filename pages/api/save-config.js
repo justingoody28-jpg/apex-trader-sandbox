@@ -1,9 +1,21 @@
 // pages/api/save-config.js
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // GET — return current riskControls fresh from GitHub (bypasses CDN cache)
+  if (req.method === 'GET') {
+    const PAT = process.env.GITHUB_PAT;
+    const fr = await fetch('https://api.github.com/repos/justingoody28-jpg/apex-trader-sandbox/contents/public/auto-trade-config.json',
+      { headers: { 'Authorization': `token ${PAT}`, 'Accept': 'application/json' } });
+    const fd = await fr.json();
+    const bytes = Uint8Array.from(atob(fd.content.replace(/\n/g,'')), c=>c.charCodeAt(0));
+    const cfg = JSON.parse(new TextDecoder().decode(bytes));
+    return res.status(200).json({ ok: true, riskControls: cfg.riskControls });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { riskControls } = req.body || {};
   if (!riskControls) return res.status(400).json({ error: 'riskControls required' });
