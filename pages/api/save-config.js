@@ -23,6 +23,7 @@ export default async function handler(req, res) {
       maxTradesPerDay: parseInt(riskControls.maxTradesPerDay) || 5,
       maxBetOverride: (riskControls.maxBetOverride !== null && riskControls.maxBetOverride !== undefined) ? parseFloat(riskControls.maxBetOverride) : null,
       maxDailyExposure: parseFloat(riskControls.maxDailyExposure) || 1250,
+      betByScenario: riskControls.betByScenario || {},
     };
     const enc = new TextEncoder().encode(JSON.stringify(cfg, null, 2));
     const chunks = [];
