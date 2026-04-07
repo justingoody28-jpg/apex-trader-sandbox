@@ -89,6 +89,8 @@ export default async function handler(req, res) {
   const _maxTrades = _rc.maxTradesPerDay || 999;
   const _maxExposure = _rc.maxDailyExposure || 999999;
   const _betOverride = _rc.maxBetOverride || null;
+  const _betBySc = _rc.betByScenario || {};
+  function scBet(sc, tickerBet) { if (_betBySc[sc] > 0) return _betBySc[sc]; if (_betOverride) return Math.min(tickerBet, _betOverride); return tickerBet; }
   const PAPER_BASE = _live ? 'https://api.tradier.com/v1' : 'https://sandbox.tradier.com/v1';
 
   if (!config.scenarios || !config.scenarios.E) return res.status(200).json({ message: 'Scenario E disabled', trades: [] });
@@ -202,10 +204,11 @@ export default async function handler(req, res) {
 
 
     // Scenario D: Short gap-up >=2% | TP -2% / SL +0.5%
-    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D||[]).includes(sym) && _riskOk(bet)) {
+    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D||[]).includes(sym) && _riskOk(scBet('D',bet))) {
       const tpD = +(price * 0.98).toFixed(2);
       const slD = +(price * 1.005).toFixed(2);
-      const qtyD = Math.max(1, Math.floor(bet / price));
+      const _betD = scBet('D', bet);
+      const qtyD = Math.max(1, Math.floor(_betD / price));
       try {
         const paramsD = new URLSearchParams({
           'class': 'otoco', 'duration': 'day',
@@ -213,7 +216,7 @@ export default async function handler(req, res) {
           'symbol[1]': sym, 'side[1]': 'buy_to_cover', 'quantity[1]': String(qtyD), 'type[1]': 'limit', 'price[1]': String(tpD),
           'symbol[2]': sym, 'side[2]': 'buy_to_cover', 'quantity[2]': String(qtyD), 'type[2]': 'stop', 'stop[2]': String(slD),
         });
-        if (DRY_RUN) { results.push({ symbol: sym, scenario: 'D', status: 'dry_run', gap: +gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD }); } else {
+        if (DRY_RUN) { results.push({ symbol: sym, scenario: 'D', status: 'dry_run', gap: +gap.toFixed(2), price, bet: _betD, qty: qtyD, tp: tpD, sl: slD }); } else {
         const rdD = await fetch(PAPER_BASE + '/accounts/' + (_live ? TRADIER_ACCOUNT_ID : TRADIER_PAPER_ACCOUNT_ID) + '/orders', { method: 'POST', headers: PAPER_H, body: paramsD });
         const jD = await rdD.json();
         if(rdD.ok){_tradesPlaced++;_exposureUsed+=bet;} results.push({ symbol: sym, scenario: 'D', status: rdD.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyD, tp: tpD, sl: slD, order: jD?.order });
@@ -222,10 +225,11 @@ export default async function handler(req, res) {
     }
 
     // Scenario A: Long gap-up >=2% ONLY when SPY gap >0.5% | TP +2% / SL -0.5%
-    if (gap >= 2 && spyGap > 0.5 && spyRecovering && (vix === null || vix <= 25) && !(_excl.A||[]).includes(sym) && _riskOk(bet)) {
+    if (gap >= 2 && spyGap > 0.5 && spyRecovering && (vix === null || vix <= 25) && !(_excl.A||[]).includes(sym) && _riskOk(scBet('A',bet))) {
       const tpA = +(price * 1.02).toFixed(2);
       const slA = +(price * 0.995).toFixed(2);
-      const qtyA = Math.max(1, Math.floor(bet / price));
+      const _betA = scBet('A', bet);
+      const qtyA = Math.max(1, Math.floor(_betA / price));
       try {
         const paramsA = new URLSearchParams({
           'class': 'otoco', 'duration': 'day',
@@ -242,10 +246,11 @@ export default async function handler(req, res) {
     }
 
         // Scenario F: Long gap-down <=-5% | TP +2% / SL -2%
-    if (gap <= -5 && gap > -25 && !(_excl.F||[]).includes(sym) && _riskOk(bet)) {
+    if (gap <= -5 && gap > -25 && !(_excl.F||[]).includes(sym) && _riskOk(scBet('F',bet))) {
       const tpF = +(price * 1.02).toFixed(2);
       const slF = +(price * 0.98).toFixed(2);
-      const qtyF = Math.max(1, Math.floor(bet / price));
+      const _betF = scBet('F', bet);
+      const qtyF = Math.max(1, Math.floor(_betF / price));
       try {
         const paramsF = new URLSearchParams({
           'class': 'otoco', 'duration': 'day',
@@ -268,7 +273,7 @@ export default async function handler(req, res) {
 
     if ((_excl[tier.tier]||[]).includes(sym)) { results.push({ symbol: sym, status: 'skipped', reason: `Excluded from ${tier.tier}`, gap: +gap.toFixed(2), tier: tier.tier }); continue; }
     if (!_riskOk(tier.bet || bet)) { results.push({ symbol: sym, status: 'skipped', reason: 'Risk cap reached', gap: +gap.toFixed(2), tier: tier.tier }); continue; }
-    const eBet = tier.bet || bet; const qty = Math.max(1, Math.floor(eBet / price));
+    const eBet = scBet('E' + (tier.tier + 1), tier.bet || bet); const qty = Math.max(1, Math.floor(eBet / price));
     if (qty < 1) {
       results.push({ symbol: sym, status: 'skipped', reason: `Bet too small at $${price.toFixed(2)}`, gap: +gap.toFixed(2), tier: tier.tier, rvol_logged: rvol });
       continue;
