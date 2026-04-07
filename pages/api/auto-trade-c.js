@@ -63,9 +63,7 @@ export default async function handler(req, res) {
   if (!TRADIER_TOKEN || !TRADIER_ACCOUNT_ID) return res.status(500).json({ error: 'Missing env vars' });
   const H = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
 
-  const PAPER_H = _live
-    ? { 'Authorization': `Bearer ${TRADIER_LIVE_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
-    : { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
+  let PAPER_H = { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
   const BASE = 'https://api.tradier.com/v1';
 
   function getTier(gap) {
@@ -85,6 +83,9 @@ export default async function handler(req, res) {
 
   const _rc = config.riskControls || {};
   const _live = _rc.live === true;
+  PAPER_H = _live
+    ? { 'Authorization': `Bearer ${TRADIER_LIVE_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
+    : { 'Authorization': `Bearer ${TRADIER_PAPER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
   const _maxTrades = _rc.maxTradesPerDay || 999;
   const _maxExposure = _rc.maxDailyExposure || 999999;
   const _betOverride = _rc.maxBetOverride || null;
