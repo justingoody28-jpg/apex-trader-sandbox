@@ -36,24 +36,7 @@ export default async function handler(req, res) {
   } catch(_e){ /* dedup check failed â proceed normally */ }
   // ââ End dedup guard ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-  // ── Market hours guard ────────────────────────────────────────────────────
-  try {
-    const _mktR = await fetch('https://api.tradier.com/v1/markets/clock', {
-      headers: { 'Authorization': `Bearer ${process.env.TRADIER_TOKEN}`, 'Accept': 'application/json' }
-    });
-    if (_mktR.ok) {
-      const _mktJ = await _mktR.json();
-      if (_mktJ?.clock?.state === 'closed') {
-        return res.status(200).json({
-          timestamp: new Date().toISOString(),
-          status: 'market_closed',
-          message: 'Market closed (holiday or weekend). No trades placed.',
-          trades: []
-        });
-      }
-    }
-  } catch(_me) { /* non-fatal */ }
-  // ── End market hours guard ─────────────────────────────────────────────────
+  /* CLOCK BYPASSED */
 
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const TRADIER_TOKEN = process.env.TRADIER_TOKEN, TRADIER_ACCOUNT_ID = process.env.TRADIER_ACCOUNT_ID;
