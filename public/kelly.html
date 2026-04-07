@@ -271,6 +271,10 @@ function applyRealData(totals){
     } else {
       sc.b=null;sc.actualPF=null;
     }
+    // Set pct from Kelly-optimal allocation so each scenario sizes correctly
+    const rr = sc.b != null ? sc.b : (sc.tp / sc.sl);
+    const kOpt = kTgt(sc.wr, rr, state.kfrac);
+    if(kOpt > 0) sc.pct = Math.min(50, Math.max(1, Math.round(kOpt)));
   });
 }
 function updateSliders(){state.scs.forEach((sc,i)=>{const sl=document.querySelector('input[data-i="'+i+'"][data-f="wr"]');const out=document.getElementById('wr'+i);if(sl)sl.value=sc.wr;if(out){out.textContent=sc.wr+'%'+(sc.signals?' · '+sc.signals.toLocaleString()+' sig':'');out.style.minWidth='90px';}});}
