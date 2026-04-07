@@ -343,7 +343,7 @@ function applyQuarter(qtr){
 (function(){
   async function tcLoad(){
     try{
-      const r=await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json?t='+Date.now());
+      const r=await fetch('/api/save-config');
       const c=await r.json();
       const rc=c.riskControls||{};
       document.getElementById('tcLive').checked=rc.live===true;
