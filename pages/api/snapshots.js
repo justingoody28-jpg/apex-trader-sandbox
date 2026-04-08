@@ -17,15 +17,22 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { label, date_from, date_to, rows, cap_tier } = req.body;
-    // Upsert by label + cap_tier so different cap tiers never overwrite each other
-    let delQ = supabase.from('apex_backtest_snapshots').delete().eq('label', label);
-    if (cap_tier) delQ = delQ.eq('cap_tier', cap_tier);
-    const { error: delErr } = await delQ;
-    if (delErr) return res.status(500).json({ error: delErr.message });
+    const { label, date_from, date_to, rows } = req.body;
+    // Determine which grp values are in new rows
+    const newGrps = new Set((rows||[]).map(r => r.grp).filter(Boolean));
+    // Fetch existing snapshot for this label
+    const { data: existing } = await supabase.from('apex_backtest_snapshots').select('*').eq('label', label).limit(1);
+    let mergedRows = rows || [];
+    if (existing && existing[0] && existing[0].rows) {
+      // Keep existing rows that don't match the new grp values
+      const kept = existing[0].rows.filter(r => !newGrps.has(r.grp));
+      mergedRows = [...kept, ...(rows||[])];
+    }
+    // Delete existing and insert merged
+    await supabase.from('apex_backtest_snapshots').delete().eq('label', label);
     const { data, error } = await supabase
       .from('apex_backtest_snapshots')
-      .insert([{ label, date_from, date_to, rows, cap_tier: cap_tier || null, saved_at: new Date().toISOString() }])
+      .insert([{ label, date_from, date_to, rows: mergedRows, saved_at: new Date().toISOString() }])
       .select();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data[0]);
