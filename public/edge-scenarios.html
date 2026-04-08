@@ -839,9 +839,8 @@ function updatePills(){
 }
 
 function updateBatchBtn(){
-  var grp=document.getElementById('batchGroup').value;
-  var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){var g=t.grp==='Lg'?'Large':t.grp==='SM'?'Small/Micro':t.grp;return g===grp;}).length;
-  var label=grp==='all'?'All 37':grp+' ('+count+')';
+  var count=getActiveTickers().length;
+  var label=count===ALL_TICKERS.length?'All '+count:count+' tickers';
   document.getElementById('runAllBtn').textContent='\u26A1 Run '+label;
   document.getElementById('expAllBtn').textContent='\u2B07 Export '+label;
 }
