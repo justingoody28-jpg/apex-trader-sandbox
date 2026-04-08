@@ -85,10 +85,11 @@ export default async function handler(req, res) {
     const _sbKey = process.env.SUPABASE_SERVICE_KEY;
     const _sbH = { apikey: _sbKey, Authorization: `Bearer ${_sbKey}` };
     // Get active ticker list
-    const _wlR = await fetch(`${_sbUrl}/rest/v1/watchlist_state?active=eq.true&select=symbol,bet`, { headers: _sbH });
+    const _wlR = await fetch(`${_sbUrl}/rest/v1/apex_watchlist?id=eq.default`, { headers: _sbH });
     const _wlD = await _wlR.json();
-    const _active = new Set((_wlD||[]).map(r=>r.symbol));
-    _excl = {};
+    const _active = new Set(_wlD[0]?.active || []);
+    const _exclRaw = _wlD[0]?.excluded;
+    _excl = (_exclRaw && !Array.isArray(_exclRaw)) ? _exclRaw : {};
     // Get most recent snapshot for Kelly sizing
     const _snR = await fetch(`${_sbUrl}/rest/v1/apex_backtest_snapshots?select=rows,label&order=saved_at.desc&limit=1`, { headers: _sbH });
     const _snD = await _snR.json();
