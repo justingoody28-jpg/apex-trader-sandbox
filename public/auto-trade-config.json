@@ -2,963 +2,895 @@
   "tickers": [
     {
       "symbol": "AMD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NVDA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "INTC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TSLA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "AMZN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "AAPL",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GOOGL",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "META",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NFLX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MSFT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "JPM",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "LLY",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PFE",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "UNH",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TWLO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "COIN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HUBS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "OKTA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SNAP",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HOOD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CRWD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "DDOG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SOFI",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GLOB",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "EXLS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PEGA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NCNO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ALRM",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "JAMF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TNET",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ATEN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "LPSN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "DOMO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "QTWO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "EVBG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "BRZE",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ASAN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "UMBF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "WTFC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SNV",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "IBOC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PRSP",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CATY",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FFIN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "WSBC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CVBF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FULT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "INVA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PRGO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HALO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NTRA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MDRX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "OMCL",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PINC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ADUS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "AMSF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ACAD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NVCR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "RYTM",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "RARE",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FOLD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CRDF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ARQT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "XNCR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "IMVT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PRAX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "KYMR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "BOOT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "WING",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FRPT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CAVA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TACO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TXRH",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FAT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "RRGB",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "JACK",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ACVA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PRTY",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "VSCO",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "JOANN",
+      "bet": 500
     },
     {
       "symbol": "ODP",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "RCII",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ASTE",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HCSG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TREX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "APOG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ARCB",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MATX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MRTN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SAIA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "LSTR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ECHO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CEIX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ARCH",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SWN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "RRC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CIVI",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "VTLE",
-      "active": true,
-      "bet": 250
+      "bet": 2000
     },
     {
       "symbol": "SM",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "REX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HESM",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "SRLP",
+      "bet": 500
     },
     {
       "symbol": "IOSP",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "KWR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TROX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MTRN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ASIX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "KREF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GPMT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "STWD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "BXMT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TRTX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ATER",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "LAZR",
+      "bet": 500
     },
     {
       "symbol": "MRNA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "AGEN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GFAI",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "IONQ",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FCEL",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "RCKT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SPCE",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HUT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "WOLF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PAYO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FLYW",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TASK",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MNDY",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NRDS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MAPS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "RSKD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "AMBR",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "CLBK",
+      "bet": 500
+    },
+    {
+      "symbol": "OBNK",
+      "bet": 500
+    },
+    {
+      "symbol": "HBCP",
+      "bet": 500
+    },
+    {
+      "symbol": "BSVN",
+      "bet": 500
+    },
+    {
+      "symbol": "ORRF",
+      "bet": 500
+    },
+    {
+      "symbol": "MCBC",
+      "bet": 500
+    },
+    {
+      "symbol": "NWIN",
+      "bet": 500
+    },
+    {
+      "symbol": "FSBC",
+      "bet": 500
     },
     {
       "symbol": "OPAD",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "VZIO",
+      "bet": 500
     },
     {
       "symbol": "SOUN",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "CPTN",
+      "bet": 500
     },
     {
       "symbol": "VNET",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ARQQ",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "QUBT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SDGR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "LQDT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SPRY",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "TGTX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CDNA",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "VERV",
+      "bet": 500
     },
     {
       "symbol": "KRYS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "AGIO",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "XBIT",
+      "bet": 500
     },
     {
       "symbol": "DRTS",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "REGN",
+      "bet": 500
     },
     {
       "symbol": "GOSS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NVAX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "OCGN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SRPT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HRTX",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "MESO",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "ESSA",
+      "bet": 500
     },
     {
       "symbol": "TELA",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ATRC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PRCT",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "SILK",
+      "bet": 500
     },
     {
       "symbol": "RNXT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "WTTR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "KLXE",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NINE",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "BORR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PTEN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PUMP",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "NR",
+      "bet": 500
+    },
+    {
+      "symbol": "PFIE",
+      "bet": 500
     },
     {
       "symbol": "DNOW",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GPOR",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "KCAL",
+      "bet": 500
     },
     {
       "symbol": "TPVG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "XPOF",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PLBY",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "LAZY",
+      "bet": 500
     },
     {
       "symbol": "GIII",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CATO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SCVL",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "DXLG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "CURV",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "BURL",
+      "bet": 500
     },
     {
       "symbol": "CULP",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ITRN",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HIMS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "BARK",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "PETQ",
+      "bet": 500
     },
     {
       "symbol": "GENC",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HLIO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FWRD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "HTLD",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "USAK",
+      "bet": 500
+    },
+    {
+      "symbol": "ATSG",
+      "bet": 500
     },
     {
       "symbol": "AIRT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GLDD",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "MFAC",
+      "bet": 500
+    },
+    {
+      "symbol": "NVEE",
+      "bet": 500
     },
     {
       "symbol": "CLPR",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "NXRT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GOOD",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "LAND",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "GIPR",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "PKST",
+      "bet": 500
     },
     {
       "symbol": "JBGS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "AIV",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "GMRE",
+      "bet": 500
     },
     {
       "symbol": "CLDT",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "SHAK",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "KRUS",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "FWRG",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "ARCO",
-      "active": true,
-      "bet": 250
+      "bet": 500
     },
     {
       "symbol": "PZZA",
-      "active": true,
-      "bet": 250
+      "bet": 500
+    },
+    {
+      "symbol": "NAPA",
+      "bet": 500
     }
   ],
   "scenarios": {
@@ -978,9 +910,9 @@
     "hRvol": 4
   },
   "defaultBet": 500,
-  "count": 0,
-  "updated": "2026-04-08T00:44:31.386Z",
-  "_note": "Auto-synced from apex_watchlist (0 tickers, Kelly from Q1 2026)",
+  "count": 223,
+  "updated": "2026-04-08T14:57:36.505Z",
+  "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q2 2025)",
   "riskControls": {
     "live": false,
     "maxTradesPerDay": 15,
