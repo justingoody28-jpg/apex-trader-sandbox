@@ -840,7 +840,7 @@ function updatePills(){
 
 function updateBatchBtn(){
   var grp=document.getElementById('batchGroup').value;
-  var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){return t.grp===grp;}).length;
+  var count=grp==='all'?ALL_TICKERS.length:ALL_TICKERS.filter(function(t){var g=t.grp==='Lg'?'Large':t.grp==='SM'?'Small/Micro':t.grp;return g===grp;}).length;
   var label=grp==='all'?'All 37':grp+' ('+count+')';
   document.getElementById('runAllBtn').textContent='\u26A1 Run '+label;
   document.getElementById('expAllBtn').textContent='\u2B07 Export '+label;
@@ -852,9 +852,10 @@ function getActiveTickers(){
   var lg=document.getElementById('capLarge')?.checked===true;
   if(sm&&mi&&lg)return ALL_TICKERS;
   return ALL_TICKERS.filter(function(t){
-    if(t.grp==='Small/Micro')return sm;
-    if(t.grp==='Mid')return mi;
-    if(t.grp==='Large')return lg;
+    var g=t.grp==='Lg'?'Large':t.grp==='SM'?'Small/Micro':t.grp;
+    if(g==='Small/Micro')return sm;
+    if(g==='Mid')return mi;
+    if(g==='Large')return lg;
     return true;
   });
 }
