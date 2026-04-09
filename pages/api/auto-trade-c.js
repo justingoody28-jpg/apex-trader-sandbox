@@ -188,7 +188,7 @@ try {
     // bid updates live pre-market. last only updates on actual trade print.
     const bidPrice = (q.bid && q.bid > 0) ? q.bid : null;
     const lastPrice = (q.last && q.last > 0) ? q.last : null;
-    const price = bidPrice || lastPrice;
+    const price = bidPrice; // bid-only: skip if no pre-market bid
     const prevClose = q.prevclose;
 
     if (!price || !prevClose || price <= 0 || prevClose <= 0) {
