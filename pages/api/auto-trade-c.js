@@ -14,7 +14,23 @@
 export default async function handler(req, res) {
   const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
 
-  /* DEDUP BYPASSED */
+  // ── Dedup guard: prevent double-execution on same trading day ──
+const _todayEDT = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).toISOString().slice(0,10);
+try {
+  const _pt = process.env.TRADIER_PAPER_TOKEN || process.env.TRADIER_TOKEN;
+  const _pa = process.env.TRADIER_PAPER_ACCOUNT_ID || 'VA49290911';
+  const _or = await fetch(`https://sandbox.tradier.com/v1/accounts/${_pa}/orders`,
+    {headers:{'Authorization':`Bearer ${_pt}`,'Accept':'application/json'}});
+  const _od = await _or.json();
+  const _ol = _od?.orders?.order;
+  const _oArr = Array.isArray(_ol)?_ol:(_ol?[_ol]:[]);
+  const _tod = _oArr.filter(o=>o.create_date?.startsWith(_todayEDT) && o.status !== "canceled" && o.status !== "cancelled" && o.status !== "rejected" && o.status !== "expired");
+  if(_tod.length > 0){
+    return res.status(200).json({timestamp:new Date().toISOString(),status:'already_ran',
+      message:`Dedup guard: ${_tod.length} orders already placed today (${_todayEDT}). Skipping.`,
+      symbols:_tod.map(o=>o.symbol||(Array.isArray(o.leg)?o.leg[0]?.symbol:o.leg?.symbol)||'?')});
+  }
+} catch(_e){ /* dedup check failed — proceed normally */ }
 
   // ââ undefined
   // ── Market hours guard ────────────────────────────────────────────────────
