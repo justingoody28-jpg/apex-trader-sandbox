@@ -537,10 +537,6 @@
       "bet": 500
     },
     {
-      "symbol": "OBNK",
-      "bet": 500
-    },
-    {
       "symbol": "HBCP",
       "bet": 500
     },
@@ -910,9 +906,9 @@
     "hRvol": 4
   },
   "defaultBet": 500,
-  "count": 223,
-  "updated": "2026-04-09T00:41:44.816Z",
-  "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q1 2026)",
+  "count": 222,
+  "updated": "2026-04-09T15:17:09.063Z",
+  "_note": "Auto-synced from apex_watchlist (222 tickers, Kelly from Q1 2026)",
   "riskControls": {
     "live": false,
     "maxTradesPerDay": 15,
