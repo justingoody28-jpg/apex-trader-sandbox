@@ -130,11 +130,11 @@
     },
     {
       "symbol": "LPSN",
-      "bet": 500
+      "bet": 2000
     },
     {
       "symbol": "DOMO",
-      "bet": 500
+      "bet": 250
     },
     {
       "symbol": "QTWO",
@@ -302,7 +302,7 @@
     },
     {
       "symbol": "FAT",
-      "bet": 500
+      "bet": 2000
     },
     {
       "symbol": "RRGB",
@@ -398,7 +398,7 @@
     },
     {
       "symbol": "VTLE",
-      "bet": 2000
+      "bet": 500
     },
     {
       "symbol": "SM",
@@ -690,7 +690,7 @@
     },
     {
       "symbol": "KLXE",
-      "bet": 500
+      "bet": 2000
     },
     {
       "symbol": "NINE",
@@ -911,8 +911,8 @@
   },
   "defaultBet": 500,
   "count": 223,
-  "updated": "2026-04-08T14:57:52.974Z",
-  "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q2 2025)",
+  "updated": "2026-04-09T00:32:55.487Z",
+  "_note": "Auto-synced from apex_watchlist (223 tickers, Kelly from Q1 2026)",
   "riskControls": {
     "live": false,
     "maxTradesPerDay": 15,
