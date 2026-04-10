@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
   try {
     const r = await fetch(
-      `https://sandbox.tradier.com/v1/markets/quotes?symbols=${symbols}&greeks=false`,
+      `https://api.tradier.com/v1/markets/quotes?symbols=${symbols}&greeks=false`,
       { headers: { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' } }
     );
     if (!r.ok) { const err = await r.text(); return res.status(r.status).json({ error: `Tradier ${r.status}: ${err.slice(0,200)}` }); }
