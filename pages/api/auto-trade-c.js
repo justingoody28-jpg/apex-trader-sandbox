@@ -78,7 +78,7 @@ try {
     config = await r.json();
   } catch (e) { return res.status(500).json({ error: e.message }); }
 
-  const _rc = config.riskControls || {};
+  const _rc = config;
   const _live = _rc.live === true;
   PAPER_H = _live
     ? { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }
