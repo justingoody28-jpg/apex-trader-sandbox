@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const d = await r.json();
   const orders = d?.orders?.order || [];
   const arr = Array.isArray(orders) ? orders : (orders ? [orders] : []);
-  const todayStr = '2026-04-06';
+  const todayStr = new Date().toISOString().slice(0, 10);
   const todayOrders = arr.filter(o => o.create_date?.startsWith(todayStr));
   return res.status(200).json({
     total: arr.length,
