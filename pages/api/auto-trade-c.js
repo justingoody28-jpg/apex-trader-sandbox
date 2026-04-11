@@ -398,6 +398,43 @@ export default async function handler(req, res) {
   const errors  = results.filter(r => r.status === 'error').length;
   console.log(`[APEX] ===== RUN COMPLETE | traded=${traded} skipped=${skipped} errors=${errors} totalExposure=$${_exposureUsed} =====`);
 
+  // ── Persist trade log to Supabase ────────────────────────────────────────
+  try {
+    const _sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const _sbKey = process.env.SUPABASE_SERVICE_KEY;
+    const _sbH   = { 'apikey': _sbKey, 'Authorization': `Bearer ${_sbKey}`, 'Content-Type': 'application/json' };
+    const _trigger = DRY_RUN ? 'dryrun' : (req.headers['x-vercel-cron'] ? 'cron' : 'manual');
+    const _logRows = results
+      .filter(r => r.status === 'traded' || r.status === 'dry_run' || r.status === 'error' ||
+                   (r.status === 'skipped' && r.gap !== undefined && Math.abs(r.gap) >= 2))
+      .map(r => ({
+        run_at:       runId,
+        trigger_type: _trigger,
+        live:         _live,
+        symbol:       r.symbol,
+        scenario:     r.scenario || null,
+        status:       r.status,
+        gap:          r.gap !== undefined ? +r.gap : null,
+        price:        r.price || r.entryPrice || null,
+        qty:          r.qty || null,
+        tp:           r.tp || r.takeProfitPrice || null,
+        sl:           r.sl || r.stopLossPrice  || null,
+        bet:          r.bet || null,
+        order_id:     r.order?.id || r.orderId || null,
+        reason:       r.reason || null,
+      }));
+    if (_logRows.length > 0) {
+      const _lr = await fetch(`${_sbUrl}/rest/v1/apex_trade_log`, {
+        method: 'POST',
+        headers: { ..._sbH, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(_logRows)
+      });
+      console.log(`[APEX] Trade log written: ${_logRows.length} rows | status=${_lr.status}`);
+    }
+  } catch (_logErr) {
+    console.log('[APEX] Trade log write failed (non-fatal):', _logErr.message);
+  }
+
   return res.status(200).json({
     timestamp: runId, variant: 'C-Tradier-tiered-9:29',
     live: _live,
