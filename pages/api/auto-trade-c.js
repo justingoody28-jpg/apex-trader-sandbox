@@ -41,14 +41,20 @@ export default async function handler(req, res) {
   }
 
   // ── Load config FIRST so _live is known before dedup ────────────────────
+  // Hardcoded fallback ensures a GitHub fetch failure never kills the run
+  const CONFIG_FALLBACK = {"live":true,"maxTradesPerDay":10,"maxBetOverride":null,"maxDailyExposure":400,"betByScenario":{"A":25,"B":25,"C":25,"D":25,"E1":25,"E2":25,"E3":25,"E4":25,"F":25},"scenarios":{"A":false,"B":false,"C":false,"D":true,"E":true,"F":true,"G":false,"H":false}};
   let config;
   try {
-    const r = await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json');
+    const _cfgCtrl = new AbortController();
+    const _cfgTimeout = setTimeout(() => _cfgCtrl.abort(), 5000);
+    const r = await fetch('https://raw.githubusercontent.com/justingoody28-jpg/apex-trader-sandbox/main/public/auto-trade-config.json', { signal: _cfgCtrl.signal });
+    clearTimeout(_cfgTimeout);
     if (!r.ok) throw new Error('Config fetch failed: ' + r.status);
     config = await r.json();
+    console.log('[APEX] Config loaded from GitHub');
   } catch (e) {
-    console.log('[APEX] ERROR: Config load failed:', e.message);
-    return res.status(500).json({ error: e.message });
+    console.log('[APEX] Config fetch failed, using fallback:', e.message);
+    config = CONFIG_FALLBACK;
   }
 
   const _live        = config.live === true;
