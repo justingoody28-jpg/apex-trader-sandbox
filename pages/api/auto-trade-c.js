@@ -107,31 +107,14 @@ export default async function handler(req, res) {
     console.log(`[APEX] Dedup skipped (dryrun mode)`);
   }
 
-  // ── Market hours guard (weekends/holidays only) ─────────────────────────
-  // NOTE: Tradier clock returns 'closed' during pre-market (before 9:30 AM EDT).
-  // Cron fires at 9:29 AM EDT intentionally pre-market to catch gap signals.
-  // Only block on weekends/holidays — check day of week instead of Tradier clock.
-  try {
-    const _mktR = await fetch(`${BASE}/markets/clock`, { headers: H });
-    if (_mktR.ok) {
-      const _mktJ = await _mktR.json();
-      const state = _mktJ?.clock?.state;
-      console.log(`[APEX] Market state: ${state}`);
-      if (state === 'closed') {
-        // Only block if it's actually a weekend or holiday (not just pre-market)
-        const _nowEDT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-        const _hourEDT = _nowEDT.getHours();
-        const _dayEDT = _nowEDT.getDay(); // 0=Sun, 6=Sat
-        const _isWeekend = _dayEDT === 0 || _dayEDT === 6;
-        const _isPreMarket = _hourEDT >= 4 && _hourEDT < 10;
-        if (_isWeekend || !_isPreMarket) {
-          console.log('[APEX] Market closed (weekend/holiday) — no trades placed');
-          return res.status(200).json({ timestamp: runId, status: 'market_closed', message: 'Market closed (holiday or weekend). No trades placed.', trades: [] });
-        }
-        console.log('[APEX] Market state=closed but pre-market window — proceeding with gap scan');
-      }
-    }
-  } catch (_me) { console.log('[APEX] Market clock check failed (non-fatal):', _me.message); }
+  // ── Weekend guard (day-of-week only — Tradier clock unreliable at 9:29 AM EDT) ──
+  const _nowEDT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const _dayEDT = _nowEDT.getDay();
+  if (_dayEDT === 0 || _dayEDT === 6) {
+    console.log('[APEX] Weekend — no trades placed');
+    return res.status(200).json({ timestamp: runId, status: 'market_closed', message: 'Weekend. No trades placed.', trades: [] });
+  }
+  console.log(`[APEX] Day check passed (day=${_dayEDT}) — proceeding`);
 
   function scBet(sc, tickerBet) {
     if (_betBySc[sc] > 0) return _betBySc[sc];
