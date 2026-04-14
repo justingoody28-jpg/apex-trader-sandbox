@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/auto-trade-c",
-      "schedule": "29 13 * * 1-5"
+      "schedule": "30 13 * * 1-5"
     }
   ]
 }
