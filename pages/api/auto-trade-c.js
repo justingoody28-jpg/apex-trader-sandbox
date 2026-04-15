@@ -1,4 +1,4 @@
-// pages/api/auto-trade-c.js — Scenario D/E/F/A GAP FADE, Tiered Exits
+// pages/api/auto-trade-c.js — Scenario D/E/F/A GAP FADE, Tiered Exits — cron 9:30 AM EDT
 // Cron: 9:29 AM EDT weekdays (Vercel cron)
 // Data + Execution: Tradier production API + OTOCO bracket orders
 //
