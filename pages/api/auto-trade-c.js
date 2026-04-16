@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
   // ── Load config FIRST so _live is known before dedup ────────────────────
   // Hardcoded fallback ensures a GitHub fetch failure never kills the run
-  const CONFIG_FALLBACK = {"live":true,"maxTradesPerDay":10,"maxBetOverride":null,"maxDailyExposure":400,"betByScenario":{"A":25,"B":25,"C":25,"D":25,"E1":25,"E2":25,"E3":25,"E4":25,"F":25},"scenarios":{"A":false,"B":false,"C":false,"D":true,"E":true,"F":true,"G":false,"H":false}};
+  const CONFIG_FALLBACK = {"live":true,"maxTradesPerDay":10,"maxBetOverride":null,"maxDailyExposure":400,"betByScenario":{"A":25,"B":25,"C":25,"D":25,"E1":25,"E2":25,"E3":25,"E4":25,"F":25},"scenarios":{"A":false,"B":false,"C":false,"D":false,"E":true,"F":true,"G":false,"H":false}};
   let config;
   try {
     const _cfgCtrl = new AbortController();
@@ -251,7 +251,7 @@ export default async function handler(req, res) {
     console.log(`[APEX] ${sym} | bid=${price} prevclose=${prevClose} gap=${gap.toFixed(2)}% rvol=${rvol}`);
 
     // ── Scenario D: Short gap-up >=2% ──────────────────────────────────────
-    if (gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D || []).includes(sym) && _riskOk(scBet('D', bet))) {
+    if (config.scenarios.D !== false && gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D || []).includes(sym) && _riskOk(scBet('D', bet))) {
       const _betD = scBet('D', bet);
       const tpD   = +(price * 0.98).toFixed(2);
       const slD   = +(price * 1.005).toFixed(2);
