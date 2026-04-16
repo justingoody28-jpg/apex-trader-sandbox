@@ -2,11 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "devCommand": "next dev",
-  "installCommand": "npm install",
-  "crons": [
-    {
-      "path": "/api/auto-trade-c",
-      "schedule": "30 13 * * 1-5"
-    }
-  ]
+  "installCommand": "npm install"
 }
