@@ -352,9 +352,9 @@ export default async function handler(req, res) {
             const tpF = +(fillPrice * 1.02).toFixed(2);
             const slF = +(fillPrice * 0.98).toFixed(2);
             console.log(`[APEX] ${sym} F fill=${fillPrice} TP=${tpF} SL=${slF}`);
-            // Step 4: Place OTO bracket
+            // Step 4: Place OCO bracket (TP + SL, one cancels the other)
             const bracketParams = new URLSearchParams({
-              'class': 'oto', 'duration': 'day',
+              'class': 'oco', 'duration': 'day',
               'symbol[0]': sym, 'side[0]': 'sell', 'quantity[0]': String(qtyF), 'type[0]': 'limit', 'price[0]': String(tpF),
               'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'stop',  'stop[1]':  String(slF),
             });
