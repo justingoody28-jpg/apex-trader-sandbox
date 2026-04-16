@@ -18,6 +18,17 @@ export default async function handler(req, res) {
 
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // ── Webhook secret check ─────────────────────────────────────────────────
+  // Allow: Vercel cron (no secret needed), dryrun, or valid TV_WEBHOOK_SECRET
+  const _secret = process.env.TV_WEBHOOK_SECRET;
+  if (_secret && !DRY_RUN) {
+    const _provided = req.headers['x-webhook-secret'] || req.query.secret;
+    if (_provided !== _secret) {
+      console.log('[APEX] Unauthorized — invalid webhook secret');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
   const TRADIER_TOKEN         = process.env.TRADIER_TOKEN;
   const TRADIER_ACCOUNT_ID    = process.env.TRADIER_ACCOUNT_ID;
   const TRADIER_PAPER_TOKEN   = process.env.TRADIER_PAPER_TOKEN;
