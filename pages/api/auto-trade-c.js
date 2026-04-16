@@ -311,25 +311,60 @@ export default async function handler(req, res) {
     // ── Scenario F: Long gap-down <=-5% ───────────────────────────────────
     if (gap <= -5 && gap > -25 && !(_excl.F || []).includes(sym) && _riskOk(scBet('F', bet))) {
       const _betF = scBet('F', bet);
-      const tpF   = +(price * 1.02).toFixed(2);
-      const slF   = +(price * 0.98).toFixed(2);
       const qtyF  = Math.max(1, Math.floor(_betF / price));
-      console.log(`[APEX] ${sym} | SCENARIO F LONG | bet=${_betF} qty=${qtyF} entry=${price} TP=${tpF} SL=${slF}`);
+      console.log(`[APEX] ${sym} | SCENARIO F LONG | bet=${_betF} qty=${qtyF} entry=~${price} (market order — TP/SL set from fill)`);
       try {
-        const paramsF = new URLSearchParams({
-          'class': 'otoco', 'duration': 'day',
-          'symbol[0]': sym, 'side[0]': 'buy',  'quantity[0]': String(qtyF), 'type[0]': 'market',
-          'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'limit', 'price[1]': String(tpF),
-          'symbol[2]': sym, 'side[2]': 'sell', 'quantity[2]': String(qtyF), 'type[2]': 'stop',  'stop[2]':  String(slF),
-        });
         if (DRY_RUN) {
+          const tpF = +(price * 1.02).toFixed(2);
+          const slF = +(price * 0.98).toFixed(2);
           results.push({ symbol: sym, scenario: 'F', status: 'dry_run', gap: +gap.toFixed(2), price, bet: _betF, qty: qtyF, tp: tpF, sl: slF });
         } else {
-          const rdF = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: paramsF });
-          const jF  = await rdF.json();
-          console.log(`[APEX] ${sym} F order result: status=${rdF.status} orderId=${jF?.order?.id}`);
-          if (rdF.ok) { _tradesPlaced++; _exposureUsed += _betF; }
-          results.push({ symbol: sym, scenario: 'F', status: rdF.ok ? 'filled' : 'error', gap: gap.toFixed(2), price, qty: qtyF, tp: tpF, sl: slF, order: jF?.order });
+          // Step 1: Place market entry only
+          const entryParams = new URLSearchParams({
+            'class': 'equity', 'duration': 'day',
+            'symbol': sym, 'side': 'buy', 'quantity': String(qtyF), 'type': 'market',
+          });
+          const entryR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: entryParams });
+          const entryJ = await entryR.json();
+          const entryId = entryJ?.order?.id;
+          console.log(`[APEX] ${sym} F entry result: status=${entryR.status} orderId=${entryId}`);
+          if (!entryR.ok || !entryId) {
+            results.push({ symbol: sym, scenario: 'F', status: 'error', gap: gap.toFixed(2), price, qty: qtyF, error: 'Entry order failed' });
+          } else {
+            // Step 2: Poll for fill price (up to 5 seconds)
+            let fillPrice = null;
+            for (let i = 0; i < 5; i++) {
+              await new Promise(r => setTimeout(r, 1000));
+              const pollR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${entryId}`, { headers: ORDER_H });
+              const pollJ = await pollR.json();
+              const o = pollJ?.order;
+              if (o?.status === 'filled' && o?.avg_fill_price > 0) {
+                fillPrice = +o.avg_fill_price;
+                break;
+              }
+              console.log(`[APEX] ${sym} polling fill... status=${o?.status} attempt=${i+1}`);
+            }
+            if (!fillPrice) {
+              console.log(`[APEX] ${sym} F — could not get fill price, using bid as fallback`);
+              fillPrice = price;
+            }
+            // Step 3: Calculate TP/SL from actual fill price
+            const tpF = +(fillPrice * 1.02).toFixed(2);
+            const slF = +(fillPrice * 0.98).toFixed(2);
+            console.log(`[APEX] ${sym} F fill=${fillPrice} TP=${tpF} SL=${slF}`);
+            // Step 4: Place OTO bracket
+            const bracketParams = new URLSearchParams({
+              'class': 'oto', 'duration': 'day',
+              'symbol[0]': sym, 'side[0]': 'sell', 'quantity[0]': String(qtyF), 'type[0]': 'limit', 'price[0]': String(tpF),
+              'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'stop',  'stop[1]':  String(slF),
+            });
+            const bracketR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
+            const bracketJ = await bracketR.json();
+            console.log(`[APEX] ${sym} F bracket result: status=${bracketR.status} orderId=${bracketJ?.order?.id}`);
+            _tradesPlaced++;
+            _exposureUsed += _betF;
+            results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: gap.toFixed(2), price: fillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: bracketR.ok });
+          }
         }
       } catch (eF) {
         console.log(`[APEX] ${sym} F order exception:`, eF.message);
