@@ -23,5 +23,9 @@
     "F": true,
     "G": false,
     "H": false
-  }
+  },
+  "tickers": [],
+  "count": 0,
+  "updated": "2026-04-16T10:37:25.108Z",
+  "_note": "Auto-synced from apex_watchlist (0 tickers, Kelly from Q1 2026)"
 }
