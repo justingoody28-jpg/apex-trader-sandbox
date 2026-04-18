@@ -554,6 +554,21 @@ body {
   </div>
 
   <div class="wm-body">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border2);background:var(--panel-dim);display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:300px">
+        <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--muted);letter-spacing:.04em;margin-bottom:6px">BATCH ADD TICKERS</div>
+        <textarea id="batchInput" placeholder="Paste tickers: AAPL, MSFT, GOOGL  (comma, space, or newline separated)" style="width:100%;min-height:56px;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px;border:1px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:140px">
+        <select id="batchCapTier" style="font-size:11px;font-family:'IBM Plex Mono',monospace;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text)">
+          <option value="Mid">Mid cap</option>
+          <option value="Lg">Large cap</option>
+          <option value="SM">Small cap</option>
+        </select>
+        <button onclick="batchAddTickers()" style="font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;padding:8px 14px;border-radius:4px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;letter-spacing:.04em">Add all</button>
+        <span id="batchStatus" style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-align:center;min-height:13px"></span>
+      </div>
+    </div>
     <div class="sc-tabs" id="scTabs"></div>
     <div id="panels"></div>
     <div class="save-bar" id="saveBar">
@@ -801,6 +816,30 @@ function setFilter(scId, val) { filters[scId].show = val; const s = SC.find(x =>
 function toggleTicker(scId, tk, enabled) { if (!enabled) excluded[scId].add(tk); else excluded[scId].delete(tk); const row = document.getElementById(`row-${scId}-${tk}`); if (row) row.classList.toggle('disabled', !enabled); updateCounts(scId); markDirty(); }
 function excludeTicker(scId, tk) { excluded[scId].add(tk); const row = document.getElementById(`row-${scId}-${tk}`); if (row) row.style.display = 'none'; updateCounts(scId); markDirty(); }
 function addTicker(scId) { const input = document.getElementById(`add-${scId}`); const sym = input.value.trim().toUpperCase(); if (!sym) return; if (!TICKERS.find(t => t.t === sym)) TICKERS.push({ t: sym, g: 'Mid' }); excluded[scId].delete(sym); input.value = ''; document.getElementById(`list-${scId}`).innerHTML = renderTickerList(SC.find(s => s.id === scId)); updateCounts(scId); markDirty(); }
+
+function batchAddTickers() {
+  const input = document.getElementById('batchInput');
+  const status = document.getElementById('batchStatus');
+  const capTier = document.getElementById('batchCapTier').value || 'Mid';
+  const raw = (input.value || '').toUpperCase();
+  const syms = [...new Set(raw.split(/[\s,;\n]+/).map(s => s.trim()).filter(s => /^[A-Z]{1,6}$/.test(s)))];
+  if (!syms.length) { status.textContent = 'No valid tickers found'; status.style.color = 'var(--red, #e55)'; return; }
+  let added = 0, already = 0;
+  syms.forEach(sym => {
+    const existing = TICKERS.find(t => t.t === sym);
+    if (!existing) { TICKERS.push({ t: sym, g: capTier }); added++; }
+    else { already++; }
+    approved.add(sym);
+    // Clear from any excluded lists so the new ticker is active in all scenarios
+    Object.values(excluded).forEach(s => s.delete(sym));
+  });
+  input.value = '';
+  status.textContent = `✓ ${added} added, ${already} already present`;
+  status.style.color = 'var(--green, #4ade80)';
+  setTimeout(() => { status.textContent = ''; }, 4000);
+  renderAll();
+  markDirty();
+}
 function updateCounts(scId) { const active = TICKERS.filter(t => !excluded[scId].has(t.t)).length; const excl = excluded[scId].size; const bar = document.querySelector(`#panel-${scId} .stats-row`); if (bar) bar.innerHTML = `<span><span class="stat-val">${active}</span> active</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${excl}</span> excluded</span><span style="color:var(--dim)">·</span><span><span class="stat-val">${TICKERS.length}</span> total</span>`; const tab = document.querySelector(`.sc-tab[data-s="${scId}"] .sc-tab-count`); if (tab) tab.textContent = active; }
 function toggleCapTier(g) {
   const tks = ALL_TICKERS.filter(t => t.g === g);
