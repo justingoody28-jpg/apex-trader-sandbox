@@ -320,17 +320,27 @@ export default async function handler(req, res) {
     }
 
     // ── Scenario F: Long gap-down <=-5% ───────────────────────────────────
+    // Fill-confirmed execution with hard cancel on slow fills.
+    // 1. Submit market entry.
+    // 2. Poll 500ms × 6 (3s max). Break early on filled/rejected/canceled.
+    // 3. Three-way branch:
+    //    a) FILLED + avg_fill_price > 0 → bracket from REAL fill price. If
+    //       bracket fails, emergency market-sell flatten (no naked longs).
+    //    b) REJECTED (buying power, margin) → log, no cancel, no bracket.
+    //    c) TIMEOUT (not filled at 3s) → DELETE entry, re-poll to confirm.
+    //       If cancel-during-fill race → treat as (a). Else → skipped.
+    // NO fallback to pre-market bid. NO bracket without a confirmed fill.
     if (gap <= -5 && gap > -25 && !(_excl.F || []).includes(sym) && _riskOk(scBet('F', bet))) {
       const _betF = scBet('F', bet);
       const qtyF  = Math.max(1, Math.floor(_betF / price));
-      console.log(`[APEX] ${sym} | SCENARIO F LONG | bet=${_betF} qty=${qtyF} entry=~${price} (market order — TP/SL set from fill)`);
+      console.log(`[APEX] ${sym} | SCENARIO F LONG | bet=${_betF} qty=${qtyF} entry=~${price} (market order — TP/SL set from fill only)`);
       try {
         if (DRY_RUN) {
           const tpF = +(price * 1.02).toFixed(2);
           const slF = +(price * 0.98).toFixed(2);
           results.push({ symbol: sym, scenario: 'F', status: 'dry_run', gap: +gap.toFixed(2), price, bet: _betF, qty: qtyF, tp: tpF, sl: slF });
         } else {
-          // Step 1: Place market entry only
+          // ── Step 1: Submit market entry ──────────────────────────────
           const entryParams = new URLSearchParams({
             'class': 'equity', 'duration': 'day',
             'symbol': sym, 'side': 'buy', 'quantity': String(qtyF), 'type': 'market',
@@ -338,32 +348,41 @@ export default async function handler(req, res) {
           const entryR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: entryParams });
           const entryJ = await entryR.json();
           const entryId = entryJ?.order?.id;
-          console.log(`[APEX] ${sym} F entry result: status=${entryR.status} orderId=${entryId}`);
+          console.log(`[APEX] ${sym} F entry submit: http=${entryR.status} orderId=${entryId}`);
+
           if (!entryR.ok || !entryId) {
-            results.push({ symbol: sym, scenario: 'F', status: 'error', gap: gap.toFixed(2), price, qty: qtyF, error: 'Entry order failed' });
-          } else {
-            // Step 2: Poll for fill price (up to 5 seconds)
-            let fillPrice = null;
-            for (let i = 0; i < 5; i++) {
-              await new Promise(r => setTimeout(r, 1000));
-              const pollR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${entryId}`, { headers: ORDER_H });
-              const pollJ = await pollR.json();
-              const o = pollJ?.order;
-              if (o?.status === 'filled' && o?.avg_fill_price > 0) {
-                fillPrice = +o.avg_fill_price;
-                break;
-              }
-              console.log(`[APEX] ${sym} polling fill... status=${o?.status} attempt=${i+1}`);
+            const _reason = entryJ?.order?.partner_error_description || entryJ?.fault?.faultstring || `HTTP ${entryR.status}`;
+            console.log(`[APEX] ${sym} F ENTRY SUBMIT FAILED: ${_reason}`);
+            results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price, qty: qtyF, reason: `entry_submit_failed: ${_reason}` });
+            continue;
+          }
+
+          // ── Step 2: Poll 500ms × 6 (3 seconds max). Break early. ─────
+          let fillPrice   = 0;
+          let entryStatus = 'pending';
+          for (let i = 0; i < 6; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            const pollR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${entryId}`, { headers: ORDER_H });
+            const pollJ = await pollR.json();
+            const o = pollJ?.order;
+            entryStatus = o?.status || 'unknown';
+            if (entryStatus === 'filled' && o?.avg_fill_price > 0) {
+              fillPrice = +o.avg_fill_price;
+              console.log(`[APEX] ${sym} F filled on poll ${i+1}: fill=${fillPrice}`);
+              break;
             }
-            if (!fillPrice) {
-              console.log(`[APEX] ${sym} F — could not get fill price, using bid as fallback`);
-              fillPrice = price;
+            if (entryStatus === 'rejected' || entryStatus === 'canceled' || entryStatus === 'cancelled' || entryStatus === 'expired') {
+              console.log(`[APEX] ${sym} F terminal status on poll ${i+1}: ${entryStatus} — breaking early`);
+              break;
             }
-            // Step 3: Calculate TP/SL from actual fill price
+            console.log(`[APEX] ${sym} F poll ${i+1}/6: status=${entryStatus}`);
+          }
+
+          // ── Branch A: FILLED with valid price → bracket from fill ────
+          if (entryStatus === 'filled' && fillPrice > 0) {
             const tpF = +(fillPrice * 1.02).toFixed(2);
             const slF = +(fillPrice * 0.98).toFixed(2);
             console.log(`[APEX] ${sym} F fill=${fillPrice} TP=${tpF} SL=${slF}`);
-            // Step 4: Place OCO bracket (TP + SL, one cancels the other)
             const bracketParams = new URLSearchParams({
               'class': 'oco', 'duration': 'day',
               'symbol[0]': sym, 'side[0]': 'sell', 'quantity[0]': String(qtyF), 'type[0]': 'limit', 'price[0]': String(tpF),
@@ -371,15 +390,104 @@ export default async function handler(req, res) {
             });
             const bracketR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
             const bracketJ = await bracketR.json();
-            console.log(`[APEX] ${sym} F bracket result: status=${bracketR.status} orderId=${bracketJ?.order?.id}`);
-            _tradesPlaced++;
-            _exposureUsed += _betF;
-            results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: gap.toFixed(2), price: fillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: bracketR.ok });
+            const bracketOk = bracketR.ok && bracketJ?.order?.status !== 'error';
+            console.log(`[APEX] ${sym} F bracket submit: http=${bracketR.status} orderId=${bracketJ?.order?.id} ok=${bracketOk}`);
+
+            if (bracketOk) {
+              _tradesPlaced++;
+              _exposureUsed += _betF;
+              results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: +gap.toFixed(2), price: fillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: true });
+            } else {
+              // Bracket rejected on filled position → emergency flatten
+              const _bReason = bracketJ?.order?.partner_error_description || bracketJ?.fault?.faultstring || `HTTP ${bracketR.status}`;
+              console.log(`[APEX] ${sym} F CRITICAL: bracket rejected on filled position — flattening. reason=${_bReason}`);
+              const flattenParams = new URLSearchParams({
+                'class': 'equity', 'duration': 'day',
+                'symbol': sym, 'side': 'sell', 'quantity': String(qtyF), 'type': 'market',
+              });
+              const flatR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: flattenParams });
+              const flatJ = await flatR.json();
+              console.log(`[APEX] ${sym} F flatten submit: http=${flatR.status} orderId=${flatJ?.order?.id}`);
+              _tradesPlaced++;
+              _exposureUsed += _betF;
+              results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price: fillPrice, qty: qtyF, entryId, bracketOk: false, reason: `bracket_failed_flattened: ${_bReason}` });
+            }
+            continue;
           }
+
+          // ── Branch B: REJECTED/TERMINAL → no cancel needed, no bracket
+          if (entryStatus === 'rejected' || entryStatus === 'canceled' || entryStatus === 'cancelled' || entryStatus === 'expired') {
+            console.log(`[APEX] ${sym} F entry terminal (${entryStatus}) — no bracket submitted`);
+            results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price, qty: qtyF, entryId, reason: `entry_${entryStatus}` });
+            continue;
+          }
+
+          // ── Branch C: TIMEOUT → DELETE entry, re-poll, skip (or catch race)
+          console.log(`[APEX] ${sym} F timed out at 3s (status=${entryStatus}) — cancelling entry ${entryId}`);
+          try {
+            const cancelR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${entryId}`, { method: 'DELETE', headers: ORDER_H });
+            console.log(`[APEX] ${sym} F cancel submit: http=${cancelR.status}`);
+          } catch (cE) {
+            console.log(`[APEX] ${sym} F cancel exception (non-fatal):`, cE.message);
+          }
+
+          await new Promise(r => setTimeout(r, 250));
+          let finalStatus    = 'unknown';
+          let finalFillPrice = 0;
+          try {
+            const confR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${entryId}`, { headers: ORDER_H });
+            const confJ = await confR.json();
+            const co = confJ?.order;
+            finalStatus = co?.status || 'unknown';
+            if (finalStatus === 'filled' && co?.avg_fill_price > 0) finalFillPrice = +co.avg_fill_price;
+            console.log(`[APEX] ${sym} F post-cancel confirm: status=${finalStatus} fillPrice=${finalFillPrice}`);
+          } catch (cfE) {
+            console.log(`[APEX] ${sym} F post-cancel confirm failed:`, cfE.message);
+          }
+
+          if (finalStatus === 'filled' && finalFillPrice > 0) {
+            // Cancel-during-fill race → fill landed. Bracket it.
+            const tpF = +(finalFillPrice * 1.02).toFixed(2);
+            const slF = +(finalFillPrice * 0.98).toFixed(2);
+            console.log(`[APEX] ${sym} F race-filled at fill=${finalFillPrice} — submitting bracket TP=${tpF} SL=${slF}`);
+            const bracketParams = new URLSearchParams({
+              'class': 'oco', 'duration': 'day',
+              'symbol[0]': sym, 'side[0]': 'sell', 'quantity[0]': String(qtyF), 'type[0]': 'limit', 'price[0]': String(tpF),
+              'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'stop',  'stop[1]':  String(slF),
+            });
+            const bracketR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
+            const bracketJ = await bracketR.json();
+            const bracketOk = bracketR.ok && bracketJ?.order?.status !== 'error';
+            console.log(`[APEX] ${sym} F race bracket submit: http=${bracketR.status} ok=${bracketOk}`);
+
+            if (bracketOk) {
+              _tradesPlaced++;
+              _exposureUsed += _betF;
+              results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: +gap.toFixed(2), price: finalFillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: true, reason: 'race_filled_during_cancel' });
+            } else {
+              const _bReason = bracketJ?.order?.partner_error_description || bracketJ?.fault?.faultstring || `HTTP ${bracketR.status}`;
+              console.log(`[APEX] ${sym} F CRITICAL: race-fill bracket rejected — flattening. reason=${_bReason}`);
+              const flattenParams = new URLSearchParams({
+                'class': 'equity', 'duration': 'day',
+                'symbol': sym, 'side': 'sell', 'quantity': String(qtyF), 'type': 'market',
+              });
+              const flatR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: flattenParams });
+              const flatJ = await flatR.json();
+              console.log(`[APEX] ${sym} F race flatten submit: http=${flatR.status} orderId=${flatJ?.order?.id}`);
+              _tradesPlaced++;
+              _exposureUsed += _betF;
+              results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price: finalFillPrice, qty: qtyF, entryId, bracketOk: false, reason: `race_bracket_failed_flattened: ${_bReason}` });
+            }
+            continue;
+          }
+
+          // Cancel succeeded (or order was terminal) → clean skip
+          console.log(`[APEX] ${sym} F skipped: slow_fill_cancelled (final=${finalStatus})`);
+          results.push({ symbol: sym, scenario: 'F', status: 'skipped', gap: +gap.toFixed(2), price, qty: qtyF, entryId, reason: `slow_fill_cancelled (final=${finalStatus})` });
         }
       } catch (eF) {
         console.log(`[APEX] ${sym} F order exception:`, eF.message);
-        results.push({ symbol: sym, scenario: 'F', status: 'error', error: eF.message });
+        results.push({ symbol: sym, scenario: 'F', status: 'error', reason: eF.message });
       }
     }
 
