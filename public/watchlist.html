@@ -679,6 +679,37 @@ async function loadState() {
       // when Supabase was empty, triggering the feedback-loop wipe bug.
       approved = new Set(d.active);
       excluded = Object.fromEntries(SC.map(s=>[s.id,new Set(Array.isArray(d.excluded)?d.excluded:(d.excluded&&d.excluded[s.id])||[])]));
+
+      // v4 fix (2026-04-20): restore cap-tier labels from persisted tickers.
+      // If Supabase has a non-empty `tickers` array, use it as the source of
+      // truth for TICKERS. Otherwise backfill: start from hardcoded ALL_TICKERS
+      // (223 labeled) + add any `active` symbols not already labeled, tagged
+      // 'Unknown' so the user can re-classify them via batch upload.
+      if (Array.isArray(d.tickers) && d.tickers.length > 0) {
+        TICKERS.length = 0;
+        const seenT = new Set();
+        d.tickers.forEach(t => {
+          if (t && t.t && !seenT.has(t.t)) {
+            TICKERS.push({ t: t.t, g: t.g || 'Unknown' });
+            seenT.add(t.t);
+          }
+        });
+        // Safety net: if any active symbol isn't in TICKERS, add it as Unknown
+        approved.forEach(sym => {
+          if (!seenT.has(sym)) { TICKERS.push({ t: sym, g: 'Unknown' }); seenT.add(sym); }
+        });
+      } else {
+        // First load after v4 deploy, or tickers column empty: backfill from
+        // hardcoded ALL_TICKERS + mark any orphan `active` symbols as Unknown.
+        TICKERS.length = 0;
+        const seenT = new Set();
+        ALL_TICKERS.forEach(t => {
+          if (!seenT.has(t.t)) { TICKERS.push({ t: t.t, g: t.g }); seenT.add(t.t); }
+        });
+        approved.forEach(sym => {
+          if (!seenT.has(sym)) { TICKERS.push({ t: sym, g: 'Unknown' }); seenT.add(sym); }
+        });
+      }
       return;
     }
   } catch(e) { console.warn('Supabase load failed, trying localStorage fallback', e); }
@@ -707,10 +738,13 @@ async function saveState() {
 
     if(btn) { btn.textContent = 'Saving…'; btn.style.opacity = '.6'; }
     if(status) status.textContent = '';
+    // v4 fix (2026-04-20): persist TICKERS [{t,g},...] so cap-tier labels
+    // set via batch upload survive page refresh.
+    const tickersArr = TICKERS.map(t => ({ t: t.t, g: t.g }));
     const r = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: activeArr, excluded: excludedObj })
+      body: JSON.stringify({ active: activeArr, excluded: excludedObj, tickers: tickersArr })
     });
     const d = await r.json();
     if (!d.ok) throw new Error('Save failed');
