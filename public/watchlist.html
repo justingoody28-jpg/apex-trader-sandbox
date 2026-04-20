@@ -673,7 +673,10 @@ async function loadState() {
   try {
     const r = await fetch('/api/watchlist');
     const d = await r.json();
-    if (d && Array.isArray(d.active) && d.active.length > 0) {
+    if (d && Array.isArray(d.active)) {
+      // v3 fix (2026-04-20): populate from ANY valid response, including empty.
+      // Previously required d.active.length > 0, which left `approved` stale
+      // when Supabase was empty, triggering the feedback-loop wipe bug.
       approved = new Set(d.active);
       excluded = Object.fromEntries(SC.map(s=>[s.id,new Set(Array.isArray(d.excluded)?d.excluded:(d.excluded&&d.excluded[s.id])||[])]));
       return;
@@ -688,11 +691,22 @@ async function loadState() {
 async function saveState() {
   const btn = document.getElementById('saveBtn');
   const status = document.getElementById('saveStatus');
-  if(btn) { btn.textContent = 'Saving…'; btn.style.opacity = '.6'; }
-  if(status) status.textContent = '';
   try {
     const activeArr = [...approved];
     const excludedObj = Object.fromEntries(Object.entries(excluded||{}).map(([k,v])=>[k,[...v]]));
+
+    // v3 fix (2026-04-20): refuse empty-save unless user explicitly confirms.
+    // Prevents the feedback-loop wipe bug from silently emptying apex_watchlist.
+    if (activeArr.length === 0) {
+      const ok = window.confirm('⚠️ Active ticker list is EMPTY.\n\nSaving now will wipe your watchlist in Supabase, and tomorrow\u2019s cron will trade zero tickers.\n\nAre you absolutely sure you want to save an empty list?');
+      if (!ok) {
+        if(status) { status.textContent = 'Save cancelled — active list was empty'; status.style.color = 'var(--dim)'; setTimeout(() => { if(status) status.textContent = ''; }, 3000); }
+        return;
+      }
+    }
+
+    if(btn) { btn.textContent = 'Saving…'; btn.style.opacity = '.6'; }
+    if(status) status.textContent = '';
     const r = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -860,7 +874,6 @@ function updateCapButtons() {
 }
 function updateHeader() { updateCapButtons(); const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; }
 function markDirty() { dirty = true; const bar = document.getElementById('saveBar'); bar.classList.add('visible'); bar.querySelector('.save-msg').innerHTML = '<div class="pulse"></div>Unsaved changes — not yet committed to config'; }
-  if(typeof v === 'undefined' || v === true){ clearTimeout(window._saveTimer); window._saveTimer = setTimeout(saveState, 800); }
 function toggle() { document.getElementById('wm').classList.toggle('open'); }
 loadState();
 window._perfIdx={};

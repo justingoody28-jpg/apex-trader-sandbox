@@ -51,6 +51,157 @@ export default async function handler(req, res) {
     return null;
   }
 
+  // ── v3: live-bid refresh right before bracket submit ────────────────────
+  // Used to validate our intended stop price against the CURRENT bid, which
+  // prevents Tradier's SellStopOrderStopPriceGreaterBid rule from canceling
+  // our stop leg (and cascading the OCO to canceled). Quotes always use the
+  // LIVE api.tradier.com endpoint regardless of order routing.
+  async function fetchCurrentBid(sym) {
+    try {
+      const _ac = new AbortController();
+      const _tid = setTimeout(() => _ac.abort(), 2000);
+      const r = await fetch(`${BASE}/markets/quotes?symbols=${sym}`, { headers: H, signal: _ac.signal });
+      clearTimeout(_tid);
+      if (!r.ok) return null;
+      const d = await r.json();
+      const q = d?.quotes?.quote;
+      const bid = q?.bid;
+      return (bid && bid > 0) ? +bid : null;
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  // ── v3: emergency flatten — market sell to close a naked long position ──
+  async function emergencyFlatten(sym, qtyF) {
+    console.log(`[APEX] ${sym} F EMERGENCY FLATTEN: qty=${qtyF}`);
+    try {
+      const flattenParams = new URLSearchParams({
+        'class': 'equity', 'duration': 'day',
+        'symbol': sym, 'side': 'sell', 'quantity': String(qtyF), 'type': 'market',
+      });
+      const flatR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: flattenParams });
+      const flatJ = await flatR.json();
+      console.log(`[APEX] ${sym} F flatten submit: http=${flatR.status} orderId=${flatJ?.order?.id} status=${flatJ?.order?.status}`);
+      return flatJ?.order?.id || null;
+    } catch (e) {
+      console.log(`[APEX] ${sym} F FLATTEN EXCEPTION:`, e.message);
+      return null;
+    }
+  }
+
+  // ── v3: submit OCO bracket with full verification per Tradier docs ──────
+  // Returns { ok, reason, bracketId, finalStatus, attempts }
+  // If ok=false, caller MUST emergency-flatten the position.
+  //
+  // Verification stages (per attempt):
+  //   1. Pre-flight TP-SL spread ≥ $0.12 (prevents OcoPriceDifferenceIsLessThanDelta) — once
+  //   2. Pre-flight current-bid > SL+buffer (prevents SellStopOrderStopPriceGreaterBid) — once
+  //   3. RETRY LOOP (delays from _retryDelaysMs):
+  //      a. Wait delay
+  //      b. Check global abort timer (_retryAbortMs vs _runStartMs)
+  //      c. Submit OCO
+  //      d. Immediate response status must be ok/open/pending (not rejected/canceled/error)
+  //      e. Post-submit re-poll at 500ms — per Tradier's documented recommended workflow
+  //      f. If alive → return ok:true. If failed → continue to next attempt.
+  //   4. All retries exhausted → return ok:false (caller flattens)
+  //
+  // Tradier confirmed 2026-04-20: bracket cancels were routing timeouts (never reached market center).
+  // Retries give the routing infrastructure additional chances after the 9:30 open burst.
+  async function submitBracketVerified({ sym, qtyF, fillPrice, tpF, slF }) {
+    // Stage 1: spread check (once — doesn't change between retries)
+    const spread = +(tpF - slF).toFixed(4);
+    if (spread < 0.12) {
+      return { ok: false, reason: `spread_too_narrow: tp=${tpF} sl=${slF} spread=$${spread} <$0.12 min`, bracketId: null, finalStatus: 'preflight_skipped', attempts: 0 };
+    }
+
+    // Stage 2: bid-vs-stop check (once — same rationale)
+    const currentBid = await fetchCurrentBid(sym);
+    if (currentBid !== null && currentBid <= slF + 0.02) {
+      return { ok: false, reason: `bid_at_or_below_stop: bid=${currentBid} sl=${slF} (SellStopOrderStopPriceGreaterBid risk)`, bracketId: null, finalStatus: 'preflight_skipped', attempts: 0 };
+    }
+    if (currentBid === null) {
+      console.log(`[APEX] ${sym} F WARN: bid fetch failed, proceeding without pre-flight bid check`);
+    } else {
+      console.log(`[APEX] ${sym} F pre-flight OK: bid=${currentBid} sl=${slF} spread=$${spread}`);
+    }
+
+    const OK_STATUSES = ['ok', 'open', 'pending', 'partially_filled'];
+    const FAIL_STATUSES = ['rejected', 'canceled', 'cancelled', 'expired', 'error'];
+
+    // Stage 3: retry loop
+    let lastResult = { ok: false, reason: 'no_attempts_made', bracketId: null, finalStatus: 'unknown', attempts: 0 };
+
+    for (let i = 0; i < _retryDelaysMs.length; i++) {
+      const delayMs = _retryDelaysMs[i];
+      const attemptNum = i + 1;
+
+      // Step 3a: wait the inter-attempt delay
+      if (delayMs > 0) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+
+      // Step 3b: global abort check (don't blow past Vercel function timeout)
+      const elapsedMs = Date.now() - _runStartMs;
+      if (elapsedMs > _retryAbortMs) {
+        console.log(`[APEX] ${sym} F bracket retry aborted at attempt ${attemptNum}: run elapsed ${elapsedMs}ms > abort ${_retryAbortMs}ms`);
+        return { ...lastResult, reason: `abort_timeout_after_${i}_attempts: ${lastResult.reason}`, attempts: i };
+      }
+
+      // Step 3c: submit the OCO
+      const bracketParams = new URLSearchParams({
+        'class': 'oco', 'duration': 'day',
+        'symbol[0]': sym, 'side[0]': 'sell', 'quantity[0]': String(qtyF), 'type[0]': 'limit', 'price[0]': String(tpF),
+        'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'stop',  'stop[1]':  String(slF),
+      });
+      const bracketR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
+      const bracketJ = await bracketR.json();
+      const bracketId = bracketJ?.order?.id || null;
+      const immediateStatus = bracketJ?.order?.status || 'unknown';
+      console.log(`[APEX] ${sym} F bracket attempt ${attemptNum}/${_retryDelaysMs.length}: http=${bracketR.status} orderId=${bracketId} immediateStatus=${immediateStatus}`);
+
+      // Step 3d: immediate response check
+      const immediateOk = bracketR.ok && OK_STATUSES.includes(immediateStatus);
+      if (!immediateOk) {
+        const reason = bracketJ?.order?.reason_description || bracketJ?.order?.partner_error_description || bracketJ?.fault?.faultstring || `HTTP ${bracketR.status} status=${immediateStatus}`;
+        lastResult = { ok: false, reason: `attempt${attemptNum}_immediate_fail: ${reason}`, bracketId, finalStatus: immediateStatus, attempts: attemptNum };
+        console.log(`[APEX] ${sym} F attempt ${attemptNum} immediate fail — ${reason}`);
+        continue;
+      }
+
+      // Step 3e: post-submit re-poll at 500ms
+      await new Promise(r => setTimeout(r, 500));
+      let repollStatus = immediateStatus;
+      let repollReason = null;
+      try {
+        const repollR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${bracketId}`, { headers: ORDER_H });
+        const repollJ = await repollR.json();
+        repollStatus = repollJ?.order?.status || 'unknown';
+        repollReason = repollJ?.order?.reason_description || null;
+        console.log(`[APEX] ${sym} F attempt ${attemptNum} re-poll@500ms: status=${repollStatus} reason=${repollReason || 'none'}`);
+      } catch (e) {
+        // Re-poll network error — be defensive, assume bracket is alive since immediate was OK.
+        console.log(`[APEX] ${sym} F attempt ${attemptNum} re-poll EXCEPTION (assuming alive):`, e.message);
+        return { ok: true, reason: `attempt${attemptNum}_repoll_exception_assumed_ok`, bracketId, finalStatus: immediateStatus, attempts: attemptNum };
+      }
+
+      // Step 3f: verdict
+      if (FAIL_STATUSES.includes(repollStatus)) {
+        lastResult = { ok: false, reason: `attempt${attemptNum}_post_submit_${repollStatus}: ${repollReason || 'no_reason_from_tradier'}`, bracketId, finalStatus: repollStatus, attempts: attemptNum };
+        continue;
+      }
+      if (OK_STATUSES.includes(repollStatus)) {
+        return { ok: true, reason: `verified_open_attempt${attemptNum}`, bracketId, finalStatus: repollStatus, attempts: attemptNum };
+      }
+      // Unknown status — defensive: treat as failure, try next attempt
+      lastResult = { ok: false, reason: `attempt${attemptNum}_unknown_status: ${repollStatus}`, bracketId, finalStatus: repollStatus, attempts: attemptNum };
+    }
+
+    // All attempts exhausted
+    console.log(`[APEX] ${sym} F bracket exhausted ${_retryDelaysMs.length} attempts — returning fail for flatten`);
+    return lastResult;
+  }
+
   // ── Load config FIRST so _live is known before dedup ────────────────────
   // Hardcoded fallback ensures a GitHub fetch failure never kills the run
   const CONFIG_FALLBACK = {"live":true,"maxTradesPerDay":10,"maxBetOverride":null,"maxDailyExposure":400,"betByScenario":{"A":25,"B":25,"C":25,"D":25,"E1":25,"E2":25,"E3":25,"E4":25,"F":25},"scenarios":{"A":false,"B":false,"C":false,"D":false,"E":true,"F":true,"G":false,"H":false}};
@@ -74,7 +225,15 @@ export default async function handler(req, res) {
   const _betOverride = config.maxBetOverride   || null;
   const _betBySc     = config.betByScenario    || {};
 
+  // v3: bracket retry config (per Tradier-confirmed routing-timeout cancels)
+  // Default: 3 attempts at [0, 1500, 3000]ms with 50s global abort
+  const _retryCfg       = config.bracketRetries || {};
+  const _retryDelaysMs  = Array.isArray(_retryCfg.delaysMs) && _retryCfg.delaysMs.length > 0 ? _retryCfg.delaysMs : [0, 1500, 3000];
+  const _retryAbortMs   = Number.isFinite(_retryCfg.abortAfterMs) ? _retryCfg.abortAfterMs : 50000;
+  const _runStartMs     = Date.now();
+
   console.log(`[APEX] Config loaded | live=${_live} maxTrades=${_maxTrades} maxExposure=${_maxExposure} betByScenario=${JSON.stringify(_betBySc)}`);
+  console.log(`[APEX] Retry config: ${_retryDelaysMs.length} attempts at [${_retryDelaysMs.join(',')}]ms, abort after ${_retryAbortMs}ms`);
 
   const LIVE_BASE  = 'https://api.tradier.com/v1';
   const PAPER_BASE = _live ? LIVE_BASE : 'https://sandbox.tradier.com/v1';
@@ -383,34 +542,21 @@ export default async function handler(req, res) {
             const tpF = +(fillPrice * 1.02).toFixed(2);
             const slF = +(fillPrice * 0.98).toFixed(2);
             console.log(`[APEX] ${sym} F fill=${fillPrice} TP=${tpF} SL=${slF}`);
-            const bracketParams = new URLSearchParams({
-              'class': 'oco', 'duration': 'day',
-              'symbol[0]': sym, 'side[0]': 'sell', 'quantity[0]': String(qtyF), 'type[0]': 'limit', 'price[0]': String(tpF),
-              'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'stop',  'stop[1]':  String(slF),
-            });
-            const bracketR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
-            const bracketJ = await bracketR.json();
-            const bracketOk = bracketR.ok && bracketJ?.order?.status !== 'error';
-            console.log(`[APEX] ${sym} F bracket submit: http=${bracketR.status} orderId=${bracketJ?.order?.id} ok=${bracketOk}`);
 
-            if (bracketOk) {
+            // v3: full-verification bracket submit (spread + bid check + re-poll)
+            const br = await submitBracketVerified({ sym, qtyF, fillPrice, tpF, slF });
+
+            if (br.ok) {
               _tradesPlaced++;
               _exposureUsed += _betF;
-              results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: +gap.toFixed(2), price: fillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: true });
+              results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: +gap.toFixed(2), price: fillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: true, bracketId: br.bracketId, bracketStatus: br.finalStatus });
             } else {
-              // Bracket rejected on filled position → emergency flatten
-              const _bReason = bracketJ?.order?.partner_error_description || bracketJ?.fault?.faultstring || `HTTP ${bracketR.status}`;
-              console.log(`[APEX] ${sym} F CRITICAL: bracket rejected on filled position — flattening. reason=${_bReason}`);
-              const flattenParams = new URLSearchParams({
-                'class': 'equity', 'duration': 'day',
-                'symbol': sym, 'side': 'sell', 'quantity': String(qtyF), 'type': 'market',
-              });
-              const flatR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: flattenParams });
-              const flatJ = await flatR.json();
-              console.log(`[APEX] ${sym} F flatten submit: http=${flatR.status} orderId=${flatJ?.order?.id}`);
+              // Bracket failed (pre-flight skip, immediate reject, or post-submit cancel) → emergency flatten
+              console.log(`[APEX] ${sym} F CRITICAL: bracket failed — ${br.reason}. Flattening.`);
+              const flatId = await emergencyFlatten(sym, qtyF);
               _tradesPlaced++;
               _exposureUsed += _betF;
-              results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price: fillPrice, qty: qtyF, entryId, bracketOk: false, reason: `bracket_failed_flattened: ${_bReason}` });
+              results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price: fillPrice, qty: qtyF, entryId, bracketOk: false, bracketId: br.bracketId, flattenOrderId: flatId, reason: `bracket_failed_flattened: ${br.reason}` });
             }
             continue;
           }
@@ -450,33 +596,20 @@ export default async function handler(req, res) {
             const tpF = +(finalFillPrice * 1.02).toFixed(2);
             const slF = +(finalFillPrice * 0.98).toFixed(2);
             console.log(`[APEX] ${sym} F race-filled at fill=${finalFillPrice} — submitting bracket TP=${tpF} SL=${slF}`);
-            const bracketParams = new URLSearchParams({
-              'class': 'oco', 'duration': 'day',
-              'symbol[0]': sym, 'side[0]': 'sell', 'quantity[0]': String(qtyF), 'type[0]': 'limit', 'price[0]': String(tpF),
-              'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qtyF), 'type[1]': 'stop',  'stop[1]':  String(slF),
-            });
-            const bracketR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
-            const bracketJ = await bracketR.json();
-            const bracketOk = bracketR.ok && bracketJ?.order?.status !== 'error';
-            console.log(`[APEX] ${sym} F race bracket submit: http=${bracketR.status} ok=${bracketOk}`);
 
-            if (bracketOk) {
+            // v3: same verified bracket helper
+            const br = await submitBracketVerified({ sym, qtyF, fillPrice: finalFillPrice, tpF, slF });
+
+            if (br.ok) {
               _tradesPlaced++;
               _exposureUsed += _betF;
-              results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: +gap.toFixed(2), price: finalFillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: true, reason: 'race_filled_during_cancel' });
+              results.push({ symbol: sym, scenario: 'F', status: 'filled', gap: +gap.toFixed(2), price: finalFillPrice, qty: qtyF, tp: tpF, sl: slF, entryId, bracketOk: true, bracketId: br.bracketId, bracketStatus: br.finalStatus, reason: 'race_filled_during_cancel' });
             } else {
-              const _bReason = bracketJ?.order?.partner_error_description || bracketJ?.fault?.faultstring || `HTTP ${bracketR.status}`;
-              console.log(`[APEX] ${sym} F CRITICAL: race-fill bracket rejected — flattening. reason=${_bReason}`);
-              const flattenParams = new URLSearchParams({
-                'class': 'equity', 'duration': 'day',
-                'symbol': sym, 'side': 'sell', 'quantity': String(qtyF), 'type': 'market',
-              });
-              const flatR = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: flattenParams });
-              const flatJ = await flatR.json();
-              console.log(`[APEX] ${sym} F race flatten submit: http=${flatR.status} orderId=${flatJ?.order?.id}`);
+              console.log(`[APEX] ${sym} F CRITICAL: race-fill bracket failed — ${br.reason}. Flattening.`);
+              const flatId = await emergencyFlatten(sym, qtyF);
               _tradesPlaced++;
               _exposureUsed += _betF;
-              results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price: finalFillPrice, qty: qtyF, entryId, bracketOk: false, reason: `race_bracket_failed_flattened: ${_bReason}` });
+              results.push({ symbol: sym, scenario: 'F', status: 'error', gap: +gap.toFixed(2), price: finalFillPrice, qty: qtyF, entryId, bracketOk: false, bracketId: br.bracketId, flattenOrderId: flatId, reason: `race_bracket_failed_flattened: ${br.reason}` });
             }
             continue;
           }
