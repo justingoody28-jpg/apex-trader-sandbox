@@ -872,17 +872,24 @@ function batchAddTickers() {
   const raw = (input.value || '').toUpperCase();
   const syms = [...new Set(raw.split(/[\s,;\n]+/).map(s => s.trim()).filter(s => /^[A-Z]{1,6}$/.test(s)))];
   if (!syms.length) { status.textContent = 'No valid tickers found'; status.style.color = 'var(--red, #e55)'; return; }
-  let added = 0, already = 0;
+  // v4.1 (2026-04-20): update cap tier on existing tickers so the batch-upload
+  // UI can be used to re-label the 191 orphan 'Unknown' tickers.
+  let added = 0, relabeled = 0, unchanged = 0;
   syms.forEach(sym => {
     const existing = TICKERS.find(t => t.t === sym);
     if (!existing) { TICKERS.push({ t: sym, g: capTier }); added++; }
-    else { already++; }
+    else if (existing.g !== capTier) { existing.g = capTier; relabeled++; }
+    else { unchanged++; }
     approved.add(sym);
     // Clear from any excluded lists so the new ticker is active in all scenarios
     Object.values(excluded).forEach(s => s.delete(sym));
   });
   input.value = '';
-  status.textContent = `✓ ${added} added, ${already} already present`;
+  const parts = [];
+  if (added) parts.push(`${added} added`);
+  if (relabeled) parts.push(`${relabeled} relabeled to ${capTier}`);
+  if (unchanged) parts.push(`${unchanged} already ${capTier}`);
+  status.textContent = parts.length ? '✓ ' + parts.join(', ') : 'No changes';
   status.style.color = 'var(--green, #4ade80)';
   setTimeout(() => { status.textContent = ''; }, 4000);
   renderAll();
