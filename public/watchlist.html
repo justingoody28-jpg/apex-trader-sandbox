@@ -872,7 +872,7 @@ function updateCapButtons() {
     btn.style.color = on?'var(--accent)':'var(--muted)';
   });
 }
-function updateHeader() { updateCapButtons(); const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; }
+function updateHeader() { updateCapButtons(); const withStats = TICKERS.filter(t => stats[t.t] && Object.keys(stats[t.t]).length > 0).length; document.getElementById('statsCount').textContent = withStats + ' with stats'; document.getElementById('totalCount').textContent = approved.size + ' tickers'; }
 function markDirty() { dirty = true; const bar = document.getElementById('saveBar'); bar.classList.add('visible'); bar.querySelector('.save-msg').innerHTML = '<div class="pulse"></div>Unsaved changes — not yet committed to config'; }
 function toggle() { document.getElementById('wm').classList.toggle('open'); }
 loadState();
