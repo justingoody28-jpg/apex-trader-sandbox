@@ -33,17 +33,17 @@ export default async function handler(req, res) {
   }
 
   // Tradier paper creds
-  const PAPER_TOKEN = process.env.TRADIER_PAPER_TOKEN;
-  const PAPER_ACCOUNT = process.env.TRADIER_PAPER_ACCOUNT_ID;
+  const LIVE_TOKEN_X = process.env.TRADIER_TOKEN;
+  const LIVE_ACCOUNT = process.env.TRADIER_ACCOUNT_ID;
   const LIVE_TOKEN = process.env.TRADIER_TOKEN;
-  if (!PAPER_TOKEN || !PAPER_ACCOUNT || !LIVE_TOKEN) {
+  if (!LIVE_TOKEN_X || !LIVE_ACCOUNT || !LIVE_TOKEN) {
     return res.status(500).json({ error: 'Missing Tradier env vars' });
   }
 
   const QUOTE_BASE = 'https://api.tradier.com/v1';
-  const PAPER_BASE = 'https://sandbox.tradier.com/v1';
+  const LIVE_BASE = 'https://api.tradier.com/v1';
   const QUOTE_H = { Authorization: `Bearer ${LIVE_TOKEN}`, Accept: 'application/json' };
-  const ORDER_H = { Authorization: `Bearer ${PAPER_TOKEN}`, Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
+  const ORDER_H = { Authorization: `Bearer ${LIVE_TOKEN_X}`, Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
 
   const trace = [];
   const log = (step, data) => { trace.push({ t: Date.now(), step, ...data }); };
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
       'quantity': String(qty),
       'type': 'market',
     });
-    const entryR = await fetch(`${PAPER_BASE}/accounts/${PAPER_ACCOUNT}/orders`, {
+    const entryR = await fetch(`${LIVE_BASE}/accounts/${LIVE_ACCOUNT}/orders`, {
       method: 'POST', headers: ORDER_H, body: entryParams,
     });
     const entryJ = await entryR.json();
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
     let finalEntryStatus = null;
     for (let i = 0; i < 6; i++) {
       await new Promise(r => setTimeout(r, 500));
-      const pR = await fetch(`${PAPER_BASE}/accounts/${PAPER_ACCOUNT}/orders/${entryId}`, { headers: ORDER_H });
+      const pR = await fetch(`${LIVE_BASE}/accounts/${LIVE_ACCOUNT}/orders/${entryId}`, { headers: ORDER_H });
       const pJ = await pR.json();
       const status = pJ?.order?.status;
       const avg = parseFloat(pJ?.order?.avg_fill_price);
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
     if (!fillPrice) {
       log('entry_timeout', {});
       // Try to cancel the unfilled entry
-      const cancelR = await fetch(`${PAPER_BASE}/accounts/${PAPER_ACCOUNT}/orders/${entryId}`, { method: 'DELETE', headers: ORDER_H });
+      const cancelR = await fetch(`${LIVE_BASE}/accounts/${LIVE_ACCOUNT}/orders/${entryId}`, { method: 'DELETE', headers: ORDER_H });
       log('entry_cancel', { http: cancelR.status });
       return res.status(500).json({ error: 'Entry did not fill in 3s', trace });
     }
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
     if ((tp - sl) < 0.12) {
       log('preflight_spread_fail', { tp, sl, spread: tp - sl });
       // Entry filled, bracket can't fire — flatten immediately
-      await emergencyFlatten(ticker, qty, log, PAPER_BASE, PAPER_ACCOUNT, ORDER_H);
+      await emergencyFlatten(ticker, qty, log, LIVE_BASE, LIVE_ACCOUNT, ORDER_H);
       return res.status(200).json({ ok: false, reason: 'spread_too_narrow', fillPrice, tp, sl, flattened: true, trace });
     }
 
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
     log('preflight_bid_check', { bid: currentBid, sl });
     if (currentBid !== undefined && currentBid !== null && currentBid <= sl + 0.02) {
       log('preflight_bid_fail', { bid: currentBid, sl });
-      await emergencyFlatten(ticker, qty, log, PAPER_BASE, PAPER_ACCOUNT, ORDER_H);
+      await emergencyFlatten(ticker, qty, log, LIVE_BASE, LIVE_ACCOUNT, ORDER_H);
       return res.status(200).json({ ok: false, reason: 'bid_at_or_below_stop', fillPrice, tp, sl, flattened: true, trace });
     }
 
@@ -177,7 +177,7 @@ export default async function handler(req, res) {
         'symbol[0]': ticker, 'side[0]': 'sell', 'quantity[0]': String(qty), 'type[0]': 'limit', 'price[0]': String(tp),
         'symbol[1]': ticker, 'side[1]': 'sell', 'quantity[1]': String(qty), 'type[1]': 'stop',  'stop[1]':  String(sl),
       });
-      const bR = await fetch(`${PAPER_BASE}/accounts/${PAPER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
+      const bR = await fetch(`${LIVE_BASE}/accounts/${LIVE_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: bracketParams });
       const bJ = await bR.json();
       const bracketId = bJ?.order?.id || null;
       const immediateStatus = bJ?.order?.status || 'unknown';
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
       // Re-poll at 500ms
       await new Promise(r => setTimeout(r, 500));
       try {
-        const rpR = await fetch(`${PAPER_BASE}/accounts/${PAPER_ACCOUNT}/orders/${bracketId}`, { headers: ORDER_H });
+        const rpR = await fetch(`${LIVE_BASE}/accounts/${LIVE_ACCOUNT}/orders/${bracketId}`, { headers: ORDER_H });
         const rpJ = await rpR.json();
         const repollStatus = rpJ?.order?.status;
         const repollReason = rpJ?.order?.reason_description;
@@ -226,7 +226,7 @@ export default async function handler(req, res) {
       });
     } else {
       log('bracket_all_retries_failed', lastResult);
-      await emergencyFlatten(ticker, qty, log, PAPER_BASE, PAPER_ACCOUNT, ORDER_H);
+      await emergencyFlatten(ticker, qty, log, LIVE_BASE, LIVE_ACCOUNT, ORDER_H);
       return res.status(200).json({
         ok: false,
         ticker, qty, fillPrice,
@@ -242,13 +242,13 @@ export default async function handler(req, res) {
   }
 }
 
-async function emergencyFlatten(ticker, qty, log, PAPER_BASE, PAPER_ACCOUNT, ORDER_H) {
+async function emergencyFlatten(ticker, qty, log, LIVE_BASE, LIVE_ACCOUNT, ORDER_H) {
   log('emergency_flatten_start', { ticker, qty });
   const params = new URLSearchParams({
     'class': 'equity', 'duration': 'day',
     'symbol': ticker, 'side': 'sell', 'quantity': String(qty), 'type': 'market',
   });
-  const r = await fetch(`${PAPER_BASE}/accounts/${PAPER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
+  const r = await fetch(`${LIVE_BASE}/accounts/${LIVE_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
   const j = await r.json();
   log('emergency_flatten_result', { http: r.status, id: j?.order?.id, status: j?.order?.status });
   return j;
