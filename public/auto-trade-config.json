@@ -2,7 +2,7 @@
   "live": true,
   "maxTradesPerDay": 3,
   "maxBetOverride": null,
-  "maxDailyExposure": 75,
+  "maxDailyExposure": 150,
   "betByScenario": {
     "A": 50,
     "B": 50,
