@@ -12,6 +12,13 @@
 // Returns: { count, trades: [{date, symbol, side, qty, price, tradeType, description}] }
 
 export default async function handler(req, res) {
+  // CORS: allow browser-origin requests (including file:// which sends Origin: null)
+  // Read-only endpoint — safe to expose.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

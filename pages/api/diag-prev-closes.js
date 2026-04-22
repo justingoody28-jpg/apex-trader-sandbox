@@ -12,6 +12,12 @@
 // the morning cron fires to confirm data is ready.
 
 export default async function handler(req, res) {
+  // CORS: allow browser-origin requests (read-only diag endpoint).
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const sbKey = process.env.SUPABASE_SERVICE_KEY;
   if (!sbUrl || !sbKey) return res.status(500).json({ error: 'Supabase env vars not set' });
