@@ -160,6 +160,11 @@
       <label>QUARTERS</label>
       <div class="qtrs" id="qtrBtns"></div>
     </div>
+    <div style="margin-top:14px">
+      <label>CAP SIZES (from Supabase watchlist)</label>
+      <div id="capToggleBox" style="margin-top:6px;font-size:12px">Loading watchlist...</div>
+      <div id="universeTotal" style="margin-top:8px;font-size:11px;color:var(--muted)"></div>
+    </div>
     <div class="scen-ref" id="scenRef"></div>
     <div class="actions">
       <button class="btn-run" id="btnRun" onclick="startBacktest()">▶ RUN BACKTEST</button>
@@ -195,7 +200,8 @@
           <input type="number" id="filtMinPmVol" value="0" step="500" style="width:80px; padding:4px; background:#1a2838; color:#e5e7eb; border:1px solid #2d3748; border-radius:3px;" onchange="applyFilters()">
           <span style="color:#6b7280">shares</span></div>
         <div><label style="color:#9ca3af"><input type="checkbox" id="filtCapLarge" checked onchange="applyFilters()"> Large</label>
-          <label style="color:#9ca3af; margin-left:8px;"><input type="checkbox" id="filtCapMid" checked onchange="applyFilters()"> Mid</label></div>
+          <label style="color:#9ca3af; margin-left:8px;"><input type="checkbox" id="filtCapMid" checked onchange="applyFilters()"> Mid</label>
+          <label style="color:#9ca3af; margin-left:8px;"><input type="checkbox" id="filtCapSmall" checked onchange="applyFilters()"> Small</label></div>
         <div><label style="color:#9ca3af">Scenario:</label>
           <select id="filtScenario" onchange="applyFilters()" style="padding:4px; background:#1a2838; color:#e5e7eb; border:1px solid #2d3748; border-radius:3px;">
             <option value="ALL">All</option><option value="F">F only</option><option value="E">E only (all tiers)</option></select></div>
@@ -223,9 +229,7 @@
     <div class="idle-icon">◎</div>
     <div class="idle-title">READY TO BACKTEST</div>
     <div class="idle-sub">
-      200 tickers (100 Large · 100 Mid) · Q3 2024 – Q4 2025<br>
-      E1–E4 gap-up shorts + F gap-down longs · Polygon minute bars<br>
-      Exact replica of edge-scenarios.html signal logic
+      Loading watchlist from Supabase…
     </div>
   </div>
 
@@ -233,11 +237,84 @@
 </main>
 
 <script>
-// ─── UNIVERSE ────────────────────────────────────────────────────────────────
-// ─── UNIVERSE — 200 new tickers (no overlap with original 200 or APEX watchlist)
-const LARGE = ['AMAT','LRCX','KLAC','MU','HPQ','DELL','STX','WDC','CDNS','SNPS','BMY','CVS','CI','HUM','ELV','ISRG','ZBH','BAX','BDX','VRTX','C','PNC','TFC','MTB','RF','HBAN','KEY','CFG','FRC','FITB','BKR','DVN','FANG','MRO','APA','HES','OKE','WMB','KMI','LNG','F','GM','RCL','CCL','NCLH','EXPE','ABNB','LVS','MGM','WYNN','EL','STZ','TAP','HSY','CAG','CPB','SJM','K','MKC','CHD','MMM','ITW','PH','EMR','ROK','DOV','XYL','GNRC','ACCO','RRX','DOW','LYB','PPG','AVY','IP','PKG','SEE','GEF','SON','CLF','FOX','FOXA','IPG','OMC','NYT','PARA','LYV','SIRI','LUMN','VIAC','AEP','EXC','SRE','XEL','WEC','ES','ETR','FE','PPL','CNP'];
-const MID   = ['PEGA','APPF','PROS','TASK','ALKS','RIOT','MARA','CLSK','CIFR','BTBT','ACRS','CTIC','FORM','IMVT','KALA','LNTH','NEOS','PAHC','RCUS','SUPN','BANF','BRKL','CASH','CHCO','CVBF','DCOM','ESSA','FBIZ','GABC','HAFC','ALTO','CEIX','DKL','FLNG','GATO','HNNA','IPCO','KNTK','LGCY','MNRL','ARCO','BJ','BKE','BOOT','CATO','DLTH','EXPR','FIVE','GIII','JOANN','ANDE','CALM','CVGW','DENN','DMAC','FLXS','GO','HNGR','IPAR','JBSS','ARCB','ATSG','AVAV','AXON','BWXT','FLIR','HAYW','ICAD','JELD','KELYA','CSTM','HWKN','IOSP','KAMN','LXFR','MTRN','NGVT','OLIN','PRLB','RYAM','CARS','CODA','EVC','FREE','GTN','HLIT','IDCC','LPSN','NXST','OOMA','ALEX','BRT','CEQP','CLNC','CORR','DEA','EFC','FPI','GOOD','IIPR'];
-const UNIVERSE = [...LARGE.map(t=>({ticker:t,cap:'Large'})),...MID.map(t=>({ticker:t,cap:'Mid'}))];
+// ─── UNIVERSE — loaded from Supabase watchlist at page init ─────────────────
+// UNIVERSE populated asynchronously via loadWatchlist(). Format: [{ticker, cap}]
+// cap values normalized: 'Lg' -> 'Large', 'Mid' -> 'Mid', 'SM' -> 'Small'
+let UNIVERSE = [];
+let WATCHLIST_LOADED = false;
+const CAP_NORMALIZE = { 'Lg': 'Large', 'Mid': 'Mid', 'SM': 'Small' };
+
+// Cap toggles — which caps to INCLUDE when building run universe
+// Default: Large + Mid. User can enable Small.
+let capToggles = { Large: true, Mid: true, Small: false };
+
+async function loadWatchlist() {
+  try {
+    const r = await fetch('/api/watchlist');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const raw = Array.isArray(d.tickers) ? d.tickers : [];
+    UNIVERSE = raw.map(t => ({ ticker: t.t, cap: CAP_NORMALIZE[t.g] || t.g }));
+    WATCHLIST_LOADED = true;
+    renderCapToggles();
+    updateIdleMsg();
+  } catch (e) {
+    console.error('Watchlist load failed:', e);
+    document.getElementById('statusMsg').textContent = '⚠ Watchlist load failed: ' + e.message;
+    document.getElementById('statusMsg').className = 'status-msg c-red';
+  }
+}
+
+function getSelectedUniverse() {
+  return UNIVERSE.filter(u => capToggles[u.cap]);
+}
+
+function countByCap() {
+  const counts = { Large: 0, Mid: 0, Small: 0 };
+  UNIVERSE.forEach(u => { if (counts[u.cap] != null) counts[u.cap]++; });
+  return counts;
+}
+
+function renderCapToggles() {
+  const c = countByCap();
+  const el = document.getElementById('capToggleBox');
+  if (!el) return;
+  el.innerHTML = ['Large','Mid','Small'].map(cap => {
+    const checked = capToggles[cap] ? 'checked' : '';
+    return `<label style="display:inline-flex;align-items:center;gap:6px;margin-right:14px;cursor:pointer">
+      <input type="checkbox" id="capTog_${cap}" ${checked} onchange="toggleCap('${cap}')">
+      <span style="color:#c8daea">${cap}</span>
+      <span style="color:var(--muted);font-size:10px">(${c[cap]||0})</span>
+    </label>`;
+  }).join('');
+  // Update total display
+  const sel = getSelectedUniverse();
+  const tot = document.getElementById('universeTotal');
+  if (tot) {
+    const qtrCount = selectedQ ? selectedQ.length : 16;
+    const jobs = sel.length * qtrCount;
+    const estMin = Math.round(jobs * 0.6 / 60);
+    tot.innerHTML = `<b style="color:var(--accent)">${sel.length}</b> tickers selected · <b>${qtrCount}</b> quarters · ~<b>${jobs}</b> jobs · est <b>${estMin}</b>min`;
+  }
+}
+
+function toggleCap(cap) {
+  capToggles[cap] = !capToggles[cap];
+  renderCapToggles();
+}
+
+function updateIdleMsg() {
+  const el = document.getElementById('idleMsg');
+  if (!el) return;
+  const c = countByCap();
+  const sub = el.querySelector('.idle-sub');
+  if (sub) {
+    sub.innerHTML = `Watchlist loaded from Supabase: <b>${UNIVERSE.length}</b> tickers<br>` +
+      `Large: ${c.Large||0} · Mid: ${c.Mid||0} · Small: ${c.Small||0} · Q1 2022 – Q4 2025<br>` +
+      `Select caps + quarters above, then RUN`;
+  }
+}
+window.toggleCap = toggleCap;
 
 // ─── QUARTERS ────────────────────────────────────────────────────────────────
 const QUARTERS = [
@@ -279,6 +356,7 @@ function applyFilters() {
   const minPmVol = +(document.getElementById('filtMinPmVol')?.value || 0);
   const showLg = document.getElementById('filtCapLarge')?.checked ?? true;
   const showMid = document.getElementById('filtCapMid')?.checked ?? true;
+  const showSm = document.getElementById('filtCapSmall')?.checked ?? true;
   const scenMode = document.getElementById('filtScenario')?.value || 'ALL';
 
   filteredSignals = allSignals.filter(s => {
@@ -286,6 +364,7 @@ function applyFilters() {
     if (minPmVol > 0 && (!s.pmVol || s.pmVol < minPmVol)) return false;
     if (s.cap === 'Large' && !showLg) return false;
     if (s.cap === 'Mid' && !showMid) return false;
+    if (s.cap === 'Small' && !showSm) return false;
     if (scenMode === 'F' && s.scenario !== 'F') return false;
     if (scenMode === 'E' && s.scenario === 'F') return false;
     return true;
@@ -309,6 +388,7 @@ function resetFilters() {
   const pv = document.getElementById('filtMinPmVol'); if (pv) pv.value = 0;
   const lg = document.getElementById('filtCapLarge'); if (lg) lg.checked = true;
   const md = document.getElementById('filtCapMid'); if (md) md.checked = true;
+  const sm = document.getElementById('filtCapSmall'); if (sm) sm.checked = true;
   const sc = document.getElementById('filtScenario'); if (sc) sc.value = 'ALL';
   applyFilters();
 }
@@ -364,11 +444,11 @@ let fScen = 'ALL', fCap = 'ALL';
   });
   const all = document.createElement('button');
   all.className='qbtn qbtn-sm'; all.textContent='ALL';
-  all.onclick=()=>{ document.querySelectorAll('.qbtn:not(.qbtn-sm)').forEach(b=>{b.classList.add('on');selectedQ=QUARTERS.map(q=>q.label);}); };
+  all.onclick=()=>{ document.querySelectorAll('.qbtn:not(.qbtn-sm)').forEach(b=>{b.classList.add('on');selectedQ=QUARTERS.map(q=>q.label);}); renderCapToggles(); };
   qc.appendChild(all);
   const none = document.createElement('button');
   none.className='qbtn qbtn-sm'; none.textContent='NONE';
-  none.onclick=()=>{ document.querySelectorAll('.qbtn:not(.qbtn-sm)').forEach(b=>{b.classList.remove('on');selectedQ=[];}); };
+  none.onclick=()=>{ document.querySelectorAll('.qbtn:not(.qbtn-sm)').forEach(b=>{b.classList.remove('on');selectedQ=[];}); renderCapToggles(); };
   qc.appendChild(none);
 
   // Scenario ref
@@ -384,7 +464,11 @@ let fScen = 'ALL', fCap = 'ALL';
 function toggleQ(label, btn) {
   if (selectedQ.includes(label)) { selectedQ = selectedQ.filter(l=>l!==label); btn.classList.remove('on'); }
   else { selectedQ.push(label); btn.classList.add('on'); }
+  renderCapToggles(); // refresh job count estimate
 }
+
+// Load watchlist from Supabase on page load
+loadWatchlist();
 
 // ─── HELPERS — exact match to edge-scenarios.html ────────────────────────────
 function etH(ts) {
@@ -623,6 +707,9 @@ async function startBacktest() {
   const apiKey=document.getElementById('apiKey').value.trim();
   if(!apiKey){alert('Enter Polygon API key');return;}
   if(!selectedQ.length){alert('Select at least one quarter');return;}
+  if(!WATCHLIST_LOADED){alert('Watchlist still loading, try again in a few seconds');return;}
+  const runUniverse = getSelectedUniverse();
+  if(!runUniverse.length){alert('No tickers selected — enable at least one cap size');return;}
 
   // Restore any saved progress before starting — skips completed tickers automatically
   restoreProgress();
@@ -636,13 +723,13 @@ async function startBacktest() {
   setStatus('','');
 
   const quarters=QUARTERS.filter(q=>selectedQ.includes(q.label));
-  const total=UNIVERSE.length*quarters.length;
+  const total=runUniverse.length*quarters.length;
   let cur=0;
   const delayMs=+document.getElementById('delay').value||300;
 
   for(const quarter of quarters){
     if(shouldStop)break;
-    for(const {ticker,cap} of UNIVERSE){
+    for(const {ticker,cap} of runUniverse){
       if(shouldStop)break;
       const ck=`${ticker}|${quarter.label}`;
       if(completedKeys.has(ck)){cur++;setProgress(cur,total,`SKIP ${ticker} — ${quarter.label}`);continue;}
@@ -888,7 +975,7 @@ function renderTrades(){
     <div class="filter-row">
       ${['ALL','E1','E2','E3','E4','F'].map(f=>mkFBtn(f,'scen')).join('')}
       <div class="filter-sep"></div>
-      ${['ALL','Large','Mid'].map(f=>mkFBtn(f,'cap')).join('')}
+      ${['ALL','Large','Mid','Small'].map(f=>mkFBtn(f,'cap')).join('')}
       <span class="trade-count">${filtered.length} trades</span>
     </div>
     ${mini}
