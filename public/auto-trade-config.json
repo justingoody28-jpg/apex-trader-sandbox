@@ -1260,9 +1260,97 @@
     {
       "symbol": "GTLB",
       "bet": 500
+    },
+    {
+      "symbol": "AMED",
+      "bet": 500
+    },
+    {
+      "symbol": "AMPL",
+      "bet": 500
+    },
+    {
+      "symbol": "ANGI",
+      "bet": 500
+    },
+    {
+      "symbol": "ARLO",
+      "bet": 500
+    },
+    {
+      "symbol": "BAND",
+      "bet": 500
+    },
+    {
+      "symbol": "BGS",
+      "bet": 500
+    },
+    {
+      "symbol": "BJRI",
+      "bet": 500
+    },
+    {
+      "symbol": "BMBL",
+      "bet": 500
+    },
+    {
+      "symbol": "CENTA",
+      "bet": 500
+    },
+    {
+      "symbol": "CHEF",
+      "bet": 500
+    },
+    {
+      "symbol": "HAIN",
+      "bet": 500
+    },
+    {
+      "symbol": "IOVA",
+      "bet": 500
+    },
+    {
+      "symbol": "JJSF",
+      "bet": 500
+    },
+    {
+      "symbol": "LTC",
+      "bet": 500
+    },
+    {
+      "symbol": "MGNI",
+      "bet": 500
+    },
+    {
+      "symbol": "PLAY",
+      "bet": 500
+    },
+    {
+      "symbol": "PUBM",
+      "bet": 500
+    },
+    {
+      "symbol": "ROIC",
+      "bet": 500
+    },
+    {
+      "symbol": "TTGT",
+      "bet": 500
+    },
+    {
+      "symbol": "UTZ",
+      "bet": 500
+    },
+    {
+      "symbol": "VITL",
+      "bet": 500
+    },
+    {
+      "symbol": "YELP",
+      "bet": 500
     }
   ],
-  "count": 309,
-  "updated": "2026-04-23T12:56:29.477Z",
-  "_note": "Auto-synced from apex_watchlist (309 tickers, Kelly from Q1 2026)"
+  "count": 331,
+  "updated": "2026-04-23T13:08:11.150Z",
+  "_note": "Auto-synced from apex_watchlist (331 tickers, Kelly from Q1 2026)"
 }
