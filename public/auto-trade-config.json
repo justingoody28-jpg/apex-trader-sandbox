@@ -1244,9 +1244,29 @@
     {
       "symbol": "SMTC",
       "bet": 500
+    },
+    {
+      "symbol": "SNOW",
+      "bet": 500
+    },
+    {
+      "symbol": "PANW",
+      "bet": 500
+    },
+    {
+      "symbol": "ORCL",
+      "bet": 500
+    },
+    {
+      "symbol": "SHAK",
+      "bet": 500
+    },
+    {
+      "symbol": "GTLB",
+      "bet": 500
     }
   ],
-  "count": 305,
-  "updated": "2026-04-23T02:04:07.296Z",
-  "_note": "Auto-synced from apex_watchlist (305 tickers, Kelly from Q1 2026)"
+  "count": 310,
+  "updated": "2026-04-23T12:56:18.361Z",
+  "_note": "Auto-synced from apex_watchlist (310 tickers, Kelly from Q1 2026)"
 }
