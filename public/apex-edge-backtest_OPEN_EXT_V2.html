@@ -184,6 +184,7 @@
     </div>
     <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
     <div class="prog-note" id="progNote"></div>
+    <div id="wakeLockStatus" style="margin-top:6px;font-size:10px"></div>
   </div>
 
   <!-- Tabs + Results -->
@@ -431,6 +432,55 @@ let selectedQ  = QUARTERS.map(q=>q.label);
 let activeTab  = 'summary';
 let sortCol    = 'wr', sortDir = -1;
 let fScen = 'ALL', fCap = 'ALL';
+
+// ─── WAKE LOCK — prevents screen/system sleep during long backtest runs ─────
+let wakeLock = null;
+async function acquireWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+        updateWakeLockStatus();
+      });
+      updateWakeLockStatus();
+      return true;
+    } else {
+      updateWakeLockStatus(false);
+      return false;
+    }
+  } catch (e) {
+    console.warn('Wake lock request failed:', e);
+    updateWakeLockStatus(false);
+    return false;
+  }
+}
+async function releaseWakeLock() {
+  if (wakeLock) {
+    try { await wakeLock.release(); } catch {}
+    wakeLock = null;
+  }
+  updateWakeLockStatus();
+}
+// Re-acquire when tab becomes visible again (wake locks are auto-released when tab hidden)
+document.addEventListener('visibilitychange', async () => {
+  if (running && !document.hidden && wakeLock === null) {
+    await acquireWakeLock();
+  }
+});
+function updateWakeLockStatus(supported) {
+  const el = document.getElementById('wakeLockStatus');
+  if (!el) return;
+  if (wakeLock) {
+    el.innerHTML = '🔓 <span style="color:var(--green)">Screen awake lock ACTIVE</span> — laptop stays on';
+  } else if (running) {
+    el.innerHTML = '⚠ <span style="color:var(--gold)">Wake lock inactive</span> — laptop may sleep';
+  } else if (supported === false) {
+    el.innerHTML = '<span style="color:var(--muted)">Wake Lock not supported in this browser (use Chrome/Edge/Safari 16.4+)</span>';
+  } else {
+    el.innerHTML = '';
+  }
+}
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 (function init() {
@@ -714,6 +764,10 @@ async function startBacktest() {
   // Restore any saved progress before starting — skips completed tickers automatically
   restoreProgress();
   running=true; shouldStop=false;
+
+  // Acquire screen wake lock so laptop doesn't sleep during run
+  await acquireWakeLock();
+
   document.getElementById('btnRun').style.display='none';
   document.getElementById('btnStop').style.display='inline-block';
   document.getElementById('btnExport').style.display='none';
@@ -748,6 +802,7 @@ async function startBacktest() {
   }
 
   running=false;
+  await releaseWakeLock();
   document.getElementById('btnRun').style.display='inline-block';
   document.getElementById('btnStop').style.display='none';
   if(allSignals.length)document.getElementById('btnExport').style.display='inline-block';
@@ -756,7 +811,7 @@ async function startBacktest() {
   renderResults();
 }
 
-function stopBacktest(){shouldStop=true;}
+function stopBacktest(){shouldStop=true; releaseWakeLock();}
 
 function setProgress(cur,total,label){
   const pct=total?Math.round(cur/total*100):0;
