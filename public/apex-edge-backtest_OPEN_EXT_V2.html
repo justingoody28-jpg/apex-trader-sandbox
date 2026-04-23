@@ -841,9 +841,18 @@ function calcStats(sigs){
   const wr=res?wins.length/res*100:0;
   const pf=lp>0?wp/lp:wp>0?999:0;
   const avgMin=res?Math.round(sigs.filter(s=>s.result!=='TIMEOUT').reduce((a,s)=>a+s.minToExit,0)/Math.max(1,sigs.filter(s=>s.result!=='TIMEOUT').length)):0;
+  // NBBO spread aggregates — only over signals that have NBBO data captured
+  const withNbbo = sigs.filter(s => s.nbboSpreadPct != null);
+  const spreads = withNbbo.map(s => s.nbboSpreadPct).sort((a,b) => a-b);
+  const avgSpread = spreads.length ? spreads.reduce((a,b)=>a+b,0)/spreads.length : null;
+  const medSpread = spreads.length ? spreads[Math.floor(spreads.length/2)] : null;
+  const p90Spread = spreads.length ? spreads[Math.floor(spreads.length*0.9)] : null;
+  // Ambiguous count
+  const ambiguousCount = sigs.filter(s => s.ambiguous).length;
   return{n:sigs.length,wins:wins.length,losses:losses.length,timeouts:sigs.length-res,
     wr:wr.toFixed(1),pf:pf>=999?'∞':pf.toFixed(2),
-    totalPnl:sigs.reduce((a,s)=>a+s.pnlPct,0).toFixed(2),avgMin};
+    totalPnl:sigs.reduce((a,s)=>a+s.pnlPct,0).toFixed(2),avgMin,
+    nbboCount:withNbbo.length, avgSpread, medSpread, p90Spread, ambiguousCount};
 }
 
 function wrColor(w){return +w>=60?'c-green':+w>=50?'':('c-red');}
@@ -852,6 +861,15 @@ function rColor(r){return r==='WIN'?'c-green':r==='LOSS'?'c-red':'c-muted';}
 
 function statCard(label,stats){
   if(!stats)return'';
+  const spreadRow = stats.medSpread != null
+    ? `<div class="card-row"><span class="card-key">MED SPREAD</span><span class="card-val">${stats.medSpread.toFixed(2)}%</span></div>
+       <div class="card-row"><span class="card-key">AVG SPREAD</span><span class="card-val">${stats.avgSpread.toFixed(2)}%</span></div>
+       <div class="card-row"><span class="card-key">P90 SPREAD</span><span class="card-val">${stats.p90Spread.toFixed(2)}%</span></div>
+       <div class="card-row"><span class="card-key">NBBO COV</span><span class="card-val c-muted">${stats.nbboCount}/${stats.n}</span></div>`
+    : `<div class="card-row"><span class="card-key">NBBO SPREAD</span><span class="card-val c-muted">--</span></div>`;
+  const ambigRow = stats.ambiguousCount > 0
+    ? `<div class="card-row"><span class="card-key">AMBIGUOUS</span><span class="card-val c-gold">${stats.ambiguousCount}</span></div>`
+    : '';
   return`<div class="card">
     <div class="card-title">${label}</div>
     <div class="card-row"><span class="card-key">SIGNALS</span><span class="card-val c-accent">${stats.n}</span></div>
@@ -860,6 +878,8 @@ function statCard(label,stats){
     <div class="card-row"><span class="card-key">TOTAL PnL</span><span class="card-val ${pColor(stats.totalPnl)}">${stats.totalPnl}%</span></div>
     <div class="card-row"><span class="card-key">AVG EXIT</span><span class="card-val">${stats.avgMin}m</span></div>
     <div class="card-row"><span class="card-key">W/L/TO</span><span class="card-val c-muted">${stats.wins}/${stats.losses}/${stats.timeouts}</span></div>
+    ${spreadRow}
+    ${ambigRow}
   </div>`;
 }
 
@@ -1008,9 +1028,12 @@ function renderTrades(){
 
   let tbl=`<div class="tbl-wrap" style="max-height:55vh"><table><thead><tr>
     <th>DATE</th><th>TICKER</th><th>CAP</th><th>SCEN</th><th>QUARTER</th>
-    <th>GAP%</th><th>RVOL</th><th>ENTRY</th><th>RESULT</th><th>MIN</th><th>PnL%</th>
+    <th>GAP%</th><th>RVOL</th><th>ENTRY</th><th>SPREAD%</th><th>RESULT</th><th>MIN</th><th>PnL%</th>
   </tr></thead><tbody>`;
   filtered.forEach(s=>{
+    const spreadCell = s.nbboSpreadPct != null
+      ? `<span class="${s.nbboSpreadPct > 1 ? 'c-red' : s.nbboSpreadPct > 0.3 ? 'c-gold' : 'c-green'}">${s.nbboSpreadPct.toFixed(3)}%</span>`
+      : '<span class="c-muted">--</span>';
     tbl+=`<tr>
       <td class="c-muted" style="font-size:10px">${s.date}</td>
       <td class="c-accent fw">${s.ticker}</td>
@@ -1020,7 +1043,8 @@ function renderTrades(){
       <td class="${s.gap>=10?'c-red':'c-green'}">${s.gap>0?'+':''}${s.gap}%</td>
       <td>${s.rvol!=null?s.rvol+'x':'--'}</td>
       <td>$${s.entry}</td>
-      <td class="${rColor(s.result)} fw">${s.result}</td>
+      <td style="font-size:10px">${spreadCell}</td>
+      <td class="${rColor(s.result)} fw">${s.result}${s.ambiguous?' ⚠':''}</td>
       <td>${s.minToExit}m</td>
       <td class="${pColor(s.pnlPct)} fw">${s.pnlPct>0?'+':''}${s.pnlPct}%</td>
     </tr>`;
