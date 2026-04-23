@@ -1258,15 +1258,11 @@
       "bet": 500
     },
     {
-      "symbol": "SHAK",
-      "bet": 500
-    },
-    {
       "symbol": "GTLB",
       "bet": 500
     }
   ],
-  "count": 310,
-  "updated": "2026-04-23T12:56:18.361Z",
-  "_note": "Auto-synced from apex_watchlist (310 tickers, Kelly from Q1 2026)"
+  "count": 309,
+  "updated": "2026-04-23T12:56:29.477Z",
+  "_note": "Auto-synced from apex_watchlist (309 tickers, Kelly from Q1 2026)"
 }
