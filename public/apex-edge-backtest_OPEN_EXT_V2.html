@@ -543,7 +543,9 @@ async function processTicker(tk, cap, quarter, apiKey, delayMs) {
         const res=evalShort(intra,ep,tier.tp,tier.sl);
         signals.push({date,ticker:tk,cap,scenario:tier.tier,quarter:quarter.label,
           gap:+gap.toFixed(2),rvol,entry:+ep.toFixed(2),avgVol:avgVol?Math.round(avgVol):null,pmVol,
-          result:res.r,pnlPct:+res.p.toFixed(2),minToExit:res.min});
+          result:res.r,pnlPct:+res.p.toFixed(2),minToExit:res.min,
+          ambiguous:res.ambiguous||false,breachPct:res.breachPct??null,
+          barHigh:res.barHigh??null,barLow:res.barLow??null});
         break;
       }
     }
@@ -553,7 +555,9 @@ async function processTicker(tk, cap, quarter, apiKey, delayMs) {
       const res=evalLong(intra,ep,F_TP,F_SL);
       signals.push({date,ticker:tk,cap,scenario:'F',quarter:quarter.label,
         gap:+gapDown.toFixed(2),rvol,entry:+ep.toFixed(2),avgVol:avgVol?Math.round(avgVol):null,pmVol,
-        result:res.r,pnlPct:+res.p.toFixed(2),minToExit:res.min});
+        result:res.r,pnlPct:+res.p.toFixed(2),minToExit:res.min,
+        ambiguous:res.ambiguous||false,breachPct:res.breachPct??null,
+        barHigh:res.barHigh??null,barLow:res.barLow??null});
     }
 
     await new Promise(r=>setTimeout(r,10)); // yield every day — prevents browser crash
@@ -910,9 +914,9 @@ function exportCSV(){
 
   // --- SECTION 4: TRADE LOG ---
   header('TRADES — individual trade log');
-  lines.push('Date,Ticker,Cap,Scenario,Quarter,Gap%,Rvol,Entry,Result,MinToExit,PnL%');
+  lines.push('Date,Ticker,Cap,Scenario,Quarter,Gap%,Rvol,AvgVol,PmVol,Entry,Result,MinToExit,PnL%,Ambiguous,BreachPct,BarHigh,BarLow');
   filteredSignals.forEach(s=>{
-    lines.push([s.date,s.ticker,s.cap,s.scenario,s.quarter,s.gap,s.rvol??'',s.entry,s.result,s.minToExit,s.pnlPct].map(esc).join(','));
+    lines.push([s.date,s.ticker,s.cap,s.scenario,s.quarter,s.gap,s.rvol??'',s.avgVol??'',s.pmVol??'',s.entry,s.result,s.minToExit,s.pnlPct,s.ambiguous?'YES':'NO',s.breachPct??'',s.barHigh??'',s.barLow??''].map(esc).join(','));
   });
 
   const a=document.createElement('a');
