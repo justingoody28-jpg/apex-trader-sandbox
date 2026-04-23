@@ -418,7 +418,9 @@ export default async function handler(req, res) {
     const tier = getTier(gap);
     const rvol = (q.average_volume > 0) ? +(q.volume / q.average_volume).toFixed(2) : null;
 
-    console.log(`[APEX] ${sym} | bid=${price} prevclose=${prevClose} gap=${gap.toFixed(2)}% rvol=${rvol}`);
+    const askPrice = (q.ask && q.ask > 0) ? q.ask : null;
+    const spreadPct = (askPrice && bidPrice) ? +(((askPrice - bidPrice) / bidPrice) * 100).toFixed(3) : null;
+    console.log(`[APEX] ${sym} | bid=${price} ask=${askPrice} spread%=${spreadPct} prevclose=${prevClose} gap=${gap.toFixed(2)}% rvol=${rvol}`);
 
     // ── Scenario D: Short gap-up >=2% ──────────────────────────────────────
     if (config.scenarios.D !== false && gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D || []).includes(sym) && _riskOk(scBet('D', bet))) {
