@@ -486,6 +486,56 @@ async function fetchDaily(tk,from,to,apiKey) {
   } catch(e){return[];}
 }
 
+// NBBO fetch — captures bid/ask spread at entry time for each fired signal.
+// Requires Polygon Advanced ($199/mo) plan. Returns null on 403 and
+// disables future calls to avoid wasted requests.
+let nbboSupported=true, nbboErrorLogged=false, nbboCallCount=0;
+async function fetchNbboAtEntry(tk, entryTs, apiKey) {
+  if (!nbboSupported) return null;
+  try {
+    // entryTs is in ms (Polygon bar.t). Window ±2 seconds around entry.
+    const startNs = (entryTs - 500) * 1e6;
+    const endNs   = (entryTs + 2000) * 1e6;
+    const url = `https://api.polygon.io/v3/quotes/${tk}?timestamp.gte=${startNs}&timestamp.lte=${endNs}&order=asc&limit=20&apiKey=${apiKey}`;
+    const r = await fetch(url);
+    nbboCallCount++;
+    if (r.status === 403 || r.status === 401) {
+      if (!nbboErrorLogged) {
+        console.warn('⚠️ NBBO quotes unavailable on current Polygon plan (HTTP '+r.status+'). Signal records will lack spread data. Upgrade to Advanced $199/mo to enable.');
+        nbboErrorLogged = true;
+      }
+      nbboSupported = false;
+      return null;
+    }
+    if (!r.ok) return null;
+    const d = await r.json();
+    const quotes = d.results || [];
+    if (!quotes.length) return null;
+    // Find closest quote to entry time
+    const entryNs = entryTs * 1e6;
+    let best = quotes[0];
+    let bestDelta = Math.abs((best.sip_timestamp || best.participant_timestamp || 0) - entryNs);
+    for (const q of quotes) {
+      const t = q.sip_timestamp || q.participant_timestamp || 0;
+      const d2 = Math.abs(t - entryNs);
+      if (d2 < bestDelta) { best = q; bestDelta = d2; }
+    }
+    const bid = best.bid_price, ask = best.ask_price;
+    if (!bid || !ask || bid <= 0 || ask <= 0) return null;
+    const mid = (bid + ask) / 2;
+    return {
+      nbboBid: +bid.toFixed(4),
+      nbboAsk: +ask.toFixed(4),
+      nbboMid: +mid.toFixed(4),
+      nbboSpread: +(ask - bid).toFixed(4),
+      nbboSpreadPct: +(((ask - bid) / mid) * 100).toFixed(4),
+      nbboBidSize: best.bid_size,
+      nbboAskSize: best.ask_size,
+      nbboTsDeltaMs: +(bestDelta / 1e6).toFixed(1)
+    };
+  } catch(e) { return null; }
+}
+
 // ─── CORE: processTicker — mirrors edge-scenarios.html logic exactly ──────────
 async function processTicker(tk, cap, quarter, apiKey, delayMs) {
   const signals=[];
@@ -541,11 +591,12 @@ async function processTicker(tk, cap, quarter, apiKey, delayMs) {
     for(const tier of E_TIERS){
       if(gap>=tier.gapMin&&gap<tier.gapMax){
         const res=evalShort(intra,ep,tier.tp,tier.sl);
-        signals.push({date,ticker:tk,cap,scenario:tier.tier,quarter:quarter.label,
+        const nbbo=await fetchNbboAtEntry(tk,ent.t,apiKey);
+        signals.push(Object.assign({date,ticker:tk,cap,scenario:tier.tier,quarter:quarter.label,
           gap:+gap.toFixed(2),rvol,entry:+ep.toFixed(2),avgVol:avgVol?Math.round(avgVol):null,pmVol,
           result:res.r,pnlPct:+res.p.toFixed(2),minToExit:res.min,
           ambiguous:res.ambiguous||false,breachPct:res.breachPct??null,
-          barHigh:res.barHigh??null,barLow:res.barLow??null});
+          barHigh:res.barHigh??null,barLow:res.barLow??null}, nbbo||{}));
         break;
       }
     }
@@ -553,11 +604,12 @@ async function processTicker(tk, cap, quarter, apiKey, delayMs) {
     // F — gap down, no rvol filter (matches source)
     if(gapDown<=-F_GAP){
       const res=evalLong(intra,ep,F_TP,F_SL);
-      signals.push({date,ticker:tk,cap,scenario:'F',quarter:quarter.label,
+      const nbbo=await fetchNbboAtEntry(tk,ent.t,apiKey);
+      signals.push(Object.assign({date,ticker:tk,cap,scenario:'F',quarter:quarter.label,
         gap:+gapDown.toFixed(2),rvol,entry:+ep.toFixed(2),avgVol:avgVol?Math.round(avgVol):null,pmVol,
         result:res.r,pnlPct:+res.p.toFixed(2),minToExit:res.min,
         ambiguous:res.ambiguous||false,breachPct:res.breachPct??null,
-        barHigh:res.barHigh??null,barLow:res.barLow??null});
+        barHigh:res.barHigh??null,barLow:res.barLow??null}, nbbo||{}));
     }
 
     await new Promise(r=>setTimeout(r,10)); // yield every day — prevents browser crash
@@ -624,7 +676,11 @@ function setProgress(cur,total,label){
   document.getElementById('progLabel').textContent=label;
   document.getElementById('progPct').textContent=cur+'/'+total+' ('+pct+'%)';
   document.getElementById('progBar').style.width=pct+'%';
-  document.getElementById('progNote').textContent=allSignals.length+' signals found';
+  let nbboMsg='';
+  if(nbboCallCount>0){
+    nbboMsg=nbboSupported?` · ✓ NBBO active (${nbboCallCount} quotes fetched)`:' · ⚠ NBBO unavailable — upgrade Polygon to Advanced for spread data';
+  }
+  document.getElementById('progNote').textContent=allSignals.length+' signals found'+nbboMsg;
 }
 
 function setStatus(msg,cls){
@@ -914,9 +970,9 @@ function exportCSV(){
 
   // --- SECTION 4: TRADE LOG ---
   header('TRADES — individual trade log');
-  lines.push('Date,Ticker,Cap,Scenario,Quarter,Gap%,Rvol,AvgVol,PmVol,Entry,Result,MinToExit,PnL%,Ambiguous,BreachPct,BarHigh,BarLow');
+  lines.push('Date,Ticker,Cap,Scenario,Quarter,Gap%,Rvol,AvgVol,PmVol,Entry,Result,MinToExit,PnL%,Ambiguous,BreachPct,BarHigh,BarLow,NbboBid,NbboAsk,NbboMid,NbboSpread,NbboSpreadPct,NbboBidSize,NbboAskSize,NbboTsDeltaMs');
   filteredSignals.forEach(s=>{
-    lines.push([s.date,s.ticker,s.cap,s.scenario,s.quarter,s.gap,s.rvol??'',s.avgVol??'',s.pmVol??'',s.entry,s.result,s.minToExit,s.pnlPct,s.ambiguous?'YES':'NO',s.breachPct??'',s.barHigh??'',s.barLow??''].map(esc).join(','));
+    lines.push([s.date,s.ticker,s.cap,s.scenario,s.quarter,s.gap,s.rvol??'',s.avgVol??'',s.pmVol??'',s.entry,s.result,s.minToExit,s.pnlPct,s.ambiguous?'YES':'NO',s.breachPct??'',s.barHigh??'',s.barLow??'',s.nbboBid??'',s.nbboAsk??'',s.nbboMid??'',s.nbboSpread??'',s.nbboSpreadPct??'',s.nbboBidSize??'',s.nbboAskSize??'',s.nbboTsDeltaMs??''].map(esc).join(','));
   });
 
   const a=document.createElement('a');
