@@ -12,19 +12,33 @@
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-
   const key = process.env.POLYGON_KEY;
   if (!key) return res.status(500).json({ error: 'POLYGON_KEY env not set' });
 
-  let body = req.body;
-  if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
-  const trades = body?.trades;
+  let trades = null;
+  if (req.method === 'GET') {
+    // Compact format: ?t=TICKER|YYYY-MM-DD|entry|min;TICKER|...
+    const tParam = req.query.t;
+    if (!tParam) return res.status(400).json({ error: 'query param t required, format TICKER|YYYY-MM-DD|entry|min;...' });
+    const wp = parseFloat(req.query.wp || '2');
+    const sp = parseFloat(req.query.sp || '2');
+    trades = tParam.split(';').filter(Boolean).map(s => {
+      const [ticker, date, entry, min] = s.split('|');
+      return { ticker, date, entry: parseFloat(entry), min: parseInt(min, 10), wp, sp };
+    });
+  } else if (req.method === 'POST') {
+    let body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
+    trades = body?.trades;
+  } else {
+    return res.status(405).json({ error: 'GET or POST only' });
+  }
+
   if (!Array.isArray(trades) || !trades.length) {
-    return res.status(400).json({ error: 'trades array required in body' });
+    return res.status(400).json({ error: 'trades required (array in body or t query param)' });
   }
 
   const results = [];
