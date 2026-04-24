@@ -43,6 +43,34 @@ export default async function handler(req, res) {
   const H    = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
   const BASE = 'https://api.tradier.com/v1';
 
+  // ── Premarket freshness probe (Filter A — added 2026-04-24) ──────────────
+  // Queries Polygon for today's minute bars to verify real premkt activity
+  // exists before trusting Tradier q.bid for gap calc. See docs/FILTER_DERIVATION.md
+  async function checkPremktFreshness(ticker, todayYMD, polygonKey) {
+    if (!polygonKey) return { ok: true, bars: -1, ageMin: -1, reason: 'no_polygon_key' };
+    const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker.toUpperCase())}` +
+                `/range/1/minute/${todayYMD}/${todayYMD}` +
+                `?adjusted=true&sort=asc&limit=1000&apiKey=${polygonKey}`;
+    try {
+      const r = await fetch(url);
+      if (!r.ok) return { ok: false, reason: `polygon_${r.status}`, bars: 0, ageMin: 0 };
+      const data = await r.json();
+      const all = data.results || [];
+      const [yr, mo, dy] = todayYMD.split('-').map(Number);
+      const marketOpenMs = Date.UTC(yr, mo - 1, dy, 13, 30, 0);
+      const pre = all.filter(b => b.t < marketOpenMs);
+      const bars = pre.length;
+      if (bars === 0) return { ok: false, reason: 'zero_bars', bars: 0, ageMin: 0 };
+      const lastBar = pre[pre.length - 1];
+      const ageMin = (Date.now() - lastBar.t) / 60000;
+      if (ageMin > 60) return { ok: false, reason: `stale_${Math.round(ageMin)}min`, bars, ageMin };
+      return { ok: true, bars, ageMin };
+    } catch (e) {
+      return { ok: false, reason: `polygon_err:${e.message.slice(0, 40)}`, bars: 0, ageMin: 0 };
+    }
+  }
+
+
   function getTier(gap) {
     if (gap >= 15) return { tier: 3, tpPct: 5.0, slPct: 3.0, bet: 2000 };
     if (gap >= 13) return { tier: 2, tpPct: 3.0, slPct: 1.5, bet: 1000 };
@@ -421,6 +449,29 @@ export default async function handler(req, res) {
     const askPrice = (q.ask && q.ask > 0) ? q.ask : null;
     const spreadPct = (askPrice && bidPrice) ? +(((askPrice - bidPrice) / bidPrice) * 100).toFixed(3) : null;
     console.log(`[APEX] ${sym} | bid=${price} ask=${askPrice} spread%=${spreadPct} prevclose=${prevClose} gap=${gap.toFixed(2)}% rvol=${rvol}`);
+
+    // ── FILTER GATES (added 2026-04-24, see docs/FILTER_DERIVATION.md) ──────
+    if (config.filters?.enabled !== false) {
+      // Gate 1: Spread filter (default < 3%)
+      const _maxSpread = config.filters?.maxSpreadPct ?? 3;
+      if (spreadPct !== null && spreadPct > _maxSpread) {
+        console.log(`[APEX] ${sym} | SKIP: spread_gate ${spreadPct}% > ${_maxSpread}%`);
+        results.push({ symbol: sym, status: 'skipped', reason: `spread_gate: ${spreadPct}% > ${_maxSpread}%`, gap: +gap.toFixed(2), spread: spreadPct });
+        continue;
+      }
+      // Gate 2: Premkt freshness (only probe if gap could trigger a scenario)
+      const _couldTrigger = Math.abs(gap) >= 2;
+      if (_couldTrigger && POLYGON_KEY) {
+        const _pm = await checkPremktFreshness(sym, _todayEDT, POLYGON_KEY);
+        if (!_pm.ok) {
+          console.log(`[APEX] ${sym} | SKIP: pm_gate ${_pm.reason} bars=${_pm.bars} age=${_pm.ageMin}min`);
+          results.push({ symbol: sym, status: 'skipped', reason: `pm_gate: ${_pm.reason}`, gap: +gap.toFixed(2), spread: spreadPct, pmBars: _pm.bars, pmAgeMin: +_pm.ageMin.toFixed(1) });
+          continue;
+        }
+        console.log(`[APEX] ${sym} | pm_gate OK: bars=${_pm.bars} age=${_pm.ageMin.toFixed(1)}min`);
+      }
+    }
+
 
     // ── Scenario D: Short gap-up >=2% ──────────────────────────────────────
     if (config.scenarios.D !== false && gap >= 2 && !skipD && !spyRecovering && (vix === null || vix > 20) && !(_excl.D || []).includes(sym) && _riskOk(scBet('D', bet))) {
