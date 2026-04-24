@@ -211,3 +211,76 @@ execution." Any future analysis that doesn't start here is re-inventing.
    not optimally tuned. If more low-pmv days are analyzed, a tighter
    threshold (30 or 45min) may emerge as data-supported.
 
+
+---
+
+## Part 6: Signed slip distribution (added 2026-04-24)
+
+Derived from `/tmp/tick_batches/b0-b5_raw.json`, 2,997 OK F-scenario signals
+with per-signal tick data:
+
+| Percentile | Signed slip |
+|-----------:|------------:|
+| p10        | −0.138%     |
+| p25        | −0.001%     |
+| p50        |  0.000%     |
+| p75        | +0.003%     |
+| p90        | +0.179%     |
+
+- Mean signed slip: **+0.012%** (essentially zero)
+- Adverse (slip > 0): 26.3%
+- Favorable (slip < 0): 25.3%
+- Zero slip: 48.4%
+
+**Implication:** The worst-case-all-adverse slip analysis in Part 1 is
+overly pessimistic. True expected net edge = bktPnL − 0.012% ≈ bktPnL.
+Execution cost is noise against a 137bp/trade mean edge.
+
+### Fill quality (200-share order, 15s window)
+- Full fill (200 shares): 93.3%
+- Partial <100 shares: 5.3%
+- Partial <50 shares: 4.5%
+
+### First-trade latency (ms after 9:30 open)
+- p25: 74ms | p50: 553ms | p75: 881ms | p90: 1,529ms | p99: 11,188ms
+
+Half of all signals see their first trade within 553ms of market open;
+90% within 1.5 seconds. The p99 tail (11+ seconds) is the illiquid-name
+failure mode already covered by Rules 1 + 2.
+
+---
+
+## Part 7: Apr 23 2026 forensic — preserved record
+
+Tradier fills (LIVE account, config.live=true):
+
+| Ticker | Side | Qty | Price  | Round-trip result |
+|:-------|:-----|----:|-------:|------------------:|
+| HUBS   | buy  |   1 | 213.62 | −0.26% (sell 213.07) |
+| SUPN   | buy  |   1 |  50.94 | −1.42% (sell 50.22)  |
+| BRZE   | buy  |   2 |  23.02 | −1.82% (sell 22.60)  |
+| LVS    | buy  |   1 |  51.55 | −2.17% (sell 50.43)  |
+| RYTM   | buy  |   1 |  86.29 | −1.51% (sell 84.99)  |
+| INDB   | buy  |   1 |  80.04 | −1.67% (sell 78.70)  |
+| INFY   | buy  |   3 |  12.89 | +0.12% (sell 12.90)  |
+| KYMR   | buy  |   1 |  88.93 | −2.55% (sell 86.66)  |
+| ACCO   | sell |  16 |   3.27 | NAKED (no buy leg)   |
+
+Net realized: −$8.09 on ~$656 notional (−1.23% day).
+
+Polygon premarket bar counts (04:00–09:29 EDT window):
+
+| Ticker | bars | vol     | Last bar (UTC) |
+|:-------|-----:|--------:|:---------------|
+| HUBS   |   68 |  30,181 | 13:29          |
+| SUPN   |    4 |     589 | **10:34 (3h stale)** |
+| BRZE   |   11 |  12,587 | 13:28          |
+| LVS    |   47 |  81,155 | 13:29          |
+| RYTM   |    **0** |       **0** | —              |
+| INDB   |    **0** |       **0** | —              |
+| INFY   |  115 | 1,079,115 | 13:29        |
+| KYMR   |    **0** |       **0** | —              |
+| ACCO   |    **0** |       **0** | —              |
+
+This is the ground-truth forensic behind Filter Rule 1 adoption.
+
