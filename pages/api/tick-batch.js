@@ -103,14 +103,14 @@ export default async function handler(req, res) {
   }
 
   const start = parseInt(req.query.start || '0', 10);
-  const count = Math.min(parseInt(req.query.count || '100', 10), 250);
+  const count = Math.min(parseInt(req.query.count || '100', 10), 500);
   const slice = sample.slice(start, start + count);
   if (!slice.length) return res.status(200).json({ start, count: 0, results: [] });
 
   const queries = slice.map(r => ({ ticker: r.t, date: r.d }));
   const results = new Array(queries.length);
   let idx = 0;
-  const CONC = 16;
+  const CONC = 20;
   async function worker() {
     while (true) {
       const i = idx++;
