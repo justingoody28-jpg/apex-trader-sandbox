@@ -11,6 +11,38 @@
 // Uses q.bid for pre-market price (updates live).
 // q.last only updates when a trade prints, stays at prev close pre-market.
 
+// ── Premarket freshness probe ────────────────────────────────────────────
+// See /docs/FILTER_DERIVATION.md for why this exists.
+// Returns { ok: true, bars, ageMin } on pass, or { ok: false, reason, ... } on fail.
+// Catches Apr 23-style phantom signals where Tradier q.bid returns a
+// non-zero value but zero real premkt trades occurred.
+async function checkPremktFreshness(ticker, todayYMD, polygonKey) {
+  if (!polygonKey) return { ok: true, reason: 'polygon_key_missing', bars: null, ageMin: null };
+  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker.toUpperCase())}` +
+              `/range/1/minute/${todayYMD}/${todayYMD}` +
+              `?adjusted=true&sort=asc&limit=1000&apiKey=${polygonKey}`;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) return { ok: true, reason: `polygon_${r.status}`, bars: null, ageMin: null };
+    const data = await r.json();
+    const all = data.results || [];
+    const [y, m, d] = todayYMD.split('-').map(Number);
+    const marketOpenMs = Date.UTC(y, m - 1, d, 13, 30, 0);
+    const pre = all.filter(b => b.t < marketOpenMs);
+    const bars = pre.length;
+    if (bars === 0) return { ok: false, reason: 'zero_bars', bars: 0, ageMin: null };
+    const lastBar = pre[pre.length - 1];
+    const ageMin = (Date.now() - lastBar.t) / 60000;
+    if (ageMin > 60) return { ok: false, reason: 'stale', bars, ageMin };
+    return { ok: true, bars, ageMin };
+  } catch (e) {
+    return { ok: true, reason: `error_${e.name || 'unknown'}`, bars: null, ageMin: null };
+  }
+}
+
 export default async function handler(req, res) {
   const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
   const runId = new Date().toISOString();
@@ -464,11 +496,13 @@ export default async function handler(req, res) {
       if (_couldTrigger && POLYGON_KEY) {
         const _pm = await checkPremktFreshness(sym, _todayEDT, POLYGON_KEY);
         if (!_pm.ok) {
-          console.log(`[APEX] ${sym} | SKIP: pm_gate ${_pm.reason} bars=${_pm.bars} age=${_pm.ageMin}min`);
-          results.push({ symbol: sym, status: 'skipped', reason: `pm_gate: ${_pm.reason}`, gap: +gap.toFixed(2), spread: spreadPct, pmBars: _pm.bars, pmAgeMin: +_pm.ageMin.toFixed(1) });
+          const _ageStr = (typeof _pm.ageMin === 'number') ? _pm.ageMin.toFixed(1) : 'n/a';
+          console.log(`[APEX] ${sym} | SKIP: pm_gate ${_pm.reason} bars=${_pm.bars} age=${_ageStr}min`);
+          results.push({ symbol: sym, status: 'skipped', reason: `pm_gate: ${_pm.reason}`, gap: +gap.toFixed(2), spread: spreadPct, pmBars: _pm.bars, pmAgeMin: (typeof _pm.ageMin === 'number') ? +_pm.ageMin.toFixed(1) : null });
           continue;
         }
-        console.log(`[APEX] ${sym} | pm_gate OK: bars=${_pm.bars} age=${_pm.ageMin.toFixed(1)}min`);
+        const _ageStr = (typeof _pm.ageMin === 'number') ? _pm.ageMin.toFixed(1) : 'n/a';
+        console.log(`[APEX] ${sym} | pm_gate OK: bars=${_pm.bars} age=${_ageStr}min`);
       }
     }
 
