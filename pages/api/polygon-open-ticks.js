@@ -17,6 +17,10 @@
 // GET: /api/polygon-open-ticks?t=HUBS|2026-04-23;AAPL|2024-06-03
 // POST: { queries: [{ticker, date}, ...] }
 
+export const config = {
+  maxDuration: 300
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -45,13 +49,13 @@ export default async function handler(req, res) {
   if (!Array.isArray(queries) || !queries.length) {
     return res.status(400).json({ error: 'queries required' });
   }
-  if (queries.length > 100) {
-    return res.status(400).json({ error: 'max 100 queries per batch' });
+  if (queries.length > 1500) {
+    return res.status(400).json({ error: 'max 1500 queries per batch' });
   }
 
   const results = [];
   let idx = 0;
-  const CONC = 6;
+  const CONC = 16;
 
   async function analyzeOne({ ticker, date }) {
     try {
