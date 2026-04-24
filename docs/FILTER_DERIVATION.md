@@ -1,0 +1,194 @@
+# APEX Premarket Filter Derivation
+
+Created 2026-04-24, derived from:
+- Full-population tick analysis of 3,659 backtest signals (Q3 2022 – Q2 2025) via Polygon Advanced
+- Forensic reconstruction of the Apr 23 2026 live cron execution
+
+This document is the authoritative record of filter thresholds and why they exist.
+Everything here is derived from data, not invented. When in doubt, trust this doc.
+
+---
+
+## Part 1: Spread filter — REJECTED
+
+### Motivation
+The Apr 23 2026 cron fired trades on illiquid names and lost money. Initial
+hypothesis: filter on `NbboSpreadPct` to avoid wide-spread names.
+
+### Method
+Analyzed Polygon tick data for the 15-second window after market open for every
+one of 3,659 signals in `apex_edge_backtest_OPEN_EXT_full__4_.csv` (F + E1-E4
+scenarios, Q3 2022 – Q2 2025). Simulated a 200-share market order and measured
+slip vs first-trade price. Binned by spread bucket: <1%, 1-2%, 2-3%, 3-5%,
+5-10%, 10%+.
+
+### Result — Scenario F by spread bucket (worst-case slip, all adverse)
+
+| Spread | Large n | Large bktPnL | Large netWorst | Mid n | Mid bktPnL | Mid netWorst |
+|:-|-:|-:|-:|-:|-:|-:|
+| <1%   | 1,172 | +1.44% | +1.38% | 430 | +1.23% | +1.15% |
+| 1-2%  |   363 | +1.54% | +1.36% | 430 | +1.44% | +1.33% |
+| 2-3%  |   141 | +1.27% | +1.01% | 283 | +1.13% | +0.96% |
+| 3-5%  |    92 | +1.09% | +0.73% | 198 | +1.18% | +1.00% |
+| 5-10% |    20 | +1.20% | +0.93% | 139 | +0.82% | +0.56% |
+| 10%+  |     4 | −1.00% | −1.14% |  77 | +0.88% | +0.68% |
+
+### Conclusion
+**Every spread bucket except `Large 10%+` (n=4, noise) has a positive edge even
+under worst-case adverse-slip assumption.** A tight spread filter (e.g.
+`spread<3%`) would remove 468 signals without materially improving edge. A
+loose filter (`spread<10%`) saves only the 4-signal Large 10%+ bucket.
+
+**Decision: do NOT implement a production spread filter.** Spread is not the
+failure mode that caused Apr 23.
+
+### What NOT to claim based on this data
+- The backtest PnL numbers assume fill at the 9:30 open price. Worst-case
+  net here = `bktPnL − mean|slip|`, which is conservative but not signed.
+  True expected net is closer to `bktPnL − 0.2 × mean|slip|` assuming ~60%
+  adverse slip.
+- The backtest POPULATION EXCLUDES zero-pmv signals by construction — those
+  signals wouldn't have qualifying gap values. So this data cannot tell us
+  anything about the failure mode of true-zero-volume names.
+
+---
+
+## Part 2: Premarket-freshness filter — ADOPTED
+
+### The Apr 23 2026 forensic
+
+9 trades fired, 8 were losers, net P&L = −$8.09 on $656 notional.
+All LIVE account (config.live=true).
+
+Matched Tradier fill history against Polygon minute bars for the premarket
+window (08:00–13:29 UTC = 04:00–09:29 EDT):
+
+| Ticker | Premkt bars | Premkt vol | Last bar UTC | Result |
+|:-|-:|-:|:-|:-|
+| HUBS | 68 | 30,181 | 13:29 | −0.26% (ok) |
+| SUPN | **4** | **589** | **10:34 (3h stale)** | −1.42% |
+| BRZE | 11 | 12,587 | 13:28 | −1.82% |
+| LVS | 47 | 81,155 | 13:29 | −2.17% |
+| RYTM | **0** | **0** | — | −1.51% |
+| INDB | **0** | **0** | — | −1.67% |
+| INFY | 115 | 1,079,115 | 13:29 | +0.12% |
+| KYMR | **0** | **0** | — | −2.55% |
+| ACCO | **0** | **0** | — | naked sell |
+
+**4 of 9 trades fired on stocks with literally zero premarket bars**
+(RYTM, INDB, KYMR, ACCO). **1 more was 3-hour stale** (SUPN).
+
+### Root cause hypothesis
+`apex_watchlist.premarket_volume` or the premkt price field is being populated
+with stale values (likely prior-day close or prior-day premkt) for stocks that
+had zero premkt trading activity on the current day. The F-scenario gap
+calculation then fires on that stale reference, creating a synthetic "gap"
+that doesn't exist in market reality.
+
+Still to verify: look at `watchlist-sync.js` to confirm how these fields
+are written when a ticker has no premkt trades today.
+
+### Filter Rule 1 — CRITICAL, highest confidence
+
+```
+REJECT signal if Polygon premarket_bars_today == 0
+  at cron-fire time (13:29 UTC / 09:29 EDT / 08:29 CDT)
+```
+
+**Derivation:** RYTM, INDB, KYMR, ACCO had literally zero premkt minute bars
+on Apr 23. Their watchlist-computed "gap" was fiction. A hard reject on
+zero-bar premkt would have blocked all 4. Net prevented loss: −$7.22 of the
+−$8.09 total.
+
+**Confidence: very high.** Any stock with zero premkt bars has no valid gap
+reference. Zero data = zero trade, no judgment call.
+
+### Filter Rule 2 — FRESHNESS, high confidence
+
+```
+REJECT signal if minutes_since_last_premkt_bar > 60
+  at cron-fire time
+```
+
+**Derivation:** SUPN had 4 premkt bars totaling 589 shares but the most
+recent was 175 min stale by cron time. That means for the last 3 hours
+before market open, nobody was trading SUPN premarket. The system's
+"current premkt price" was essentially the price from 6:34 AM EDT — not
+actionable as a basis for firing a market order at 9:30.
+
+**Confidence: high.** 60-minute threshold is conservative — a truly liquid
+premkt name should print at least once per hour. More aggressive threshold
+(30min) might be appropriate but 60min is clearly data-supported.
+
+### Filter Rule 3 — VOLUME FLOOR, deferred
+
+```
+REJECT if premkt_volume_today < X  (X not yet derived)
+```
+
+**Reasoning:** The backtest population excludes zero-pmv signals, so we have
+no clean statistical basis to pick X. Rules 1 + 2 alone would have caught all
+5 bad Apr 23 trades. Add Rule 3 only if post-Rule-1,2 monitoring reveals
+a residual failure mode.
+
+---
+
+## Part 3: Filter implementation checklist
+
+**Before any production patch:**
+1. [ ] Verify how `watchlist-sync.js` populates `premarket_volume` for
+      zero-premkt tickers — is it reading from Polygon at cron time, or
+      from a cached/stale source?
+2. [ ] Add a Polygon-based freshness probe to `auto-trade-c.js` at
+      pre-submission time (before OTOCO send). This must query
+      `/v2/aggs/ticker/{sym}/range/1/minute/{today}/{today}` and check:
+      - count of bars > 0
+      - age of last bar (ms since then) < 60 × 60 × 1000
+3. [ ] Add a dry-run mode that logs which signals would be rejected vs
+      accepted across 1-2 weeks of live data, BEFORE enforcing.
+4. [ ] Dedup guard must still run. Freshness filter is an ADDITIONAL
+      gate, not a replacement.
+
+**Deployment timing constraints:**
+- NEVER commit to `auto-trade-c.js` between 8:29 AM CDT and 3:00 PM CDT on
+  weekdays (cron window).
+- Always dryrun first.
+
+---
+
+## Part 4: Population anchors (don't re-derive these)
+
+From the 3,659-signal tick analysis (stored in `/tmp/tick_agg/b0-b6.json`
+during derivation, source CSV at
+`apex_edge_backtest_OPEN_EXT_full__4_.csv`):
+
+- **Full-pop cumulative PnL:** +5,009.17% across 3,656 signals (3 Polygon
+  errors). Mean +1.37%/trade.
+- **Execution reality in tick-sim:**
+  - Partial-fill rate (fi<200 shares in first 15s): 6.3%
+  - Slip > 1% rate: 2.5%
+  - Slip > 0.5% rate: 6.9%
+  - Mean |slip|: 0.135% (13.5 bps)
+- **Scenario mix with NBBO coverage:** F=3,352, E1=94, E2=101, E3=58, E4=54.
+  A/B/C/D not in this backtest CSV.
+
+These numbers are the ground truth for "what the strategy looks like in
+execution." Any future analysis that doesn't start here is re-inventing.
+
+---
+
+## Part 5: What I am NOT claiming
+
+1. The −$8.09 Apr 23 loss is not the whole story — it's 1 day. Historical
+   loss patterns from other low-pmv days have not been pulled.
+2. I have not verified `watchlist-sync.js` logic. The "watchlist is stale"
+   hypothesis is inference from Polygon vs Tradier comparison, not source
+   inspection. Next step is to read that file.
+3. The spread filter rejection is correct within the backtest population,
+   but the backtest excludes the exact failure mode (zero-pmv). The spread
+   conclusion applies only to the space of signals that would reach
+   post-freshness-filter evaluation.
+4. Filter Rule 2's 60-minute threshold is conservative-but-reasonable,
+   not optimally tuned. If more low-pmv days are analyzed, a tighter
+   threshold (30 or 45min) may emerge as data-supported.
+
