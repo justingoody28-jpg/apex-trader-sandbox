@@ -78,15 +78,34 @@ window (08:00–13:29 UTC = 04:00–09:29 EDT):
 **4 of 9 trades fired on stocks with literally zero premarket bars**
 (RYTM, INDB, KYMR, ACCO). **1 more was 3-hour stale** (SUPN).
 
-### Root cause hypothesis
-`apex_watchlist.premarket_volume` or the premkt price field is being populated
-with stale values (likely prior-day close or prior-day premkt) for stocks that
-had zero premkt trading activity on the current day. The F-scenario gap
-calculation then fires on that stale reference, creating a synthetic "gap"
-that doesn't exist in market reality.
+### Root cause — CONFIRMED (2026-04-24 via source inspection)
 
-Still to verify: look at `watchlist-sync.js` to confirm how these fields
-are written when a ticker has no premkt trades today.
+**NOT a watchlist issue.** `watchlist-sync.js` only writes `{symbol, bet}`
+per ticker. It does NOT populate premkt fields. Premkt data flows through
+`auto-trade-c.js` directly from Tradier's `/markets/quotes`.
+
+The bug is in `auto-trade-c.js` lines 407-417:
+
+```javascript
+const bidPrice = (q.bid && q.bid > 0) ? q.bid : null;
+const price    = bidPrice;
+const prevClose = q.prevclose;
+...
+const gap = (price - prevClose) / prevClose * 100;
+```
+
+**Tradier's `q.bid` returns a value even when zero transactions occurred
+premarket.** The bid can be:
+- A market-maker placeholder quote (e.g., artificially wide $1×$200)
+- A stale overnight bid carried from prior session
+- An ECN indicative quote unrelated to real liquidity
+
+Any such bid compared against `prevClose` generates a synthetic gap that
+passes the F scenario threshold (`gap <= -5`), firing entries on stocks
+nobody is actually trading.
+
+Filter Rule 1 + Rule 2 below are sufficient to fix this. No change to
+`watchlist-sync.js` is needed.
 
 ### Filter Rule 1 — CRITICAL, highest confidence
 
@@ -136,9 +155,9 @@ a residual failure mode.
 ## Part 3: Filter implementation checklist
 
 **Before any production patch:**
-1. [ ] Verify how `watchlist-sync.js` populates `premarket_volume` for
-      zero-premkt tickers — is it reading from Polygon at cron time, or
-      from a cached/stale source?
+1. [x] ~~Verify how `watchlist-sync.js` populates `premarket_volume`~~ — DONE.
+      It doesn't. Premkt data comes from Tradier `/markets/quotes` in
+      `auto-trade-c.js` directly. Not the bug source.
 2. [ ] Add a Polygon-based freshness probe to `auto-trade-c.js` at
       pre-submission time (before OTOCO send). This must query
       `/v2/aggs/ticker/{sym}/range/1/minute/{today}/{today}` and check:
