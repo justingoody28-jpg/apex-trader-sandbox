@@ -33,6 +33,7 @@ export default async function handler(req, res) {
   const maxSpreadPct = Number(req.query.maxSpreadPct ?? 3);
   const maxPmAgeMin  = Number(req.query.maxPmAgeMin ?? 60);
   const CONC         = Math.max(1, Math.min(20, Number(req.query.conc ?? 10)));
+  const verbose      = req.query.verbose === '1';  // include no_signal list
 
   // ── Load config (tickers + scenarios) ────────────────────────────────────
   let config = null;
@@ -198,5 +199,6 @@ export default async function handler(req, res) {
     triggered_backtest: triggered_backtest.sort((a,b) => (a.gap_backtest ?? 0) - (b.gap_backtest ?? 0)),
     triggered_live: triggered_live.sort((a,b) => (a.gap_live ?? 0) - (b.gap_live ?? 0)),
     filter_rejects: filter_rejects.sort((a,b) => (a.gap_backtest_F ?? a.gap_live ?? 0) - (b.gap_backtest_F ?? b.gap_live ?? 0)),
+    ...(verbose ? { no_signal, skipped } : {}),
   });
 }
