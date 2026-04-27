@@ -261,12 +261,12 @@
     <div class="stat-sub" id="sKilledSub"></div>
   </div>
   <div class="stat-cell">
-    <div class="stat-label">Avg PnL15m if fired</div>
+    <div class="stat-label">Realized PnL · 3% gate (live)</div>
     <div class="stat-value" id="sFiredPnl">—</div>
     <div class="stat-sub" id="sFiredPnlSub"></div>
   </div>
   <div class="stat-cell">
-    <div class="stat-label">Avg PnL15m if relaxed (≤ 5%)</div>
+    <div class="stat-label">Realized PnL · 5% gate (relaxed)</div>
     <div class="stat-value" id="sRelaxedPnl">—</div>
     <div class="stat-sub" id="sRelaxedPnlSub"></div>
   </div>
@@ -583,8 +583,9 @@ const COLS = [
   { key: 'spread_cron_pct', label: 'Sprd 8:29 %', cls: 'num', fmt: v => fmt(v, 2), color: 'spread' },
   { key: 'spread_open_pct', label: 'Sprd Open %', cls: 'num', fmt: v => fmt(v, 2), color: 'spread' },
   { key: 'fill_price', label: 'Fill 9:30', cls: 'num neut', fmt: v => fmt(v, 2) },
-  { key: 'px_15m', label: 'Px 9:45', cls: 'num neut', fmt: v => fmt(v, 2) },
-  { key: 'pnl_long_15m_pct', label: 'PnL15m %', cls: 'num', fmt: v => fmtPct(v), color: 'pnl' },
+  { key: 'outcome', label: 'Result', cls: 'flag', fmt: v => v || '—', color: 'outcome' },
+  { key: 'exit_min', label: 'Exit min', cls: 'num neut', fmt: v => v == null ? '—' : v },
+  { key: 'realized_pnl_pct', label: 'PnL %', cls: 'num', fmt: v => fmtPct(v), color: 'pnl' },
   { key: 'verdict', label: 'F status', cls: 'flag', fmt: () => '' },
 ];
 
@@ -609,6 +610,7 @@ function buildHeader() {
 function classForGap(v) { if (v == null) return 'neut'; return v <= -5 ? 'pos' : (v <= -2 ? '' : 'neut'); }
 function classForSpread(v) { if (v == null) return 'neut'; return v > 3 ? 'neg' : (v > 1 ? '' : 'pos'); }
 function classForPnl(v) { if (v == null) return 'neut'; return v > 0 ? 'pos' : 'neg'; }
+function classForOutcome(v) { if (v === 'W') return 'pos'; if (v === 'L') return 'neg'; if (v === 'flat') return 'neut'; return 'neut'; }
 
 function verdictBadge(r) {
   if (r.f_would_fire) return '<span class="badge fired">FIRE</span>';
@@ -649,6 +651,7 @@ function renderTable() {
         if (c.color === 'gap') cls = 'num ' + classForGap(r.gapDown);
         if (c.color === 'spread') cls = 'num ' + classForSpread(r[c.key]);
         if (c.color === 'pnl') cls = 'num ' + classForPnl(r[c.key]);
+        if (c.color === 'outcome') cls = 'flag ' + classForOutcome(r[c.key]);
       }
       return `<td class="${cls}">${val}</td>`;
     }).join('') + '</tr>';
@@ -666,15 +669,21 @@ function renderTable() {
 function renderStats() {
   const all = state.rows;
   const qual = all.filter(r => r.f_qualified);
-  const fired = all.filter(r => r.f_would_fire);
+  const fired3 = all.filter(r => r.f_would_fire); // current 3% threshold
+  const fired5 = qual.filter(r => r.spread_cron_pct != null && r.spread_cron_pct <= 5); // relaxed 5%
   const killed = qual.filter(r => !r.f_would_fire);
 
+  const realized = arr => arr.map(r => r.realized_pnl_pct).filter(v => v != null);
   const avg = arr => arr.length === 0 ? null : arr.reduce((s,v)=>s+v,0) / arr.length;
-  const firedPnls = fired.map(r => r.pnl_long_15m_pct).filter(v => v != null);
-  const relaxed = qual.filter(r => r.spread_cron_pct != null && r.spread_cron_pct <= 5);
-  const relaxedPnls = relaxed.map(r => r.pnl_long_15m_pct).filter(v => v != null);
-  const firedPnl = avg(firedPnls);
-  const relaxedPnl = avg(relaxedPnls);
+  const counts = arr => {
+    const w = arr.filter(r => r.outcome === 'W').length;
+    const l = arr.filter(r => r.outcome === 'L').length;
+    const f = arr.filter(r => r.outcome === 'flat').length;
+    return { w, l, f, total: w + l + f };
+  };
+
+  const r3 = realized(fired3); const c3 = counts(fired3); const a3 = avg(r3);
+  const r5 = realized(fired5); const c5 = counts(fired5); const a5 = avg(r5);
 
   $('sRows').textContent = all.length.toLocaleString();
   $('sRowsSub').textContent = '';
@@ -682,19 +691,23 @@ function renderStats() {
   $('sQual').textContent = qual.length.toLocaleString();
   $('sQualSub').textContent = `${(qual.length/Math.max(1,all.length)*100).toFixed(1)}% of rows`;
 
-  $('sFire').textContent = fired.length.toLocaleString();
-  $('sFireSub').textContent = `${(fired.length/Math.max(1,qual.length)*100).toFixed(1)}% of qualified`;
+  $('sFire').textContent = fired3.length.toLocaleString();
+  $('sFireSub').textContent = `${(fired3.length/Math.max(1,qual.length)*100).toFixed(1)}% of qualified`;
 
   $('sKilled').textContent = killed.length.toLocaleString();
   $('sKilledSub').textContent = `${(killed.length/Math.max(1,qual.length)*100).toFixed(1)}% of qualified`;
 
-  $('sFiredPnl').textContent = firedPnl == null ? '—' : fmtPct(firedPnl);
-  $('sFiredPnl').style.color = firedPnl == null ? 'var(--text)' : (firedPnl >= 0 ? 'var(--green)' : 'var(--red)');
-  $('sFiredPnlSub').textContent = `n=${firedPnls.length}`;
+  $('sFiredPnl').textContent = a3 == null ? '—' : fmtPct(a3);
+  $('sFiredPnl').style.color = a3 == null ? 'var(--text)' : (a3 >= 0 ? 'var(--green)' : 'var(--red)');
+  $('sFiredPnlSub').textContent = c3.total > 0
+    ? `W ${c3.w} · L ${c3.l} · flat ${c3.f} · WR ${(c3.w/c3.total*100).toFixed(1)}%`
+    : `n=${r3.length}`;
 
-  $('sRelaxedPnl').textContent = relaxedPnl == null ? '—' : fmtPct(relaxedPnl);
-  $('sRelaxedPnl').style.color = relaxedPnl == null ? 'var(--text)' : (relaxedPnl >= 0 ? 'var(--green)' : 'var(--red)');
-  $('sRelaxedPnlSub').textContent = `n=${relaxedPnls.length} (spread ≤ 5%)`;
+  $('sRelaxedPnl').textContent = a5 == null ? '—' : fmtPct(a5);
+  $('sRelaxedPnl').style.color = a5 == null ? 'var(--text)' : (a5 >= 0 ? 'var(--green)' : 'var(--red)');
+  $('sRelaxedPnlSub').textContent = c5.total > 0
+    ? `W ${c5.w} · L ${c5.l} · flat ${c5.f} · WR ${(c5.w/c5.total*100).toFixed(1)}%`
+    : `n=${r5.length}`;
 
   $('statsStrip').classList.add('active');
 }
@@ -792,7 +805,7 @@ function exportCsv() {
   const headers = [
     'date','symbol','prevclose','minPM','pm_bars','pm_volume','gapDown',
     'bid_cron','ask_cron','spread_cron_pct','bid_open','ask_open','spread_open_pct',
-    'fill_price','px_15m','pnl_long_15m_pct','f_qualified','f_would_fire','error',
+    'fill_price','outcome','exit_min','realized_pnl_pct','f_qualified','f_would_fire','error',
   ];
   const csvRows = [headers.join(',')];
   rows.forEach(r => {
