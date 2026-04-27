@@ -62,8 +62,9 @@ async function analyzeSymbol(sym, date, key) {
     ask_open: null,
     spread_open_pct: null,
     fill_price: null,
-    px_15m: null,
-    pnl_long_15m_pct: null,
+    outcome: null,           // 'W' | 'L' | 'flat' | null
+    realized_pnl_pct: null,  // +2 on W, -2 on L, EOD-flat % otherwise
+    exit_min: null,          // minutes after 13:30 UTC to exit
     f_qualified: false,
     f_would_fire: false,
     error: null,
@@ -76,10 +77,10 @@ async function analyzeSymbol(sym, date, key) {
     const openEnd = `${date}T13:30:30Z`;
     const tradeStart = `${date}T13:30:00Z`;
     const tradeEnd = `${date}T13:30:15Z`;
-    const fifteenStart = `${date}T13:45:00Z`;
-    const fifteenEnd = `${date}T13:45:30Z`;
     const pmRangeStart = `${date}T08:00:00Z`; // 4:00 AM ET (DST)
     const pmRangeEnd = `${date}T13:30:00Z`;
+    const rthStart = Date.parse(`${date}T13:30:00Z`);
+    const rthEnd = Date.parse(`${date}T20:00:00Z`); // 4:00 PM ET RTH close (DST)
 
     // Date 7 days back — used to find prev trading day
     const d = new Date(date + 'T00:00:00Z');
@@ -92,7 +93,6 @@ async function analyzeSymbol(sym, date, key) {
       cronQuote: `https://api.polygon.io/v3/quotes/${sym}?timestamp.gte=${cronStart}&timestamp.lt=${cronEnd}&order=desc&limit=1&apiKey=${key}`,
       openQuote: `https://api.polygon.io/v3/quotes/${sym}?timestamp.gte=${openStart}&timestamp.lt=${openEnd}&order=asc&limit=1&apiKey=${key}`,
       fillTrade: `https://api.polygon.io/v3/trades/${sym}?timestamp.gte=${tradeStart}&timestamp.lt=${tradeEnd}&order=asc&limit=1&apiKey=${key}`,
-      fifteenTrade: `https://api.polygon.io/v3/trades/${sym}?timestamp.gte=${fifteenStart}&timestamp.lt=${fifteenEnd}&order=asc&limit=1&apiKey=${key}`,
     };
 
     const fetchJSON = async (url) => {
@@ -101,13 +101,12 @@ async function analyzeSymbol(sym, date, key) {
       return r.json();
     };
 
-    const [bars, dailyRange, cronQuote, openQuote, fillTrade, fifteenTrade] = await Promise.all([
+    const [bars, dailyRange, cronQuote, openQuote, fillTrade] = await Promise.all([
       fetchJSON(urls.bars),
       fetchJSON(urls.dailyRange),
       fetchJSON(urls.cronQuote),
       fetchJSON(urls.openQuote),
       fetchJSON(urls.fillTrade),
-      fetchJSON(urls.fifteenTrade),
     ]);
 
     // ── prevclose: most recent daily bar before {date}
@@ -159,14 +158,47 @@ async function analyzeSymbol(sym, date, key) {
       out.fill_price = fillTrade.results[0].price ?? null;
     }
 
-    // ── Trade 15 min after open = exit reference for PnL
-    if (fifteenTrade.results && fifteenTrade.results.length > 0) {
-      out.px_15m = fifteenTrade.results[0].price ?? null;
-    }
-
-    // ── Realized 15-min PnL for hypothetical Scenario F long entry
-    if (out.fill_price && out.px_15m && out.fill_price > 0) {
-      out.pnl_long_15m_pct = ((out.px_15m - out.fill_price) / out.fill_price) * 100;
+    // ── Bracket walk: TP +2% / SL -2% / EOD flat
+    // Walks RTH minute bars chronologically. First bar where high >= TP or
+    // low <= SL resolves the trade. If both hit in same bar, conservative
+    // assumption: SL hit first → L. If neither hits by close, flat at last bar's close.
+    if (out.fill_price && out.fill_price > 0 && bars.results) {
+      const tp = out.fill_price * 1.02;
+      const sl = out.fill_price * 0.98;
+      const rthBars = bars.results
+        .filter(b => b.t >= rthStart && b.t < rthEnd)
+        .sort((a, b) => a.t - b.t);
+      let resolved = false;
+      for (const b of rthBars) {
+        const tpHit = b.h >= tp;
+        const slHit = b.l <= sl;
+        if (tpHit && slHit) {
+          // Same-bar both-hit: assume SL first (conservative, standard backtest convention)
+          out.outcome = 'L';
+          out.realized_pnl_pct = -2;
+          out.exit_min = Math.round((b.t - rthStart) / 60000);
+          resolved = true;
+          break;
+        } else if (tpHit) {
+          out.outcome = 'W';
+          out.realized_pnl_pct = 2;
+          out.exit_min = Math.round((b.t - rthStart) / 60000);
+          resolved = true;
+          break;
+        } else if (slHit) {
+          out.outcome = 'L';
+          out.realized_pnl_pct = -2;
+          out.exit_min = Math.round((b.t - rthStart) / 60000);
+          resolved = true;
+          break;
+        }
+      }
+      if (!resolved && rthBars.length > 0) {
+        const last = rthBars[rthBars.length - 1];
+        out.outcome = 'flat';
+        out.realized_pnl_pct = ((last.c - out.fill_price) / out.fill_price) * 100;
+        out.exit_min = Math.round((last.t - rthStart) / 60000);
+      }
     }
 
     // ── F qualification flags
