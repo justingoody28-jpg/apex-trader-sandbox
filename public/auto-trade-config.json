@@ -1352,5 +1352,8 @@
   ],
   "count": 331,
   "updated": "2026-04-23T13:13:00.582Z",
-  "_note": "Auto-synced from apex_watchlist (331 tickers, Kelly from Q1 2026)"
+  "_note": "Auto-synced from apex_watchlist (331 tickers, Kelly from Q1 2026)",
+  "filters": {
+    "maxSpreadPct": 5
+  }
 }
