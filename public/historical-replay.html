@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX // Historical Replay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d12;
+    --bg-2: #11161e;
+    --bg-3: #1a212c;
+    --border: #232b39;
+    --border-bright: #34405b;
+    --text: #d8dee9;
+    --text-dim: #7e8aa3;
+    --text-faint: #4d5670;
+    --accent: #ffaa00;
+    --accent-dim: #b97e00;
+    --green: #6dd47e;
+    --green-bg: #1a3322;
+    --red: #ff6b6b;
+    --red-bg: #321a1f;
+    --blue: #62b4ff;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --display: 'Space Grotesk', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+  body {
+    background-image:
+      radial-gradient(circle at 0% 0%, rgba(255, 170, 0, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(98, 180, 255, 0.03) 0%, transparent 40%);
+    min-height: 100vh;
+    padding: 24px 32px;
+  }
+  h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; }
+  .crumb { font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; }
+  .accent { color: var(--accent); }
+  .dim { color: var(--text-dim); }
+  .faint { color: var(--text-faint); }
+
+  /* ── Header ── */
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px;
+  }
+  header h1 { font-size: 28px; }
+  header h1::before { content: "▎"; color: var(--accent); margin-right: 8px; }
+  header .meta { text-align: right; }
+
+  /* ── Config Panel ── */
+  .config-grid {
+    display: grid; grid-template-columns: 280px 1fr 200px; gap: 24px;
+    background: var(--bg-2); border: 1px solid var(--border); padding: 20px;
+    margin-bottom: 24px;
+  }
+  .field-label { font-size: 10px; color: var(--text-faint); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .field-row { display: flex; gap: 8px; align-items: center; }
+  input[type="date"], input[type="number"] {
+    background: var(--bg-3); border: 1px solid var(--border-bright); color: var(--text);
+    font-family: var(--mono); font-size: 13px; padding: 6px 10px; outline: none;
+    color-scheme: dark; flex: 1;
+  }
+  input[type="date"]:focus, input[type="number"]:focus { border-color: var(--accent); }
+  textarea {
+    background: var(--bg-3); border: 1px solid var(--border-bright); color: var(--text);
+    font-family: var(--mono); font-size: 11px; padding: 8px 10px; outline: none;
+    width: 100%; resize: vertical; min-height: 88px; max-height: 200px;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  button {
+    background: var(--accent); color: var(--bg); border: 0;
+    font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 0.05em;
+    text-transform: uppercase; padding: 12px 20px; cursor: pointer;
+    transition: all 0.1s;
+  }
+  button:hover:not(:disabled) { background: #ffc547; }
+  button:disabled { background: var(--border); color: var(--text-faint); cursor: not-allowed; }
+  button.secondary {
+    background: transparent; color: var(--text); border: 1px solid var(--border-bright);
+    padding: 6px 14px; font-size: 11px;
+  }
+  button.secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Progress ── */
+  .progress-shell {
+    background: var(--bg-2); border: 1px solid var(--border); padding: 16px 20px;
+    display: none; margin-bottom: 24px;
+  }
+  .progress-shell.active { display: block; }
+  .progress-bar {
+    width: 100%; height: 4px; background: var(--bg-3); margin: 12px 0; position: relative; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent); transition: width 0.2s;
+    box-shadow: 0 0 12px rgba(255, 170, 0, 0.6);
+  }
+  .progress-stats { display: flex; gap: 24px; font-size: 11px; color: var(--text-dim); }
+  .progress-stats b { color: var(--text); font-weight: 600; }
+
+  /* ── Stats strip ── */
+  .stats-strip {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+    background: var(--border); border: 1px solid var(--border);
+    margin-bottom: 24px; display: none;
+  }
+  .stats-strip.active { display: grid; }
+  .stat-cell { background: var(--bg-2); padding: 14px 16px; }
+  .stat-label { font-size: 10px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; }
+  .stat-value { font-family: var(--display); font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: none; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .filter-bar.active { display: flex; }
+  .chip {
+    background: var(--bg-2); border: 1px solid var(--border-bright); color: var(--text-dim);
+    padding: 5px 12px; font-size: 11px; cursor: pointer; user-select: none;
+    transition: all 0.1s;
+  }
+  .chip:hover { border-color: var(--text-dim); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+  .chip-count { color: var(--text-faint); margin-left: 6px; }
+  .chip.active .chip-count { color: rgba(0,0,0,0.55); }
+
+  /* ── Histogram strip ── */
+  .hist-row { display: none; gap: 16px; margin-bottom: 24px; }
+  .hist-row.active { display: grid; grid-template-columns: 1fr 1fr; }
+  .hist-card { background: var(--bg-2); border: 1px solid var(--border); padding: 16px; }
+  .hist-title { font-size: 11px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; }
+  .hist-svg { width: 100%; height: 110px; }
+
+  /* ── Results table ── */
+  .results-shell { background: var(--bg-2); border: 1px solid var(--border); display: none; }
+  .results-shell.active { display: block; }
+  .results-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .results-head .count { color: var(--text-dim); font-size: 11px; letter-spacing: 0.05em; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead { position: sticky; top: 0; background: var(--bg-3); z-index: 1; }
+  th { padding: 10px 8px; text-align: left; color: var(--text-dim); font-weight: 600;
+       letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px;
+       border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; white-space: nowrap; }
+  th:hover { color: var(--accent); }
+  th.sorted { color: var(--accent); }
+  th.sorted::after { content: "▾"; margin-left: 4px; font-size: 9px; }
+  th.sorted.asc::after { content: "▴"; }
+  td { padding: 6px 8px; border-bottom: 1px solid rgba(35, 43, 57, 0.4); white-space: nowrap; }
+  tbody tr:hover { background: rgba(255, 170, 0, 0.05); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.sym { font-weight: 600; color: var(--accent); }
+  td.pos { color: var(--green); }
+  td.neg { color: var(--red); }
+  td.neut { color: var(--text-dim); }
+  td.flag { text-align: center; }
+  .badge {
+    display: inline-block; padding: 1px 6px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .badge.fired { background: var(--green-bg); color: var(--green); }
+  .badge.qualified-not-fired { background: var(--red-bg); color: var(--red); }
+  .badge.no-data { background: var(--bg-3); color: var(--text-faint); }
+  .table-scroll { max-height: 60vh; overflow: auto; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--bg-2); border: 1px solid var(--border-bright); padding: 12px 18px;
+    font-size: 12px; color: var(--text); transform: translateX(120%); transition: transform 0.25s;
+    z-index: 100;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="crumb">Apex Trader · Read-only diagnostic</div>
+    <h1>Historical Replay</h1>
+  </div>
+  <div class="meta">
+    <div class="crumb">Polygon Stocks Advanced</div>
+    <div class="dim" style="font-size:11px;margin-top:4px;">F-trigger replay · NBBO @ 13:29 / 13:30:01 UTC · 15-min realized PnL</div>
+  </div>
+</header>
+
+<!-- ─── Config ─── -->
+<div class="config-grid">
+  <div>
+    <span class="field-label">Date range (UTC)</span>
+    <div class="field-row">
+      <input type="date" id="startDate">
+      <span class="dim">→</span>
+      <input type="date" id="endDate">
+    </div>
+    <div class="field-row" style="margin-top:8px;font-size:11px;">
+      <span class="dim">Days back:</span>
+      <input type="number" id="daysBack" value="20" min="1" max="60" style="max-width:60px;">
+      <button class="secondary" id="applyDaysBack">Set</button>
+    </div>
+  </div>
+
+  <div>
+    <span class="field-label">Symbols (<span id="symCount">0</span>)</span>
+    <textarea id="symbolsText" spellcheck="false" placeholder="Comma- or whitespace-separated tickers"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="secondary" id="loadDefault">Load 331 from 4/27 run</button>
+      <button class="secondary" id="clearSymbols">Clear</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;justify-content:space-between;">
+    <span class="field-label">Action</span>
+    <button id="runBtn">▶ Run Replay</button>
+    <button class="secondary" id="cancelBtn" disabled style="margin-top:8px;display:none;">Cancel</button>
+  </div>
+</div>
+
+<!-- ─── Progress ─── -->
+<div class="progress-shell" id="progressShell">
+  <div class="crumb accent">Running replay</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-stats">
+    <span><b id="progDates">0</b>/<span id="progDatesTotal">0</span> dates</span>
+    <span><b id="progRows">0</b> rows accumulated</span>
+    <span><b id="progErr">0</b> errors</span>
+    <span class="dim" id="progETA"></span>
+  </div>
+</div>
+
+<!-- ─── Summary stats ─── -->
+<div class="stats-strip" id="statsStrip">
+  <div class="stat-cell">
+    <div class="stat-label">Rows</div>
+    <div class="stat-value" id="sRows">—</div>
+    <div class="stat-sub" id="sRowsSub"></div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">F qualified (gapDown ≤ −5)</div>
+    <div class="stat-value" id="sQual">—</div>
+    <div class="stat-sub" id="sQualSub"></div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">F would fire (spread ≤ 3)</div>
+    <div class="stat-value" id="sFire">—</div>
+    <div class="stat-sub" id="sFireSub"></div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Spread-killed (qual but >3%)</div>
+    <div class="stat-value" id="sKilled">—</div>
+    <div class="stat-sub" id="sKilledSub"></div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Avg PnL15m if fired</div>
+    <div class="stat-value" id="sFiredPnl">—</div>
+    <div class="stat-sub" id="sFiredPnlSub"></div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Avg PnL15m if relaxed (≤ 5%)</div>
+    <div class="stat-value" id="sRelaxedPnl">—</div>
+    <div class="stat-sub" id="sRelaxedPnlSub"></div>
+  </div>
+</div>
+
+<!-- ─── Histograms ─── -->
+<div class="hist-row" id="histRow">
+  <div class="hist-card">
+    <div class="hist-title">Spread @ 13:29 UTC distribution (qualified F only)</div>
+    <svg class="hist-svg" id="histSpread" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="hist-card">
+    <div class="hist-title">Spread @ cron vs spread @ open · qualified F</div>
+    <svg class="hist-svg" id="histCronVsOpen" preserveAspectRatio="none"></svg>
+  </div>
+</div>
+
+<!-- ─── Filters ─── -->
+<div class="filter-bar" id="filterBar"></div>
+
+<!-- ─── Results ─── -->
+<div class="results-shell" id="resultsShell">
+  <div class="results-head">
+    <div class="count"><span id="resultCount">0</span> rows shown</div>
+    <div style="display:flex;gap:8px;">
+      <button class="secondary" id="exportCsv">Export CSV</button>
+      <button class="secondary" id="clearStorage">Clear cache</button>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table id="resultsTable">
+      <thead><tr id="theadRow"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── 331 tickers from 4/27 run ─────────────────────────────────────────────
+const DEFAULT_TICKERS_331 = [
+  "TWLO","COIN","HUBS","OKTA","SNAP","HOOD","CRWD","DDOG","SOFI","GLOB","EXLS","PEGA",
+  "NCNO","ALRM","JAMF","TNET","ATEN","LPSN","DOMO","QTWO","EVBG","BRZE","ASAN","UMBF",
+  "WTFC","SNV","IBOC","PRSP","CATY","FFIN","WSBC","CVBF","FULT","INVA","PRGO","HALO",
+  "NTRA","MDRX","OMCL","PINC","ADUS","AMSF","ACAD","NVCR","RYTM","RARE","FOLD","CRDF",
+  "ARQT","XNCR","IMVT","PRAX","KYMR","BOOT","WING","FRPT","CAVA","SG","TACO","TXRH",
+  "FAT","RRGB","JACK","ACVA","PRTY","VSCO","JOANN","ODP","RCII","ASTE","HCSG","TREX",
+  "APOG","ARCB","MATX","MRTN","SAIA","LSTR","ECHO","CEIX","ARCH","SWN","RRC","CIVI",
+  "VTLE","SM","REX","HESM","SRLP","IOSP","KWR","TROX","MTRN","ASIX","KREF","GPMT",
+  "STWD","BXMT","TRTX","AMD","NVDA","INTC","TSLA","AMZN","AAPL","GOOGL","META","NFLX",
+  "MSFT","JPM","GS","LLY","PFE","UNH","STX","NCLH","DOW","APA","LYB","EL","SIRI","MGM",
+  "RRX","KLAC","WYNN","OMC","EXPE","LVS","LYV","BMY","ELV","BDX","ZBH","RF","BKR","DVN",
+  "STZ","HSY","CPB","SJM","XYL","ACCO","GEF","NYT","SRE","XEL","CDNS","CI","VRTX","C",
+  "TFC","FITB","F","RCL","PH","DOV","AVY","AEP","EMR","CLF","MU","WDC","HUM","LRCX",
+  "CCL","IP","LUMN","HPQ","GM","GNRC","DELL","AMAT","DENN","ALKS","GO","CSTM","APPF",
+  "FLNG","AXON","FIVE","LNTH","SUPN","ANDE","CALM","HLIT","NXST","OOMA","KNTK","HAYW",
+  "HAFC","CVGW","JBSS","ACRS","FORM","DLTH","RCUS","LGCY","AVAV","RYAM","EVC","CODA",
+  "BTBT","DMAC","GTN","KALA","IQ","VIST","SE","ILMN","CE","FMC","WERN","ANET","ROKU",
+  "J","GLW","IDXX","EQT","SCCO","LBRDA","INFY","HPE","A","KKR","ODFL","KNX","NTAP",
+  "SPGI","MCO","NDAQ","GPC","NSC","CSX","URI","ACN","EPAM","MDT","EW","WAT","BX","APO",
+  "MSCI","CTRA","TRGP","TSCO","CMG","TSN","RPM","LBRDK","EIX","WIT","CRK","ATUS","OLN",
+  "BIDU","LW","BTE","ONTO","HCC","CRGY","VAL","KBH","KRO","YETI","MUR","TALO","CROX",
+  "FIVN","ANIP","OLLI","UAA","TPH","SYNA","MHO","CNK","INDB","BCC","MSGE","HQY","PNTG",
+  "NBTB","EBC","LEVI","USFD","COKE","MIDD","RBC","WOR","CHTR","RMBS","LGIH","HPK","CORT",
+  "ACHC","BRBR","PD","LSCC","STRL","FRO","POWI","SOC","DHI","IMAX","IRWD","SMTC","SNOW",
+  "PANW","ORCL","GTLB","AMED","AMPL","ANGI","ARLO","BAND","BGS","BJRI","BMBL","CENTA",
+  "CHEF","HAIN","IOVA","JJSF","LTC","MGNI","PLAY","PUBM","ROIC","TTGT","UTZ","VITL","YELP"
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────
+const state = {
+  rows: [],
+  cancel: false,
+  sortKey: 'date',
+  sortDir: 'desc',
+  filterKey: 'all',
+};
+
+// ─── DOM helpers ────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const fmt = (v, d = 2) => v == null || isNaN(v) ? '—' : (+v).toFixed(d);
+const fmtPct = (v) => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2);
+
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(() => t.className = 'toast' + (isErr ? ' error' : ''), 3500);
+}
+
+// ─── Date helpers ───────────────────────────────────────────────────────────
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+function tradingDaysBack(n) {
+  const dates = [];
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  let cur = new Date(today);
+  while (dates.length < n) {
+    const dow = cur.getUTCDay();
+    if (dow !== 0 && dow !== 6) dates.unshift(isoDate(cur));
+    cur.setUTCDate(cur.getUTCDate() - 1);
+  }
+  return dates;
+}
+function datesBetween(start, end) {
+  const out = [];
+  const s = new Date(start + 'T00:00:00Z');
+  const e = new Date(end + 'T00:00:00Z');
+  while (s <= e) {
+    const dow = s.getUTCDay();
+    if (dow !== 0 && dow !== 6) out.push(isoDate(s));
+    s.setUTCDate(s.getUTCDate() + 1);
+  }
+  return out;
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+function init() {
+  // default 20 trading days back
+  const days = tradingDaysBack(20);
+  $('startDate').value = days[0];
+  $('endDate').value = days[days.length - 1];
+
+  // default symbols
+  loadDefaultSymbols();
+  updateSymCount();
+
+  // restore cached results if any
+  try {
+    const cached = localStorage.getItem('apex_replay_rows');
+    if (cached) {
+      const rows = JSON.parse(cached);
+      if (Array.isArray(rows) && rows.length > 0) {
+        state.rows = rows;
+        toast(`Loaded ${rows.length.toLocaleString()} cached rows`);
+        renderAll();
+      }
+    }
+  } catch (e) {}
+
+  // wire events
+  $('runBtn').addEventListener('click', run);
+  $('cancelBtn').addEventListener('click', () => { state.cancel = true; });
+  $('symbolsText').addEventListener('input', updateSymCount);
+  $('loadDefault').addEventListener('click', loadDefaultSymbols);
+  $('clearSymbols').addEventListener('click', () => { $('symbolsText').value = ''; updateSymCount(); });
+  $('applyDaysBack').addEventListener('click', () => {
+    const n = parseInt($('daysBack').value, 10) || 20;
+    const days = tradingDaysBack(n);
+    $('startDate').value = days[0];
+    $('endDate').value = days[days.length - 1];
+  });
+  $('exportCsv').addEventListener('click', exportCsv);
+  $('clearStorage').addEventListener('click', () => {
+    localStorage.removeItem('apex_replay_rows');
+    state.rows = [];
+    renderAll();
+    toast('Cache cleared');
+  });
+
+  buildHeader();
+  buildFilterChips();
+}
+
+function loadDefaultSymbols() {
+  $('symbolsText').value = DEFAULT_TICKERS_331.join(',');
+  updateSymCount();
+}
+
+function getSymbols() {
+  return $('symbolsText').value
+    .split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+}
+function updateSymCount() { $('symCount').textContent = getSymbols().length; }
+
+// ─── Run ────────────────────────────────────────────────────────────────────
+async function run() {
+  const start = $('startDate').value;
+  const end = $('endDate').value;
+  if (!start || !end) return toast('Pick a date range', true);
+
+  const dates = datesBetween(start, end);
+  if (dates.length === 0) return toast('No trading days in range', true);
+
+  const symbols = getSymbols();
+  if (symbols.length === 0) return toast('No symbols', true);
+
+  state.rows = [];
+  state.cancel = false;
+
+  $('runBtn').disabled = true;
+  $('cancelBtn').disabled = false;
+  $('cancelBtn').style.display = 'inline-block';
+  $('progressShell').classList.add('active');
+  $('progDatesTotal').textContent = dates.length;
+  $('progDates').textContent = '0';
+  $('progRows').textContent = '0';
+  $('progErr').textContent = '0';
+  $('progressFill').style.width = '0%';
+
+  // Batch symbols: 100 per request, ~4 requests per date for 331 symbols
+  const BATCH_SIZE = 100;
+  const symBatches = [];
+  for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+    symBatches.push(symbols.slice(i, i + BATCH_SIZE));
+  }
+
+  // Concurrency: 3 dates in parallel × 4 symbol batches sequentially per date
+  const DATE_CONCURRENCY = 3;
+  let dateIdx = 0;
+  let errors = 0;
+  const t0 = Date.now();
+
+  async function processDate(date) {
+    for (const batch of symBatches) {
+      if (state.cancel) return;
+      try {
+        const r = await fetch('/api/polygon-replay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date, symbols: batch, secret: 'apex-tv-2026' }),
+        });
+        if (!r.ok) { errors++; continue; }
+        const j = await r.json();
+        if (j.results) {
+          state.rows.push(...j.results);
+          $('progRows').textContent = state.rows.length.toLocaleString();
+          $('progErr').textContent = errors;
+        }
+      } catch (e) {
+        errors++;
+        $('progErr').textContent = errors;
+      }
+    }
+    const done = ++dateIdx;
+    $('progDates').textContent = done;
+    $('progressFill').style.width = (done / dates.length * 100) + '%';
+    const elapsed = (Date.now() - t0) / 1000;
+    const rate = done / elapsed;
+    const remaining = (dates.length - done) / rate;
+    $('progETA').textContent = `~${Math.round(remaining)}s remaining`;
+  }
+
+  // Run dates with concurrency limit
+  const dateQueue = [...dates];
+  const workers = Array.from({ length: DATE_CONCURRENCY }, async () => {
+    while (dateQueue.length > 0 && !state.cancel) {
+      const d = dateQueue.shift();
+      await processDate(d);
+    }
+  });
+  await Promise.all(workers);
+
+  $('runBtn').disabled = false;
+  $('cancelBtn').disabled = true;
+  $('cancelBtn').style.display = 'none';
+  $('progressShell').classList.remove('active');
+
+  // persist
+  try { localStorage.setItem('apex_replay_rows', JSON.stringify(state.rows)); } catch (e) {}
+
+  if (state.cancel) toast('Cancelled', true);
+  else toast(`Done · ${state.rows.length.toLocaleString()} rows · ${errors} errors`);
+
+  renderAll();
+}
+
+// ─── Filter chips ───────────────────────────────────────────────────────────
+const FILTERS = [
+  { key: 'all', label: 'All rows', test: () => true },
+  { key: 'qualified', label: 'F qualified (gapDown ≤ −5)', test: r => r.f_qualified },
+  { key: 'fired', label: 'F would fire (spread ≤ 3%)', test: r => r.f_would_fire },
+  { key: 'killed', label: 'Spread-killed', test: r => r.f_qualified && !r.f_would_fire && r.spread_cron_pct != null },
+  { key: 'killed_tradeable', label: 'Killed but tradeable @ open (spread_open ≤ 2%)', test: r => r.f_qualified && !r.f_would_fire && r.spread_open_pct != null && r.spread_open_pct <= 2 },
+  { key: 'pmnodata', label: 'No premarket data', test: r => r.pm_bars === 0 },
+];
+
+function buildFilterChips() {
+  const bar = $('filterBar');
+  bar.innerHTML = '';
+  FILTERS.forEach(f => {
+    const c = document.createElement('div');
+    c.className = 'chip' + (state.filterKey === f.key ? ' active' : '');
+    c.dataset.key = f.key;
+    c.innerHTML = `${f.label}<span class="chip-count" id="chipCount_${f.key}">0</span>`;
+    c.addEventListener('click', () => {
+      state.filterKey = f.key;
+      buildFilterChips();
+      renderTable();
+    });
+    bar.appendChild(c);
+  });
+}
+
+function updateChipCounts() {
+  FILTERS.forEach(f => {
+    const n = state.rows.filter(f.test).length;
+    const el = document.getElementById('chipCount_' + f.key);
+    if (el) el.textContent = n.toLocaleString();
+  });
+}
+
+// ─── Table ──────────────────────────────────────────────────────────────────
+const COLS = [
+  { key: 'date', label: 'Date', cls: 'dim', fmt: v => v },
+  { key: 'symbol', label: 'Symbol', cls: 'sym', fmt: v => v },
+  { key: 'prevclose', label: 'PrevC', cls: 'num neut', fmt: v => fmt(v, 2) },
+  { key: 'minPM', label: 'minPM', cls: 'num', fmt: v => fmt(v, 2) },
+  { key: 'gapDown', label: 'GapDn%', cls: 'num', fmt: v => fmtPct(v), color: 'gap' },
+  { key: 'pm_bars', label: 'PM bars', cls: 'num neut', fmt: v => v == null ? '—' : v },
+  { key: 'bid_cron', label: 'Bid 8:29', cls: 'num neut', fmt: v => fmt(v, 2) },
+  { key: 'ask_cron', label: 'Ask 8:29', cls: 'num neut', fmt: v => fmt(v, 2) },
+  { key: 'spread_cron_pct', label: 'Sprd 8:29 %', cls: 'num', fmt: v => fmt(v, 2), color: 'spread' },
+  { key: 'spread_open_pct', label: 'Sprd Open %', cls: 'num', fmt: v => fmt(v, 2), color: 'spread' },
+  { key: 'fill_price', label: 'Fill 9:30', cls: 'num neut', fmt: v => fmt(v, 2) },
+  { key: 'px_15m', label: 'Px 9:45', cls: 'num neut', fmt: v => fmt(v, 2) },
+  { key: 'pnl_long_15m_pct', label: 'PnL15m %', cls: 'num', fmt: v => fmtPct(v), color: 'pnl' },
+  { key: 'verdict', label: 'F status', cls: 'flag', fmt: () => '' },
+];
+
+function buildHeader() {
+  const tr = $('theadRow');
+  tr.innerHTML = '';
+  COLS.forEach(c => {
+    const th = document.createElement('th');
+    th.textContent = c.label;
+    th.dataset.key = c.key;
+    if (state.sortKey === c.key) th.className = 'sorted ' + (state.sortDir === 'asc' ? 'asc' : '');
+    th.addEventListener('click', () => {
+      if (state.sortKey === c.key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      else { state.sortKey = c.key; state.sortDir = 'desc'; }
+      buildHeader();
+      renderTable();
+    });
+    tr.appendChild(th);
+  });
+}
+
+function classForGap(v) { if (v == null) return 'neut'; return v <= -5 ? 'pos' : (v <= -2 ? '' : 'neut'); }
+function classForSpread(v) { if (v == null) return 'neut'; return v > 3 ? 'neg' : (v > 1 ? '' : 'pos'); }
+function classForPnl(v) { if (v == null) return 'neut'; return v > 0 ? 'pos' : 'neg'; }
+
+function verdictBadge(r) {
+  if (r.f_would_fire) return '<span class="badge fired">FIRE</span>';
+  if (r.f_qualified) return '<span class="badge qualified-not-fired">QUAL · spread killed</span>';
+  if (r.gapDown == null) return '<span class="badge no-data">no PM</span>';
+  return '<span class="badge no-data">—</span>';
+}
+
+function renderTable() {
+  const filterFn = (FILTERS.find(f => f.key === state.filterKey) || FILTERS[0]).test;
+  let rows = state.rows.filter(filterFn);
+
+  // sort
+  const k = state.sortKey;
+  const dir = state.sortDir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    const av = a[k], bv = b[k];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === 'number') return (av - bv) * dir;
+    return String(av).localeCompare(String(bv)) * dir;
+  });
+
+  $('resultCount').textContent = rows.length.toLocaleString();
+
+  // Cap render to first 1000 to keep DOM fast
+  const cap = rows.slice(0, 1000);
+  const tb = $('tbody');
+  tb.innerHTML = cap.map(r => {
+    return '<tr>' + COLS.map(c => {
+      let cls = c.cls;
+      let val;
+      if (c.key === 'verdict') {
+        val = verdictBadge(r);
+      } else {
+        val = c.fmt(r[c.key]);
+        if (c.color === 'gap') cls = 'num ' + classForGap(r.gapDown);
+        if (c.color === 'spread') cls = 'num ' + classForSpread(r[c.key]);
+        if (c.color === 'pnl') cls = 'num ' + classForPnl(r[c.key]);
+      }
+      return `<td class="${cls}">${val}</td>`;
+    }).join('') + '</tr>';
+  }).join('');
+
+  if (rows.length > 1000) {
+    tb.innerHTML += `<tr><td colspan="${COLS.length}" style="text-align:center;padding:14px;color:var(--text-faint);">…showing first 1000 of ${rows.length.toLocaleString()} — export CSV for full set</td></tr>`;
+  }
+
+  $('resultsShell').classList.add('active');
+  $('filterBar').classList.add('active');
+}
+
+// ─── Stats ──────────────────────────────────────────────────────────────────
+function renderStats() {
+  const all = state.rows;
+  const qual = all.filter(r => r.f_qualified);
+  const fired = all.filter(r => r.f_would_fire);
+  const killed = qual.filter(r => !r.f_would_fire);
+
+  const avg = arr => arr.length === 0 ? null : arr.reduce((s,v)=>s+v,0) / arr.length;
+  const firedPnls = fired.map(r => r.pnl_long_15m_pct).filter(v => v != null);
+  const relaxed = qual.filter(r => r.spread_cron_pct != null && r.spread_cron_pct <= 5);
+  const relaxedPnls = relaxed.map(r => r.pnl_long_15m_pct).filter(v => v != null);
+  const firedPnl = avg(firedPnls);
+  const relaxedPnl = avg(relaxedPnls);
+
+  $('sRows').textContent = all.length.toLocaleString();
+  $('sRowsSub').textContent = '';
+
+  $('sQual').textContent = qual.length.toLocaleString();
+  $('sQualSub').textContent = `${(qual.length/Math.max(1,all.length)*100).toFixed(1)}% of rows`;
+
+  $('sFire').textContent = fired.length.toLocaleString();
+  $('sFireSub').textContent = `${(fired.length/Math.max(1,qual.length)*100).toFixed(1)}% of qualified`;
+
+  $('sKilled').textContent = killed.length.toLocaleString();
+  $('sKilledSub').textContent = `${(killed.length/Math.max(1,qual.length)*100).toFixed(1)}% of qualified`;
+
+  $('sFiredPnl').textContent = firedPnl == null ? '—' : fmtPct(firedPnl);
+  $('sFiredPnl').style.color = firedPnl == null ? 'var(--text)' : (firedPnl >= 0 ? 'var(--green)' : 'var(--red)');
+  $('sFiredPnlSub').textContent = `n=${firedPnls.length}`;
+
+  $('sRelaxedPnl').textContent = relaxedPnl == null ? '—' : fmtPct(relaxedPnl);
+  $('sRelaxedPnl').style.color = relaxedPnl == null ? 'var(--text)' : (relaxedPnl >= 0 ? 'var(--green)' : 'var(--red)');
+  $('sRelaxedPnlSub').textContent = `n=${relaxedPnls.length} (spread ≤ 5%)`;
+
+  $('statsStrip').classList.add('active');
+}
+
+// ─── Histograms ─────────────────────────────────────────────────────────────
+function buildHist(svgId, values, opts) {
+  const svg = $(svgId);
+  if (!svg) return;
+  const w = svg.clientWidth || 400;
+  const h = 110;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+  if (values.length === 0) {
+    svg.innerHTML = `<text x="${w/2}" y="${h/2}" fill="var(--text-faint)" font-size="11" text-anchor="middle" font-family="JetBrains Mono">no data</text>`;
+    return;
+  }
+
+  const bins = opts.bins || 20;
+  const min = opts.min ?? Math.min(...values);
+  const max = opts.max ?? Math.max(...values);
+  const step = (max - min) / bins;
+  const counts = Array(bins).fill(0);
+  values.forEach(v => {
+    const idx = Math.min(bins - 1, Math.max(0, Math.floor((v - min) / step)));
+    counts[idx]++;
+  });
+  const maxCount = Math.max(...counts);
+
+  const barW = w / bins;
+  const padding = 16;
+  const innerH = h - padding;
+
+  let svgContent = '';
+  counts.forEach((c, i) => {
+    const barH = (c / maxCount) * innerH;
+    const x = i * barW;
+    const y = h - barH;
+    svgContent += `<rect x="${x + 1}" y="${y}" width="${Math.max(1, barW - 2)}" height="${barH}" fill="${opts.color || 'var(--accent)'}" opacity="0.85"/>`;
+  });
+
+  // X axis labels (min, midpoint markers)
+  const labels = [min, (min + max) / 2, max];
+  labels.forEach((v, i) => {
+    const x = i === 0 ? 4 : (i === 1 ? w / 2 : w - 4);
+    const anchor = i === 0 ? 'start' : (i === 1 ? 'middle' : 'end');
+    svgContent += `<text x="${x}" y="${h - 2}" fill="var(--text-faint)" font-size="9" text-anchor="${anchor}" font-family="JetBrains Mono">${v.toFixed(1)}%</text>`;
+  });
+
+  // Threshold marker at 3% (current production cutoff)
+  if (opts.threshold != null) {
+    const tx = ((opts.threshold - min) / (max - min)) * w;
+    if (tx >= 0 && tx <= w) {
+      svgContent += `<line x1="${tx}" y1="0" x2="${tx}" y2="${h - 14}" stroke="var(--red)" stroke-width="1" stroke-dasharray="2,2" opacity="0.7"/>`;
+      svgContent += `<text x="${tx}" y="10" fill="var(--red)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${opts.thresholdLabel || 'cutoff'}</text>`;
+    }
+  }
+
+  svg.innerHTML = svgContent;
+}
+
+function renderHistograms() {
+  const qual = state.rows.filter(r => r.f_qualified && r.spread_cron_pct != null);
+  const spreads = qual.map(r => r.spread_cron_pct).filter(v => v != null && isFinite(v) && v < 50);
+  buildHist('histSpread', spreads, { bins: 25, min: 0, max: 20, threshold: 3, thresholdLabel: '3% live cutoff' });
+
+  // Cron vs open delta
+  const both = qual.filter(r => r.spread_cron_pct != null && r.spread_open_pct != null);
+  const deltas = both.map(r => r.spread_cron_pct - r.spread_open_pct).filter(v => isFinite(v) && Math.abs(v) < 50);
+  buildHist('histCronVsOpen', deltas, { bins: 25, min: -5, max: 15, color: 'var(--blue)' });
+
+  if (state.rows.length > 0) $('histRow').classList.add('active');
+}
+
+// ─── Render ─────────────────────────────────────────────────────────────────
+function renderAll() {
+  if (state.rows.length === 0) {
+    $('statsStrip').classList.remove('active');
+    $('histRow').classList.remove('active');
+    $('resultsShell').classList.remove('active');
+    $('filterBar').classList.remove('active');
+    return;
+  }
+  renderStats();
+  renderHistograms();
+  updateChipCounts();
+  renderTable();
+}
+
+// ─── CSV export ─────────────────────────────────────────────────────────────
+function exportCsv() {
+  if (state.rows.length === 0) return toast('Nothing to export', true);
+  const filterFn = (FILTERS.find(f => f.key === state.filterKey) || FILTERS[0]).test;
+  const rows = state.rows.filter(filterFn);
+
+  const headers = [
+    'date','symbol','prevclose','minPM','pm_bars','pm_volume','gapDown',
+    'bid_cron','ask_cron','spread_cron_pct','bid_open','ask_open','spread_open_pct',
+    'fill_price','px_15m','pnl_long_15m_pct','f_qualified','f_would_fire','error',
+  ];
+  const csvRows = [headers.join(',')];
+  rows.forEach(r => {
+    csvRows.push(headers.map(h => {
+      const v = r[h];
+      if (v == null) return '';
+      if (typeof v === 'number') return v.toFixed(4).replace(/\.?0+$/, '');
+      if (typeof v === 'boolean') return v ? '1' : '0';
+      return String(v).replace(/,/g, ';');
+    }).join(','));
+  });
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  a.href = url;
+  a.download = `apex_replay_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast(`Exported ${rows.length.toLocaleString()} rows`);
+}
+
+init();
+</script>
+</body>
+</html>
