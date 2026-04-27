@@ -79,26 +79,28 @@ export default async function handler(req, res) {
   // Queries Polygon for today's minute bars to verify real premkt activity
   // exists before trusting Tradier q.bid for gap calc. See docs/FILTER_DERIVATION.md
   async function checkPremktFreshness(ticker, todayYMD, polygonKey) {
-    if (!polygonKey) return { ok: true, bars: -1, ageMin: -1, reason: 'no_polygon_key' };
+    if (!polygonKey) return { ok: true, bars: -1, ageMin: -1, reason: 'no_polygon_key', minPM: null };
     const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker.toUpperCase())}` +
                 `/range/1/minute/${todayYMD}/${todayYMD}` +
                 `?adjusted=true&sort=asc&limit=1000&apiKey=${polygonKey}`;
     try {
       const r = await fetch(url);
-      if (!r.ok) return { ok: false, reason: `polygon_${r.status}`, bars: 0, ageMin: 0 };
+      if (!r.ok) return { ok: false, reason: `polygon_${r.status}`, bars: 0, ageMin: 0, minPM: null };
       const data = await r.json();
       const all = data.results || [];
       const [yr, mo, dy] = todayYMD.split('-').map(Number);
       const marketOpenMs = Date.UTC(yr, mo - 1, dy, 13, 30, 0);
       const pre = all.filter(b => b.t < marketOpenMs);
       const bars = pre.length;
-      if (bars === 0) return { ok: false, reason: 'zero_bars', bars: 0, ageMin: 0 };
+      if (bars === 0) return { ok: false, reason: 'zero_bars', bars: 0, ageMin: 0, minPM: null };
       const lastBar = pre[pre.length - 1];
       const ageMin = (Date.now() - lastBar.t) / 60000;
-      if (ageMin > 60) return { ok: false, reason: `stale_${Math.round(ageMin)}min`, bars, ageMin };
-      return { ok: true, bars, ageMin };
+      // FIX 1 (2026-04-26): extract pre-market low for F gap-down calc (replaces stale q.bid)
+      const minPM = Math.min(...pre.map(b => b.l));
+      if (ageMin > 60) return { ok: false, reason: `stale_${Math.round(ageMin)}min`, bars, ageMin, minPM };
+      return { ok: true, bars, ageMin, minPM };
     } catch (e) {
-      return { ok: false, reason: `polygon_err:${e.message.slice(0, 40)}`, bars: 0, ageMin: 0 };
+      return { ok: false, reason: `polygon_err:${e.message.slice(0, 40)}`, bars: 0, ageMin: 0, minPM: null };
     }
   }
 
@@ -445,11 +447,48 @@ export default async function handler(req, res) {
   const results       = [];
   let _tradesPlaced   = 0;
   let _exposureUsed   = 0;
+  // FIX 1: count F skips due to missing/failed Polygon data, for end-of-run summary
+  const _fSkipCounts  = {};
 
   function _riskOk(betAmt) {
     if (_tradesPlaced >= _maxTrades)           return false;
     if (_exposureUsed + betAmt > _maxExposure) return false;
     return true;
+  }
+
+  // ── FIX 1 (2026-04-26): Pre-fetch pm data in parallel before ticker loop ──
+  // Reason: F was missing trades when Tradier q.bid was stale (e.g. HUBS Fri 4/24:
+  // bid showed 0% gap, but Polygon minPM showed -5%). We now always pull minPM
+  // from Polygon for F's gap calc. Parallel fetch keeps total runtime ~5s.
+  // SAFETY NETS:
+  //   1. Per-fetch 8s timeout — slow ticker can't drag down the batch
+  //   2. Outer try/catch — if Promise.all somehow fails, fall back to bid-based
+  //      gap (legacy behavior), cron still runs
+  const _pmMap = {};
+  if (POLYGON_KEY) {
+    const _pmStart = Date.now();
+    console.log(`[APEX] FIX1: pre-fetching pm data for ${tickers.length} tickers...`);
+    try {
+      await Promise.all(tickers.map(async t => {
+        const _sym = t.symbol.toUpperCase();
+        // Per-fetch timeout: race the helper against an 8s timer
+        const _timeout = new Promise(resolve => setTimeout(
+          () => resolve({ ok: false, reason: 'fix1_timeout_8s', bars: 0, ageMin: 0, minPM: null }),
+          8000
+        ));
+        try {
+          _pmMap[_sym] = await Promise.race([checkPremktFreshness(_sym, _todayEDT, POLYGON_KEY), _timeout]);
+        } catch (e) {
+          _pmMap[_sym] = { ok: false, reason: `fix1_err:${e.message.slice(0, 30)}`, bars: 0, ageMin: 0, minPM: null };
+        }
+      }));
+      const _okCount = Object.values(_pmMap).filter(d => d?.ok).length;
+      console.log(`[APEX] FIX1: pm pre-fetch done in ${Date.now() - _pmStart}ms (${_okCount}/${tickers.length} ok)`);
+    } catch (e) {
+      // Outer fallback — entire batch failed somehow. Cron continues with empty _pmMap.
+      // F will fall back to bid-based gap (pre-Fix1 behavior).
+      console.log(`[APEX] FIX1: pre-fetch BATCH FAILED: ${e.message} — falling back to bid-based gap`);
+    }
   }
 
   // ── Ticker loop ──────────────────────────────────────────────────────────
@@ -478,9 +517,29 @@ export default async function handler(req, res) {
     const tier = getTier(gap);
     const rvol = (q.average_volume > 0) ? +(q.volume / q.average_volume).toFixed(2) : null;
 
+    // FIX 1 (F-only): compute gapDown from Polygon minPM. E/D/A keep using `gap`
+    // (bid-based, unchanged behavior).
+    // NO FALLBACK — if Polygon data unavailable, gapDown stays null and F is skipped.
+    // This prevents phantom F entries fired off stale Tradier bid (the Friday bug).
+    let gapDown = null;
+    let gapDownReason = null;
+    const _pmData = _pmMap[sym] || null;
+    if (!_pmData) {
+      gapDownReason = 'no_polygon_key';
+    } else if (!_pmData.ok) {
+      gapDownReason = `pm_${_pmData.reason}`;
+    } else if (_pmData.minPM == null) {
+      gapDownReason = 'pm_no_minPM';
+    } else if (!(prevClose > 0)) {
+      gapDownReason = 'no_prevclose';
+    } else {
+      gapDown = (_pmData.minPM - prevClose) / prevClose * 100;
+    }
+
     const askPrice = (q.ask && q.ask > 0) ? q.ask : null;
     const spreadPct = (askPrice && bidPrice) ? +(((askPrice - bidPrice) / bidPrice) * 100).toFixed(3) : null;
-    console.log(`[APEX] ${sym} | bid=${price} ask=${askPrice} spread%=${spreadPct} prevclose=${prevClose} gap=${gap.toFixed(2)}% rvol=${rvol}`);
+    const _gapDownStr = (gapDown != null) ? `${gapDown.toFixed(2)}%` : `null(${gapDownReason})`;
+    console.log(`[APEX] ${sym} | bid=${price} ask=${askPrice} spread%=${spreadPct} prevclose=${prevClose} gap=${gap.toFixed(2)}% gapDown=${_gapDownStr} rvol=${rvol}`);
 
     // ── FILTER GATES (added 2026-04-24, see docs/FILTER_DERIVATION.md) ──────
     if (config.filters?.enabled !== false) {
@@ -491,18 +550,17 @@ export default async function handler(req, res) {
         results.push({ symbol: sym, status: 'skipped', reason: `spread_gate: ${spreadPct}% > ${_maxSpread}%`, gap: +gap.toFixed(2), spread: spreadPct });
         continue;
       }
-      // Gate 2: Premkt freshness (only probe if gap could trigger a scenario)
+      // Gate 2: Premkt freshness — uses pm data already fetched in parallel pre-fetch
       const _couldTrigger = Math.abs(gap) >= 2;
-      if (_couldTrigger && POLYGON_KEY) {
-        const _pm = await checkPremktFreshness(sym, _todayEDT, POLYGON_KEY);
-        if (!_pm.ok) {
-          const _ageStr = (typeof _pm.ageMin === 'number') ? _pm.ageMin.toFixed(1) : 'n/a';
-          console.log(`[APEX] ${sym} | SKIP: pm_gate ${_pm.reason} bars=${_pm.bars} age=${_ageStr}min`);
-          results.push({ symbol: sym, status: 'skipped', reason: `pm_gate: ${_pm.reason}`, gap: +gap.toFixed(2), spread: spreadPct, pmBars: _pm.bars, pmAgeMin: (typeof _pm.ageMin === 'number') ? +_pm.ageMin.toFixed(1) : null });
+      if (_couldTrigger && _pmData) {
+        if (!_pmData.ok) {
+          const _ageStr = (typeof _pmData.ageMin === 'number') ? _pmData.ageMin.toFixed(1) : 'n/a';
+          console.log(`[APEX] ${sym} | SKIP: pm_gate ${_pmData.reason} bars=${_pmData.bars} age=${_ageStr}min`);
+          results.push({ symbol: sym, status: 'skipped', reason: `pm_gate: ${_pmData.reason}`, gap: +gap.toFixed(2), spread: spreadPct, pmBars: _pmData.bars, pmAgeMin: (typeof _pmData.ageMin === 'number') ? +_pmData.ageMin.toFixed(1) : null });
           continue;
         }
-        const _ageStr = (typeof _pm.ageMin === 'number') ? _pm.ageMin.toFixed(1) : 'n/a';
-        console.log(`[APEX] ${sym} | pm_gate OK: bars=${_pm.bars} age=${_ageStr}min`);
+        const _ageStr = (typeof _pmData.ageMin === 'number') ? _pmData.ageMin.toFixed(1) : 'n/a';
+        console.log(`[APEX] ${sym} | pm_gate OK: bars=${_pmData.bars} age=${_ageStr}min minPM=${_pmData.minPM}`);
       }
     }
 
@@ -576,7 +634,18 @@ export default async function handler(req, res) {
     //    c) TIMEOUT (not filled at 3s) → DELETE entry, re-poll to confirm.
     //       If cancel-during-fill race → treat as (a). Else → skipped.
     // NO fallback to pre-market bid. NO bracket without a confirmed fill.
-    if (gap <= -5 && gap > -25 && !(_excl.F || []).includes(sym) && _riskOk(scBet('F', bet))) {
+    // FIX 1 (2026-04-26): F's check uses gapDown (Polygon minPM-based), not q.bid.
+    // If gapDown is null (Polygon unavailable), F is SKIPPED — never falls back to bid.
+    if (gapDown == null) {
+      // Count every F skip for end-of-run summary (regardless of bid value)
+      _fSkipCounts[gapDownReason] = (_fSkipCounts[gapDownReason] || 0) + 1;
+      // Verbose detail-log only when bid suggests this could have been a real F candidate
+      if (gap <= -2) {
+        console.log(`[APEX] ${sym} | F SKIP: gapDown unavailable (${gapDownReason}), bid-gap was ${gap.toFixed(2)}%`);
+        results.push({ symbol: sym, status: 'skipped', reason: `F_no_gapDown:${gapDownReason}`, gap: +gap.toFixed(2), spread: spreadPct });
+      }
+    }
+    if (gapDown != null && gapDown <= -5 && gapDown > -25 && !(_excl.F || []).includes(sym) && _riskOk(scBet('F', bet))) {
       const _betF = scBet('F', bet);
       const qtyF  = Math.max(1, Math.floor(_betF / price));
       console.log(`[APEX] ${sym} | SCENARIO F LONG | bet=${_betF} qty=${qtyF} entry=~${price} (market order — TP/SL set from fill only)`);
@@ -772,6 +841,13 @@ export default async function handler(req, res) {
   const skipped = results.filter(r => r.status === 'skipped').length;
   const errors  = results.filter(r => r.status === 'error').length;
   console.log(`[APEX] ===== RUN COMPLETE | traded=${traded} skipped=${skipped} errors=${errors} totalExposure=$${_exposureUsed} =====`);
+
+  // FIX 1: emit F skip summary if any tickers couldn't compute gapDown
+  const _fSkipTotal = Object.values(_fSkipCounts).reduce((a, b) => a + b, 0);
+  if (_fSkipTotal > 0) {
+    const _breakdown = Object.entries(_fSkipCounts).map(([k, v]) => `${k}=${v}`).join(' ');
+    console.log(`[APEX] FIX1 F-SKIP SUMMARY: ${_fSkipTotal} tickers had no gapDown | ${_breakdown}`);
+  }
 
   // ── Persist trade log to Supabase ────────────────────────────────────────
   try {
