@@ -82,10 +82,6 @@
       "bet": 500
     },
     {
-      "symbol": "JAMF",
-      "bet": 500
-    },
-    {
       "symbol": "TNET",
       "bet": 500
     },
@@ -106,10 +102,6 @@
       "bet": 500
     },
     {
-      "symbol": "EVBG",
-      "bet": 500
-    },
-    {
       "symbol": "BRZE",
       "bet": 500
     },
@@ -126,15 +118,7 @@
       "bet": 500
     },
     {
-      "symbol": "SNV",
-      "bet": 500
-    },
-    {
       "symbol": "IBOC",
-      "bet": 500
-    },
-    {
-      "symbol": "PRSP",
       "bet": 500
     },
     {
@@ -174,23 +158,11 @@
       "bet": 500
     },
     {
-      "symbol": "MDRX",
-      "bet": 500
-    },
-    {
       "symbol": "OMCL",
       "bet": 500
     },
     {
-      "symbol": "PINC",
-      "bet": 500
-    },
-    {
       "symbol": "ADUS",
-      "bet": 500
-    },
-    {
-      "symbol": "AMSF",
       "bet": 500
     },
     {
@@ -258,16 +230,8 @@
       "bet": 500
     },
     {
-      "symbol": "TACO",
-      "bet": 500
-    },
-    {
       "symbol": "TXRH",
       "bet": 500
-    },
-    {
-      "symbol": "FAT",
-      "bet": 2000
     },
     {
       "symbol": "RRGB",
@@ -282,23 +246,7 @@
       "bet": 500
     },
     {
-      "symbol": "PRTY",
-      "bet": 500
-    },
-    {
       "symbol": "VSCO",
-      "bet": 500
-    },
-    {
-      "symbol": "JOANN",
-      "bet": 500
-    },
-    {
-      "symbol": "ODP",
-      "bet": 500
-    },
-    {
-      "symbol": "RCII",
       "bet": 500
     },
     {
@@ -338,31 +286,7 @@
       "bet": 500
     },
     {
-      "symbol": "ECHO",
-      "bet": 500
-    },
-    {
-      "symbol": "CEIX",
-      "bet": 500
-    },
-    {
-      "symbol": "ARCH",
-      "bet": 500
-    },
-    {
-      "symbol": "SWN",
-      "bet": 500
-    },
-    {
       "symbol": "RRC",
-      "bet": 500
-    },
-    {
-      "symbol": "CIVI",
-      "bet": 500
-    },
-    {
-      "symbol": "VTLE",
       "bet": 500
     },
     {
@@ -375,10 +299,6 @@
     },
     {
       "symbol": "HESM",
-      "bet": 500
-    },
-    {
-      "symbol": "SRLP",
       "bet": 500
     },
     {
@@ -714,10 +634,6 @@
       "bet": 500
     },
     {
-      "symbol": "DENN",
-      "bet": 500
-    },
-    {
       "symbol": "ALKS",
       "bet": 500
     },
@@ -779,10 +695,6 @@
     },
     {
       "symbol": "HAYW",
-      "bet": 500
-    },
-    {
-      "symbol": "HAFC",
       "bet": 500
     },
     {
@@ -1034,10 +946,6 @@
       "bet": 500
     },
     {
-      "symbol": "ATUS",
-      "bet": 500
-    },
-    {
       "symbol": "OLN",
       "bet": 500
     },
@@ -1262,10 +1170,6 @@
       "bet": 500
     },
     {
-      "symbol": "AMED",
-      "bet": 500
-    },
-    {
       "symbol": "AMPL",
       "bet": 500
     },
@@ -1330,10 +1234,6 @@
       "bet": 500
     },
     {
-      "symbol": "ROIC",
-      "bet": 500
-    },
-    {
       "symbol": "TTGT",
       "bet": 500
     },
@@ -1350,9 +1250,9 @@
       "bet": 500
     }
   ],
-  "count": 331,
+  "count": 306,
   "updated": "2026-04-23T13:13:00.582Z",
-  "_note": "Auto-synced from apex_watchlist (331 tickers, Kelly from Q1 2026)",
+  "_note": "Auto-synced from apex_watchlist (306 tickers, Q1 2026 PM-coverage audit dropped 25)",
   "filters": {
     "maxSpreadPct": 5
   }
