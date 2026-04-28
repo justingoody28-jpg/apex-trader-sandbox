@@ -456,38 +456,68 @@ export default async function handler(req, res) {
     return true;
   }
 
-  // ── FIX 1 (2026-04-26): Pre-fetch pm data in parallel before ticker loop ──
+  // ── FIX 1 (2026-04-26) + FIX 2 (2026-04-27): Pre-fetch pm data with bounded concurrency ──
   // Reason: F was missing trades when Tradier q.bid was stale (e.g. HUBS Fri 4/24:
   // bid showed 0% gap, but Polygon minPM showed -5%). We now always pull minPM
-  // from Polygon for F's gap calc. Parallel fetch keeps total runtime ~5s.
+  // from Polygon for F's gap calc.
+  //
+  // FIX 2 (2026-04-27): Replaced unbounded Promise.all parallel fetch with bounded
+  // concurrency (30 workers). Live cron at 331-way concurrency only got 56% coverage
+  // (146 timeouts) due to TCP connection burst saturation. Audit script at 20-way
+  // got 69% in 3.8s with no time pressure. 30 keeps total runtime ~5-7s with budget
+  // to spare before market open at 13:30 UTC.
+  //
   // SAFETY NETS:
   //   1. Per-fetch 8s timeout — slow ticker can't drag down the batch
-  //   2. Outer try/catch — if Promise.all somehow fails, fall back to bid-based
-  //      gap (legacy behavior), cron still runs
+  //   2. Outer try/catch — if worker pool fails, cron still runs
+  //   3. Bounded concurrency 30 — prevents socket-pool exhaustion that caused
+  //      today's 44% miss rate (4/27)
   const _pmMap = {};
   if (POLYGON_KEY) {
     const _pmStart = Date.now();
-    console.log(`[APEX] FIX1: pre-fetching pm data for ${tickers.length} tickers...`);
+    const _CONCURRENCY = 30;
+    console.log(`[APEX] FIX1: pre-fetching pm data for ${tickers.length} tickers (concurrency=${_CONCURRENCY})...`);
     try {
-      await Promise.all(tickers.map(async t => {
-        const _sym = t.symbol.toUpperCase();
-        // Per-fetch timeout: race the helper against an 8s timer
-        const _timeout = new Promise(resolve => setTimeout(
-          () => resolve({ ok: false, reason: 'fix1_timeout_8s', bars: 0, ageMin: 0, minPM: null }),
-          8000
-        ));
-        try {
-          _pmMap[_sym] = await Promise.race([checkPremktFreshness(_sym, _todayEDT, POLYGON_KEY), _timeout]);
-        } catch (e) {
-          _pmMap[_sym] = { ok: false, reason: `fix1_err:${e.message.slice(0, 30)}`, bars: 0, ageMin: 0, minPM: null };
+      // Bounded-concurrency worker pool: each worker pulls from a shared queue.
+      const _queue = tickers.slice(); // shallow copy — we mutate via shift()
+      const _worker = async () => {
+        while (_queue.length > 0) {
+          const t = _queue.shift();
+          if (!t) break;
+          const _sym = t.symbol.toUpperCase();
+          // Per-fetch timeout: race the helper against an 8s timer
+          const _timeout = new Promise(resolve => setTimeout(
+            () => resolve({ ok: false, reason: 'fix1_timeout_8s', bars: 0, ageMin: 0, minPM: null }),
+            8000
+          ));
+          try {
+            _pmMap[_sym] = await Promise.race([checkPremktFreshness(_sym, _todayEDT, POLYGON_KEY), _timeout]);
+          } catch (e) {
+            _pmMap[_sym] = { ok: false, reason: `fix1_err:${e.message.slice(0, 30)}`, bars: 0, ageMin: 0, minPM: null };
+          }
         }
-      }));
+      };
+      await Promise.all(Array.from({ length: _CONCURRENCY }, () => _worker()));
+
+      // Coverage summary
       const _okCount = Object.values(_pmMap).filter(d => d?.ok).length;
       console.log(`[APEX] FIX1: pm pre-fetch done in ${Date.now() - _pmStart}ms (${_okCount}/${tickers.length} ok)`);
+
+      // FIX 2: failure-mode breakdown — visibility into WHY tickers fail
+      const _pmReasons = {};
+      for (const data of Object.values(_pmMap)) {
+        const reason = data?.ok ? 'ok' : (data?.reason || 'unknown');
+        _pmReasons[reason] = (_pmReasons[reason] || 0) + 1;
+      }
+      const _breakdown = Object.entries(_pmReasons)
+        .sort((a, b) => b[1] - a[1])
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ');
+      console.log(`[APEX] FIX2: pm pre-fetch breakdown | ${_breakdown}`);
     } catch (e) {
-      // Outer fallback — entire batch failed somehow. Cron continues with empty _pmMap.
-      // F will fall back to bid-based gap (pre-Fix1 behavior).
-      console.log(`[APEX] FIX1: pre-fetch BATCH FAILED: ${e.message} — falling back to bid-based gap`);
+      // Outer fallback — entire pool failed somehow. Cron continues with empty _pmMap.
+      // F will fail closed (no fallback to bid-based gap per FIX 1 design).
+      console.log(`[APEX] FIX1: pre-fetch BATCH FAILED: ${e.message}`);
     }
   }
 
