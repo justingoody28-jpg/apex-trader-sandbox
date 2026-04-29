@@ -165,7 +165,7 @@ export default async function handler(req, res) {
   //   2. Pre-flight current-bid > SL+buffer (prevents SellStopOrderStopPriceGreaterBid) — once
   //   3. RETRY LOOP (delays from _retryDelaysMs):
   //      a. Wait delay
-  //      b. Check global abort timer (_retryAbortMs vs _runStartMs)
+  //      b. Check global abort timer (_retryAbortMs vs _bracketCallStart)
   //      c. Submit OCO
   //      d. Immediate response status must be ok/open/pending (not rejected/canceled/error)
   //      e. Post-submit re-poll at 500ms — per Tradier's documented recommended workflow
@@ -195,6 +195,10 @@ export default async function handler(req, res) {
     const OK_STATUSES = ['ok', 'open', 'pending', 'partially_filled'];
     const FAIL_STATUSES = ['rejected', 'canceled', 'cancelled', 'expired', 'error'];
 
+    // Capture per-call start time (abort timer measured from here, not function start).
+    // Phase 2 calls this ~57s after function start, so _runStartMs would be obsolete.
+    const _bracketCallStart = Date.now();
+
     // Stage 3: retry loop
     let lastResult = { ok: false, reason: 'no_attempts_made', bracketId: null, finalStatus: 'unknown', attempts: 0 };
 
@@ -208,7 +212,7 @@ export default async function handler(req, res) {
       }
 
       // Step 3b: global abort check (don't blow past Vercel function timeout)
-      const elapsedMs = Date.now() - _runStartMs;
+      const elapsedMs = Date.now() - _bracketCallStart;
       if (elapsedMs > _retryAbortMs) {
         console.log(`[APEX] ${sym} F bracket retry aborted at attempt ${attemptNum}: run elapsed ${elapsedMs}ms > abort ${_retryAbortMs}ms`);
         return { ...lastResult, reason: `abort_timeout_after_${i}_attempts: ${lastResult.reason}`, attempts: i };
