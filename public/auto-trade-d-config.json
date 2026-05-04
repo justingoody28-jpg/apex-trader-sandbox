@@ -506,7 +506,7 @@ export default async function handler(req, res) {
       // Match orders submitted today with tag prefix v3_  (so c.js orders aren't counted)
       const _todays = _arr.filter(o =>
         o.create_date?.startsWith(_todayEDT) &&
-        (o.tag || '').startsWith('v3_') &&
+        (o.tag || '').startsWith('v3') &&
         o.status !== 'canceled' && o.status !== 'cancelled' &&
         o.status !== 'rejected' && o.status !== 'expired'
       );
@@ -674,7 +674,11 @@ export default async function handler(req, res) {
   const pendingOrders = [];
 
   for (const c of selected) {
-    const tag = c.layer.startsWith('personal:') ? `v3_FS_${c.ticker}` : `v3_${c.layer}`;
+    // Tag must be alphanumeric only (no underscores) per Tradier API.
+    // c.js sends no tag at all; d.js needs tags for layer attribution + dedup.
+    // Prefix v3 distinguishes d.js orders from c.js orders.
+    const rawTag = c.layer.startsWith('personal:') ? `v3FS${c.ticker}` : `v3${c.layer.replace(/_/g,'')}`;
+    const tag = rawTag.replace(/[^A-Za-z0-9]/g, '').slice(0, 25);
 
     if (DRY_RUN) {
       results.push({ symbol: c.ticker, layer: c.layer, scenario: c.scenario, status: 'dry_run', qty: c.qty, price: c.price, gap: c.gap, gapDown: c.gapDown });
@@ -689,11 +693,20 @@ export default async function handler(req, res) {
         'tag': tag,
       });
       const r = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
-      const j = await r.json();
+      const respText = await r.text();
+      let j = null;
+      try { j = JSON.parse(respText); } catch (_) { j = null; }
+      if (j === null) {
+        // Tradier returned non-JSON (typically a plain-text error like "Invalid parameter")
+        console.log(`[APEX-D] ${c.ticker} | entry NON-JSON response: http=${r.status} body=${respText.slice(0,300)}`);
+        results.push({ symbol: c.ticker, layer: c.layer, status: 'error', reason: `tradier_${r.status}: ${respText.slice(0,200)}` });
+        continue;
+      }
       const orderId = j?.order?.id;
-      console.log(`[APEX-D] ${c.ticker} | entry submit: http=${r.status} orderId=${orderId} layer=${c.layer}`);
+      console.log(`[APEX-D] ${c.ticker} | entry submit: http=${r.status} orderId=${orderId} layer=${c.layer} tag=${tag}`);
       if (!r.ok || !orderId) {
-        const reason = j?.order?.partner_error_description || j?.fault?.faultstring || `HTTP ${r.status}`;
+        const reason = j?.order?.partner_error_description || j?.errors?.error || j?.fault?.faultstring || `HTTP ${r.status}: ${respText.slice(0,200)}`;
+        console.log(`[APEX-D] ${c.ticker} | entry rejected: ${reason}`);
         results.push({ symbol: c.ticker, layer: c.layer, status: 'error', reason });
         continue;
       }
@@ -735,7 +748,13 @@ export default async function handler(req, res) {
         'symbol': sym, 'side': 'sell', 'quantity': String(qty), 'type': 'market',
       });
       const r = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
-      const j = await r.json();
+      const respText = await r.text();
+      let j = null;
+      try { j = JSON.parse(respText); } catch (_) { j = null; }
+      if (j === null) {
+        console.log(`[APEX-D] ${sym} flatten NON-JSON: http=${r.status} body=${respText.slice(0,200)}`);
+        return null;
+      }
       return j?.order?.id || null;
     } catch (e) { return null; }
   }
@@ -761,11 +780,17 @@ export default async function handler(req, res) {
         'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qty), 'type[1]': 'stop',  'stop[1]':  String(slF),
       });
       const r = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
-      const j = await r.json();
+      const respText = await r.text();
+      let j = null;
+      try { j = JSON.parse(respText); } catch (_) { j = null; }
+      if (j === null) {
+        last = { ok: false, reason: `attempt${i+1}_non_json: http=${r.status} body=${respText.slice(0,150)}`, bracketId: null };
+        continue;
+      }
       const bid = j?.order?.id;
       const st  = j?.order?.status || 'unknown';
       if (!r.ok || !OK_STATUSES.includes(st)) {
-        const reason = j?.order?.reason_description || j?.order?.partner_error_description || `HTTP ${r.status} status=${st}`;
+        const reason = j?.order?.reason_description || j?.order?.partner_error_description || j?.errors?.error || `HTTP ${r.status} status=${st} body=${respText.slice(0,150)}`;
         last = { ok: false, reason: `attempt${i+1}_immediate_fail: ${reason}`, bracketId: bid };
         continue;
       }
