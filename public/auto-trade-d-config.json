@@ -1,0 +1,27 @@
+{
+  "_comment": "APEX v3.1 d.js config. Set enabled:true ONLY when ready to fire live.",
+  "_locked": "2026-05-03",
+
+  "enabled": false,
+  "live": true,
+
+  "positionBudgetDollars": 250,
+  "maxPositionsPerDay": 4,
+  "maxDailyExposure": 1000,
+
+  "maxPricePerTrade": 250,
+  "maxSpreadPct": 3.0,
+
+  "bracketTpPct": 2.0,
+  "bracketSlPct": 2.0,
+
+  "bracketRetries": {
+    "delaysMs": [0, 1500, 3000],
+    "abortAfterMs": 50000
+  },
+
+  "selectionPriority": "personal_first",
+  "pmConcurrency": 30,
+
+  "_comment_watchlist": "Watchlist is loaded from Supabase apex_v3_watchlist?id=eq.default. This `watchlist` field is ONLY used as fallback if Supabase fails."
+}
