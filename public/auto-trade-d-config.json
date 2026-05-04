@@ -2,7 +2,7 @@
   "_comment": "APEX v3.1 d.js config. Set enabled:true ONLY when ready to fire live.",
   "_locked": "2026-05-03",
 
-  "enabled": false,
+  "enabled": true,
   "live": true,
 
   "positionBudgetDollars": 250,
