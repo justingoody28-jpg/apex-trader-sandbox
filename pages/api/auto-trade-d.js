@@ -73,6 +73,9 @@ const PERSONAL_RULES = {
   'FSLR':  { feature: 'Nbbo13_29_AskSize',   op: '>',  value: 100 },
   'SNOW':  { feature: 'Rvol',                op: '<=', value: 0.161 },
   'RBLX':  { feature: 'PmVol',               op: '<=', value: 37500 },
+  // === Mid Cap personal rules (NEW v3.1.1) ===
+  'AMKR':  { feature: 'PmRecoveryAtFire',    op: '>',  value: 2.933 },
+  'S':     { feature: 'PmBarCount',          op: '<=', value: 46 },
 };
 
 // LCTS-48 universe (where Stack B fires — gap-down longs on large-cap tech+semis)
@@ -85,6 +88,15 @@ const LCTS_48 = new Set([
   'PINS','DOCU','SHOP','QCOM','U','TER','AFRM','LYFT','MRVL','OKTA','FSLR','SNOW','RBLX',
   // 8 LCTS blacklist tickers — exclude regardless of any rule
   // (TEAM, TXN, ON, ADI, ABNB, NXPI, SMCI, SQ — listed in BLACKLIST below)
+]);
+
+// MID_CAP_17 universe (where Stack C fires — gap-down longs on mid-cap tech+semis)
+// Stack C applies ONLY when ticker is in this set AND has no personal rule
+// Selected: 17 tickers from 23 Mid Cap universe that produced Stack C fires in 5Q backtest
+// Excluded (no Stack C fires): CRUS, ICHR, IPGP, MTSI, NVMI, POWI
+const MID_CAP_17 = new Set([
+  'ACMR','ALGM','AMBA','AMKR','ASAN','BILL','CRDO','DOCN','ESTC','FROG',
+  'GTLB','MNDY','OLED','PD','S','SITM','WOLF',
 ]);
 
 // Hard blacklist — never trade these tickers via d.js
@@ -260,6 +272,19 @@ function evalStackB(f) {
           && evalCondition(f, 'PmTraj10min', '>', 0.053)
           && evalCondition(f, 'DipATRs', '>', 0.665);
   const F  = evalCondition(f, 'PmRangePct', '<=', 3.7);
+  return (T1 || T2) && F;
+}
+
+// Stack C — Mid Cap gap-down longs (NEW v3.1.1)
+// Backtest: 138 trades / 5Q, 73.19% WR, +0.928% EV, all-Q EV positive, P(noise)=0%
+function evalStackC(f) {
+  const T1 = evalCondition(f, 'DipATRs', '>', 0.446)
+          && evalCondition(f, 'Nbbo13_29_SpreadPct', '<=', 2.0794)
+          && evalCondition(f, 'Nbbo13_29_BidSize', '>', 200);
+  const T2 = evalCondition(f, 'AvgVol', '>', 2116475)
+          && evalCondition(f, 'Nbbo13_29_Spread', '<=', 1.1)
+          && evalCondition(f, 'Nbbo13_29_BidSize', '<=', 100);
+  const F  = evalCondition(f, 'RecoveryATRsAtFire', '>', 0.139);
   return (T1 || T2) && F;
 }
 
@@ -464,6 +489,7 @@ export default async function handler(req, res) {
       f_freelunch_fires:     evalFFreeLunch(features),
       g_fires:               evalG(features),
       stack_b_fires:         LCTS_48.has(upper) && !personal && evalStackB(features),
+      stack_c_fires:         MID_CAP_17.has(upper) && !personal && evalStackC(features),
       blacklisted:           BLACKLIST.has(upper),
     };
     return res.status(200).json({ status: 'verify', ticker: VERIFY_TICKER, date: VERIFY_DATE, savedPrevC, pm_bars: pm.length, daily_bars: daily.length, features, decisions });
@@ -480,7 +506,7 @@ export default async function handler(req, res) {
       // Match orders submitted today with tag prefix v3_  (so c.js orders aren't counted)
       const _todays = _arr.filter(o =>
         o.create_date?.startsWith(_todayEDT) &&
-        (o.tag || '').startsWith('v3_') &&
+        (o.tag || '').startsWith('v3') &&
         o.status !== 'canceled' && o.status !== 'cancelled' &&
         o.status !== 'rejected' && o.status !== 'expired'
       );
@@ -579,21 +605,50 @@ export default async function handler(req, res) {
       continue;
     }
 
+    // ── SIGNAL-TIME GATES (match backtest signal generation) ───────────────
+    // Backtest source: apex-edge-backtest_PROD_MIRROR_v3_4_3.html lines 1016, 1069
+    //   F (gap-down LONG):  gapDown <= -2 AND gapDown >= -25
+    //   G (gap-up LONG):    gapDown >= +2 AND gapDown <= +25
+    //   H (gap-down SHORT): same as F (not implemented in d.js yet)
+    // Without this gate, rules fire on tickers with no real gap (caught 5/4/26).
+    const F_GAP_WIDE = 2;     // matches backtest constant (line 460)
+    const isFEligible = (f.gapDown != null) && (f.gapDown <= -F_GAP_WIDE) && (f.gapDown >= -25);
+    const isGEligible = (f.gapDown != null) && (f.gapDown >=  F_GAP_WIDE) && (f.gapDown <=  25);
+    if (!isFEligible && !isGEligible) {
+      // Not a qualifying gap day — rules don't apply, skip ticker
+      continue;
+    }
+
+    // ── PM AGE GATE (match backtest line 977-978) ──────────────────────────
+    // Skip if last premarket bar is older than 60 minutes before cron.
+    if (f.pmAgeAtCronMin != null && f.pmAgeAtCronMin > 60) {
+      console.log(`[APEX-D] ${tk} | SKIP: PM age ${f.pmAgeAtCronMin}min > 60min`);
+      continue;
+    }
+
     // Decision priority: personal rule first, then universal stacks
     let layer = null;
     let scenario = null;
 
     const personal = PERSONAL_RULES[tk];
-    if (personal && evalCondition(f, personal.feature, personal.op, personal.value)) {
-      layer = `personal:${tk}`;
-      scenario = 'F';  // personal rules are F-scenario
-    } else if (LCTS_48.has(tk) && evalStackB(f)) {
-      layer = 'stack_b';
-      scenario = 'F';
-    } else if (evalFFreeLunch(f)) {
-      layer = 'f_freelunch';
-      scenario = 'F';
-    } else if (evalG(f)) {
+    // Personal rules and Stack B/C/F-FreeLunch are all F-scenario (gap-down LONG)
+    // → require F eligibility. G universal requires G eligibility.
+    if (isFEligible) {
+      if (personal && evalCondition(f, personal.feature, personal.op, personal.value)) {
+        layer = `personal:${tk}`;
+        scenario = 'F';
+      } else if (LCTS_48.has(tk) && evalStackB(f)) {
+        layer = 'stack_b';
+        scenario = 'F';
+      } else if (MID_CAP_17.has(tk) && evalStackC(f)) {
+        layer = 'stack_c';
+        scenario = 'F';
+      } else if (evalFFreeLunch(f)) {
+        layer = 'f_freelunch';
+        scenario = 'F';
+      }
+    }
+    if (!layer && isGEligible && evalG(f)) {
       layer = 'g_universal';
       scenario = 'G';
     }
@@ -621,9 +676,10 @@ export default async function handler(req, res) {
   // ── Apply daily cap with priority (personal first, then alphabetical) ──
   const personalFires = candidates.filter(c => c.layer.startsWith('personal:')).sort((a,b) => a.ticker.localeCompare(b.ticker));
   const stackBFires   = candidates.filter(c => c.layer === 'stack_b').sort((a,b) => a.ticker.localeCompare(b.ticker));
+  const stackCFires   = candidates.filter(c => c.layer === 'stack_c').sort((a,b) => a.ticker.localeCompare(b.ticker));
   const ffreelunch    = candidates.filter(c => c.layer === 'f_freelunch').sort((a,b) => a.ticker.localeCompare(b.ticker));
   const gFires        = candidates.filter(c => c.layer === 'g_universal').sort((a,b) => a.ticker.localeCompare(b.ticker));
-  const ordered = [...personalFires, ...stackBFires, ...ffreelunch, ...gFires];
+  const ordered = [...personalFires, ...stackBFires, ...stackCFires, ...ffreelunch, ...gFires];
 
   const selected = [];
   let exposureUsed = 0;
@@ -644,7 +700,11 @@ export default async function handler(req, res) {
   const pendingOrders = [];
 
   for (const c of selected) {
-    const tag = c.layer.startsWith('personal:') ? `v3_FS_${c.ticker}` : `v3_${c.layer}`;
+    // Tag must be alphanumeric only (no underscores) per Tradier API.
+    // c.js sends no tag at all; d.js needs tags for layer attribution + dedup.
+    // Prefix v3 distinguishes d.js orders from c.js orders.
+    const rawTag = c.layer.startsWith('personal:') ? `v3FS${c.ticker}` : `v3${c.layer.replace(/_/g,'')}`;
+    const tag = rawTag.replace(/[^A-Za-z0-9]/g, '').slice(0, 25);
 
     if (DRY_RUN) {
       results.push({ symbol: c.ticker, layer: c.layer, scenario: c.scenario, status: 'dry_run', qty: c.qty, price: c.price, gap: c.gap, gapDown: c.gapDown });
@@ -659,11 +719,20 @@ export default async function handler(req, res) {
         'tag': tag,
       });
       const r = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
-      const j = await r.json();
+      const respText = await r.text();
+      let j = null;
+      try { j = JSON.parse(respText); } catch (_) { j = null; }
+      if (j === null) {
+        // Tradier returned non-JSON (typically a plain-text error like "Invalid parameter")
+        console.log(`[APEX-D] ${c.ticker} | entry NON-JSON response: http=${r.status} body=${respText.slice(0,300)}`);
+        results.push({ symbol: c.ticker, layer: c.layer, status: 'error', reason: `tradier_${r.status}: ${respText.slice(0,200)}` });
+        continue;
+      }
       const orderId = j?.order?.id;
-      console.log(`[APEX-D] ${c.ticker} | entry submit: http=${r.status} orderId=${orderId} layer=${c.layer}`);
+      console.log(`[APEX-D] ${c.ticker} | entry submit: http=${r.status} orderId=${orderId} layer=${c.layer} tag=${tag}`);
       if (!r.ok || !orderId) {
-        const reason = j?.order?.partner_error_description || j?.fault?.faultstring || `HTTP ${r.status}`;
+        const reason = j?.order?.partner_error_description || j?.errors?.error || j?.fault?.faultstring || `HTTP ${r.status}: ${respText.slice(0,200)}`;
+        console.log(`[APEX-D] ${c.ticker} | entry rejected: ${reason}`);
         results.push({ symbol: c.ticker, layer: c.layer, status: 'error', reason });
         continue;
       }
@@ -705,7 +774,13 @@ export default async function handler(req, res) {
         'symbol': sym, 'side': 'sell', 'quantity': String(qty), 'type': 'market',
       });
       const r = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
-      const j = await r.json();
+      const respText = await r.text();
+      let j = null;
+      try { j = JSON.parse(respText); } catch (_) { j = null; }
+      if (j === null) {
+        console.log(`[APEX-D] ${sym} flatten NON-JSON: http=${r.status} body=${respText.slice(0,200)}`);
+        return null;
+      }
       return j?.order?.id || null;
     } catch (e) { return null; }
   }
@@ -731,11 +806,17 @@ export default async function handler(req, res) {
         'symbol[1]': sym, 'side[1]': 'sell', 'quantity[1]': String(qty), 'type[1]': 'stop',  'stop[1]':  String(slF),
       });
       const r = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { method: 'POST', headers: ORDER_H, body: params });
-      const j = await r.json();
+      const respText = await r.text();
+      let j = null;
+      try { j = JSON.parse(respText); } catch (_) { j = null; }
+      if (j === null) {
+        last = { ok: false, reason: `attempt${i+1}_non_json: http=${r.status} body=${respText.slice(0,150)}`, bracketId: null };
+        continue;
+      }
       const bid = j?.order?.id;
       const st  = j?.order?.status || 'unknown';
       if (!r.ok || !OK_STATUSES.includes(st)) {
-        const reason = j?.order?.reason_description || j?.order?.partner_error_description || `HTTP ${r.status} status=${st}`;
+        const reason = j?.order?.reason_description || j?.order?.partner_error_description || j?.errors?.error || `HTTP ${r.status} status=${st} body=${respText.slice(0,150)}`;
         last = { ok: false, reason: `attempt${i+1}_immediate_fail: ${reason}`, bracketId: bid };
         continue;
       }
