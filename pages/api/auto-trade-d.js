@@ -331,21 +331,64 @@ async function fetchPmAndDaily(ticker, todayYMD, polygonKey) {
     // continue with whatever we got
   }
 
-  // savedPrevC: walk back from yesterday up to 7 days, looking for last regular-session minute bar close
-  for (let back = 1; back <= 7 && !savedPrevC; back++) {
-    const d = new Date(target); d.setUTCDate(d.getUTCDate() - back);
-    const ymd = d.toISOString().slice(0, 10);
-    try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 4000);
-      const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/1/minute/${ymd}/${ymd}?adjusted=true&sort=asc&limit=5000&apiKey=${polygonKey}`;
-      const r = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(tid);
-      if (!r.ok) continue;
+  // ── savedPrevC: prefer /prev endpoint (Method B), fall back to minute-bar walkback ───
+  // V4 had a bug where the walkback grabbed the wrong day when Polygon's minute bars
+  // for yesterday weren't published yet at 13:29 UTC cron time. /prev endpoint returns
+  // the official daily aggregate which is typically published faster + more reliably.
+  // We verify the returned date matches the expected previous trading day before accepting.
+  function lastTradingDayYMD(targetDate) {
+    // Walk back from target until we hit a weekday (Mon-Fri).
+    // Note: this doesn't account for market holidays. If today is the day after a holiday,
+    // /prev's returned date would be 2+ days back, which our check below will catch.
+    const d = new Date(targetDate);
+    for (let i = 0; i < 7; i++) {
+      d.setUTCDate(d.getUTCDate() - 1);
+      const dow = d.getUTCDay();
+      if (dow !== 0 && dow !== 6) return d.toISOString().slice(0, 10);
+    }
+    return null;
+  }
+  const expectedPrevDate = lastTradingDayYMD(target);
+
+  // Method B: /prev endpoint
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 4000);
+    const prevUrl = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/prev?adjusted=true&apiKey=${polygonKey}`;
+    const r = await fetch(prevUrl, { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.ok) {
       const j = await r.json();
-      const reg = (j.results || []).filter(isReg);
-      if (reg.length) savedPrevC = reg[reg.length - 1].c;
-    } catch (_) { /* try previous day */ }
+      const x = (j.results && j.results[0]) ? j.results[0] : null;
+      if (x && x.c > 0) {
+        const returnedDate = new Date(x.t).toISOString().slice(0, 10);
+        // Accept /prev if its date matches expected previous trading day, OR if it's
+        // within 5 days of expected (covers holidays — Mon after long weekend etc.)
+        const daysAgo = Math.round((target.getTime() - x.t) / 86400000);
+        if (returnedDate === expectedPrevDate || (daysAgo >= 1 && daysAgo <= 5)) {
+          savedPrevC = x.c;
+        }
+      }
+    }
+  } catch (_) { /* fall through to walkback */ }
+
+  // Fallback: minute-bar walkback (original logic — if /prev failed or returned stale data)
+  if (!savedPrevC) {
+    for (let back = 1; back <= 7 && !savedPrevC; back++) {
+      const d = new Date(target); d.setUTCDate(d.getUTCDate() - back);
+      const ymd = d.toISOString().slice(0, 10);
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 4000);
+        const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/1/minute/${ymd}/${ymd}?adjusted=true&sort=asc&limit=5000&apiKey=${polygonKey}`;
+        const r = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (!r.ok) continue;
+        const j = await r.json();
+        const reg = (j.results || []).filter(isReg);
+        if (reg.length) savedPrevC = reg[reg.length - 1].c;
+      } catch (_) { /* try previous day */ }
+    }
   }
 
   return { pm, daily, savedPrevC };
