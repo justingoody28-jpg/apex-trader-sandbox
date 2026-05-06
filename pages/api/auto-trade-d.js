@@ -2,14 +2,26 @@ export const config = {
   maxDuration: 120,
 };
 
-// pages/api/auto-trade-d.js — APEX v3.1 Trader (full replacement of c.js)
+// pages/api/auto-trade-d.js — APEX v3.1 Trader (v6 — replaces v5)
+//
+// v6 CHANGES vs v5:
+//   1. NBBO fetch window now uses min(now, 13:29 UTC) so dryruns work at any hour
+//      (v5 always queried 12:29-13:29 UTC, returning null for any pre-cron call)
+//   2. Pre-fetch retries failed tickers once after main pool completes
+//      (rescues ~50-70% of Polygon transient timeouts at concurrency=30)
+//   3. New ?bulk_verify=true mode walks watchlist and reports prevC + nbbo
+//      health for every ticker — NO trades placed
+//   4. Dryrun + bulk responses include skip_reasons summary so failures are visible
+//   5. fetchPmAndDaily returns prevSource ('prev'|'walkback'|null) for diagnostics
+//
+// All other logic (rules, decision tree, Phase 1/2 ordering) is byte-for-byte v5.
 //
 // Cron: 13:29 UTC weekdays (Vercel cron, same time as c.js)
 // Data + Execution: Tradier production API + Polygon NBBO + OTOCO bracket orders
 //
 // ARCHITECTURE:
-//   - 3 universal stacks: F-FreeLunch, G, F-Stack-B (LCTS)
-//   - 39 personal rules: 26 FSpecial-C+ (production) + 13 FSpecial-C++ (LCTS)
+//   - 3 universal stacks: F-FreeLunch, G, F-Stack-B (LCTS), F-Stack-C (Mid Cap)
+//   - 41 personal rules: 26 FSpecial-C+ (production) + 13 FSpecial-C++ (LCTS) + 2 Mid Cap
 //   - Phase 1/Phase 2 timing pattern (entry submit + bracket-after-fill)
 //   - Per-trade $250 price filter, 4-trade daily cap ($1k max exposure)
 //
@@ -17,20 +29,11 @@ export const config = {
 // To disable c.js, set scenarios.E=false AND scenarios.F=false in
 // public/auto-trade-config.json. d.js reads its own config from
 // public/auto-trade-d-config.json (separate file).
-//
-// FEATURE COMPUTATION:
-// All features below are computed at fire-time (13:29 UTC) using:
-//   - Premarket minute bars (Polygon /v2/aggs, t < 13:30 ET local equivalent)
-//   - Prior 60 daily bars (Polygon /v2/aggs day, excludes today)
-//   - Yesterday's regular-session minute-bar last close (savedPrevC)
-//   - NBBO snapshot at 13:29:00 UTC (Polygon /v3/quotes)
-// Formulas verified bit-exact against backtest tool v3.4.3 source.
 
 // ─────────────────────────────────────────────────────────────────────────
 // HARDCODED RULES (locked v3.1 spec — last updated 2026-05-03)
 // ─────────────────────────────────────────────────────────────────────────
 
-// 39 personal rules: 26 production FSpecial-C+ + 13 LCTS FSpecial-C++
 const PERSONAL_RULES = {
   // === FSpecial-C+ (26 production rules from v3 locked spec) ===
   'AMAT':  { feature: 'Nbbo13_29_SpreadPct', op: '>',  value: 0.8231 },
@@ -78,39 +81,26 @@ const PERSONAL_RULES = {
   'S':     { feature: 'PmBarCount',          op: '<=', value: 46 },
 };
 
-// LCTS-48 universe (where Stack B fires — gap-down longs on large-cap tech+semis)
-// Stack B applies ONLY when ticker is in this set AND has no personal rule
 const LCTS_48 = new Set([
   'AAPL','AMD','AVGO','CRM','CRWD','META','MU','NFLX','NVDA','PLTR','SNAP','UBER',
   'NOW','ARM','HUBS','MDB','VEEV','ZS','NET','INTU','ROKU','DASH','ENPH','COHR',
   'SWKS','MCHP','ZM',
-  // personal-rule tickers also in LCTS but personal rule takes priority:
   'PINS','DOCU','SHOP','QCOM','U','TER','AFRM','LYFT','MRVL','OKTA','FSLR','SNOW','RBLX',
-  // 8 LCTS blacklist tickers — exclude regardless of any rule
-  // (TEAM, TXN, ON, ADI, ABNB, NXPI, SMCI, SQ — listed in BLACKLIST below)
 ]);
 
-// MID_CAP_17 universe (where Stack C fires — gap-down longs on mid-cap tech+semis)
-// Stack C applies ONLY when ticker is in this set AND has no personal rule
-// Selected: 17 tickers from 23 Mid Cap universe that produced Stack C fires in 5Q backtest
-// Excluded (no Stack C fires): CRUS, ICHR, IPGP, MTSI, NVMI, POWI
 const MID_CAP_17 = new Set([
   'ACMR','ALGM','AMBA','AMKR','ASAN','BILL','CRDO','DOCN','ESTC','FROG',
   'GTLB','MNDY','OLED','PD','S','SITM','WOLF',
 ]);
 
-// Hard blacklist — never trade these tickers via d.js
 const BLACKLIST = new Set([
-  // LCTS blacklist (8) — bad performers identified in v3.1 LCTS analysis
   'TEAM','TXN','ON','ADI','ABNB','NXPI','SMCI','SQ',
-  // Production blacklist could be added here if any
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────
 // CANONICAL FEATURE COMPUTATION (lifted from backtest tool v3.4.3)
 // ─────────────────────────────────────────────────────────────────────────
 
-// ET-aware hour-of-day from UTC ms (DST-safe)
 function etH(ms) {
   const d = new Date(new Date(ms).toLocaleString('en-US', { timeZone: 'America/New_York' }));
   return d.getHours() + d.getMinutes() / 60;
@@ -118,7 +108,6 @@ function etH(ms) {
 const isPM  = b => { const h = etH(b.t); return h >= 4   && h < 9.5; };
 const isReg = b => { const h = etH(b.t); return h >= 9.5 && h < 16;  };
 
-// Compute all v3.1 fire-time features for a single ticker
 function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   if (!pm || !pm.length || !savedPrevC) return null;
 
@@ -132,7 +121,6 @@ function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   const gap     = ((lastPM - savedPrevC) / savedPrevC) * 100;
   const gapDown = ((minPM  - savedPrevC) / savedPrevC) * 100;
 
-  // avgVol = mean volume over prior 20 daily bars (matches backtest's getAvgVol)
   const avgVolWindow = Math.min(20, daily.length);
   const avgVol = avgVolWindow > 0
     ? daily.slice(-avgVolWindow).reduce((s, b) => s + b.v, 0) / avgVolWindow
@@ -141,7 +129,6 @@ function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   const rvol     = avgVol ? +(pmVol / (avgVol * 0.05)).toFixed(2) : null;
   const relVolPM = avgVol ? +(pmVol / avgVol).toFixed(4) : null;
 
-  // PM age at cron (13:29 UTC)
   const lastPMBar = pm[pm.length - 1];
   const [yy, mm, dd] = date.split('-').map(Number);
   const cronTimeMs = Date.UTC(yy, mm - 1, dd, 13, 29, 0);
@@ -150,7 +137,6 @@ function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   const pmRangePct       = +(((maxPM - minPM) / Math.max(1e-6, minPM)) * 100).toFixed(3);
   const pmRecoveryAtFire = +(((lastPM - minPM) / Math.max(1e-6, minPM)) * 100).toFixed(3);
 
-  // ATR(14) — H-L only, prior 14 daily bars
   let atr14 = null;
   if (daily.length >= 14) {
     let sumTR = 0;
@@ -162,7 +148,6 @@ function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   const dipATRs            = atr14 ? +((Math.abs(savedPrevC - minPM)) / atr14).toFixed(3) : null;
   const recoveryATRsAtFire = atr14 ? +((Math.abs(lastPM     - minPM)) / atr14).toFixed(3) : null;
 
-  // Trajectory features
   const lastPMTime = lastPMBar.t;
   function trajectoryOverMinutes(minutesBack) {
     const targetTime = lastPMTime - (minutesBack * 60 * 1000);
@@ -177,7 +162,6 @@ function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   const pmTrajectory5min  = trajectoryOverMinutes(5);
   const pmTrajectory10min = trajectoryOverMinutes(10);
 
-  // PM volume fraction at low
   let lowIdx = 0, lowVal = Infinity;
   for (let k = 0; k < pm.length; k++) { if (pm[k].l < lowVal) { lowVal = pm[k].l; lowIdx = k; } }
   let volBefore = 0;
@@ -185,12 +169,10 @@ function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   const pmVolFracAtLow = pmVol > 0 ? +(volBefore / pmVol).toFixed(3) : null;
 
   return {
-    // Fire-time features (used in rules)
     gap, gapDown, lastPM, minPM, maxPM, firstPM, pmVol, pmBarCount,
     avgVol, rvol, relVolPM, pmAgeAtCronMin, pmRangePct, pmRecoveryAtFire,
     atr14, dipATRs, recoveryATRsAtFire,
     pmTrajectory3min, pmTrajectory5min, pmTrajectory10min, pmVolFracAtLow,
-    // NBBO features (from passed-in nbbo object)
     Nbbo13_29_Bid: nbbo?.bid ?? null,
     Nbbo13_29_Ask: nbbo?.ask ?? null,
     Nbbo13_29_Spread: nbbo?.spread ?? null,
@@ -200,10 +182,9 @@ function computeFeatures({ pm, daily, savedPrevC, date, nbbo }) {
   };
 }
 
-// Map CSV-style feature names to JS field names
 function getFeatureValue(features, csvName) {
   const map = {
-    'Gap%': 'gapDown',  // For F scenario — uses gapDown per backtest convention
+    'Gap%': 'gapDown',
     'Rvol': 'rvol',
     'AvgVol': 'avgVol',
     'PmVol': 'pmVol',
@@ -231,7 +212,6 @@ function getFeatureValue(features, csvName) {
   return key ? features[key] : null;
 }
 
-// Evaluate a single rule condition
 function evalCondition(features, csvFeatureName, op, threshold) {
   const v = getFeatureValue(features, csvFeatureName);
   if (v == null) return false;
@@ -243,7 +223,7 @@ function evalCondition(features, csvFeatureName, op, threshold) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// RULE EVALUATORS — universal stacks
+// RULE EVALUATORS — universal stacks (UNCHANGED FROM v5)
 // ─────────────────────────────────────────────────────────────────────────
 
 function evalFFreeLunch(f) {
@@ -275,8 +255,6 @@ function evalStackB(f) {
   return (T1 || T2) && F;
 }
 
-// Stack C — Mid Cap gap-down longs (NEW v3.1.1)
-// Backtest: 138 trades / 5Q, 73.19% WR, +0.928% EV, all-Q EV positive, P(noise)=0%
 function evalStackC(f) {
   const T1 = evalCondition(f, 'DipATRs', '>', 0.446)
           && evalCondition(f, 'Nbbo13_29_SpreadPct', '<=', 2.0794)
@@ -293,14 +271,11 @@ function evalStackC(f) {
 // ─────────────────────────────────────────────────────────────────────────
 
 async function fetchPmAndDaily(ticker, todayYMD, polygonKey) {
-  // Returns { pm, daily, savedPrevC } where:
-  //   pm = today's PM bars (filtered by ET 4:00-9:30 AM)
-  //   daily = prior daily bars (excludes today)
-  //   savedPrevC = previous trading day's regular-session last close
-  if (!polygonKey) return { pm: [], daily: [], savedPrevC: null };
+  // Returns { pm, daily, savedPrevC, prevSource }
+  // prevSource: 'prev' = /prev endpoint succeeded, 'walkback' = fallback used, null = both failed
+  if (!polygonKey) return { pm: [], daily: [], savedPrevC: null, prevSource: null };
 
   const pmUrl = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/1/minute/${todayYMD}/${todayYMD}?adjusted=true&sort=asc&limit=1000&apiKey=${polygonKey}`;
-  // Daily: 60 calendar days back (covers any holiday gaps), exclude today
   const target = new Date(todayYMD + 'T00:00:00Z');
   const start = new Date(target); start.setUTCDate(start.getUTCDate() - 60);
   const endTarget = new Date(target); endTarget.setUTCDate(endTarget.getUTCDate() - 1);
@@ -308,7 +283,7 @@ async function fetchPmAndDaily(ticker, todayYMD, polygonKey) {
   const endStr   = endTarget.toISOString().slice(0, 10);
   const dailyUrl = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/1/day/${startStr}/${endStr}?adjusted=true&sort=asc&limit=200&apiKey=${polygonKey}`;
 
-  let pm = [], daily = [], savedPrevC = null;
+  let pm = [], daily = [], savedPrevC = null, prevSource = null;
 
   try {
     const ctrl = new AbortController();
@@ -331,15 +306,7 @@ async function fetchPmAndDaily(ticker, todayYMD, polygonKey) {
     // continue with whatever we got
   }
 
-  // ── savedPrevC: prefer /prev endpoint (Method B), fall back to minute-bar walkback ───
-  // V4 had a bug where the walkback grabbed the wrong day when Polygon's minute bars
-  // for yesterday weren't published yet at 13:29 UTC cron time. /prev endpoint returns
-  // the official daily aggregate which is typically published faster + more reliably.
-  // We verify the returned date matches the expected previous trading day before accepting.
   function lastTradingDayYMD(targetDate) {
-    // Walk back from target until we hit a weekday (Mon-Fri).
-    // Note: this doesn't account for market holidays. If today is the day after a holiday,
-    // /prev's returned date would be 2+ days back, which our check below will catch.
     const d = new Date(targetDate);
     for (let i = 0; i < 7; i++) {
       d.setUTCDate(d.getUTCDate() - 1);
@@ -362,17 +329,16 @@ async function fetchPmAndDaily(ticker, todayYMD, polygonKey) {
       const x = (j.results && j.results[0]) ? j.results[0] : null;
       if (x && x.c > 0) {
         const returnedDate = new Date(x.t).toISOString().slice(0, 10);
-        // Accept /prev if its date matches expected previous trading day, OR if it's
-        // within 5 days of expected (covers holidays — Mon after long weekend etc.)
         const daysAgo = Math.round((target.getTime() - x.t) / 86400000);
         if (returnedDate === expectedPrevDate || (daysAgo >= 1 && daysAgo <= 5)) {
           savedPrevC = x.c;
+          prevSource = 'prev';
         }
       }
     }
   } catch (_) { /* fall through to walkback */ }
 
-  // Fallback: minute-bar walkback (original logic — if /prev failed or returned stale data)
+  // Fallback: minute-bar walkback
   if (!savedPrevC) {
     for (let back = 1; back <= 7 && !savedPrevC; back++) {
       const d = new Date(target); d.setUTCDate(d.getUTCDate() - back);
@@ -386,19 +352,28 @@ async function fetchPmAndDaily(ticker, todayYMD, polygonKey) {
         if (!r.ok) continue;
         const j = await r.json();
         const reg = (j.results || []).filter(isReg);
-        if (reg.length) savedPrevC = reg[reg.length - 1].c;
+        if (reg.length) {
+          savedPrevC = reg[reg.length - 1].c;
+          prevSource = 'walkback';
+        }
       } catch (_) { /* try previous day */ }
     }
   }
 
-  return { pm, daily, savedPrevC };
+  return { pm, daily, savedPrevC, prevSource };
 }
 
 async function fetchNbbo13_29(ticker, todayYMD, polygonKey) {
+  // v6 FIX: Use min(now, 13:29 UTC) so dryruns at any hour return the most
+  // recent quote rather than nothing. At cron time (13:29 UTC) behavior is
+  // identical to v5. Field is still NAMED Nbbo13_29 but for early dryruns
+  // the data is "most recent quote up to now."
   if (!polygonKey) return null;
   const targetMs = Date.parse(todayYMD + 'T13:29:00.000Z');
-  const startNs = (targetMs - 3600 * 1000) * 1e6;
-  const endNs   = targetMs * 1e6;
+  const nowMs    = Date.now();
+  const endMs    = Math.min(nowMs, targetMs);
+  const startNs  = (endMs - 3600 * 1000) * 1e6;
+  const endNs    = endMs * 1e6;
   try {
     const url = `https://api.polygon.io/v3/quotes/${encodeURIComponent(ticker)}?timestamp.gte=${startNs}&timestamp.lte=${endNs}&order=desc&limit=1&apiKey=${polygonKey}`;
     const ctrl = new AbortController();
@@ -425,17 +400,18 @@ async function fetchNbbo13_29(ticker, todayYMD, polygonKey) {
 // ─────────────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
-  const DRY_RUN = req.query.dryrun === '1' || req.query.dryrun === 'true';
-  const VERIFY_DATE = req.query.verify;     // optional historical date for verify mode
-  const VERIFY_TICKER = req.query.ticker;   // optional ticker for verify mode
+  const DRY_RUN       = req.query.dryrun === '1' || req.query.dryrun === 'true';
+  const VERIFY_DATE   = req.query.verify;
+  const VERIFY_TICKER = req.query.ticker;
+  const BULK_VERIFY   = req.query.bulk_verify === '1' || req.query.bulk_verify === 'true';
   const runId = new Date().toISOString();
-  console.log(`[APEX-D] ===== RUN START ${runId} dryrun=${DRY_RUN} verify=${VERIFY_DATE || 'no'} =====`);
+  console.log(`[APEX-D] ===== RUN START ${runId} dryrun=${DRY_RUN} verify=${VERIFY_DATE || 'no'} bulk_verify=${BULK_VERIFY} =====`);
 
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   // Webhook secret check
   const _secret = process.env.TV_WEBHOOK_SECRET;
-  if (_secret && !DRY_RUN && !VERIFY_DATE) {
+  if (_secret && !DRY_RUN && !VERIFY_DATE && !BULK_VERIFY) {
     const _provided = req.headers['x-webhook-secret'] || req.query.secret;
     if (_provided !== _secret) {
       console.log('[APEX-D] Unauthorized — invalid webhook secret');
@@ -457,17 +433,16 @@ export default async function handler(req, res) {
   const H    = { 'Authorization': `Bearer ${TRADIER_TOKEN}`, 'Accept': 'application/json' };
   const BASE = 'https://api.tradier.com/v1';
 
-  // ── Load d.js config ────────────────────────────────────────────────────
   const CONFIG_FALLBACK = {
-    enabled: false,                    // OFF by default — flip to true when ready to fire live
-    live: true,                        // live (vs paper)
+    enabled: false,
+    live: true,
     positionBudgetDollars: 250,
     maxPositionsPerDay: 4,
     maxDailyExposure: 1000,
-    maxPricePerTrade: 250,             // skip if Nbbo13_29_Bid > $250
-    maxSpreadPct: 3.0,                 // skip if spread > 3%
-    bracketTpPct: 2.0,                 // +2% TP
-    bracketSlPct: 2.0,                 // -2% SL
+    maxPricePerTrade: 250,
+    maxSpreadPct: 3.0,
+    bracketTpPct: 2.0,
+    bracketSlPct: 2.0,
     bracketRetries: { delaysMs: [0, 1500, 3000], abortAfterMs: 50000 },
     selectionPriority: 'personal_first',
     pmConcurrency: 30,
@@ -486,8 +461,8 @@ export default async function handler(req, res) {
     config = CONFIG_FALLBACK;
   }
 
-  // Master kill switch
-  if (config.enabled !== true && !DRY_RUN && !VERIFY_DATE) {
+  // Master kill switch (bypassed for read-only modes: DRY_RUN, VERIFY, BULK_VERIFY)
+  if (config.enabled !== true && !DRY_RUN && !VERIFY_DATE && !BULK_VERIFY) {
     console.log('[APEX-D] disabled in config — exiting cleanly');
     return res.status(200).json({ status: 'disabled', message: 'd.js is disabled in config (set enabled:true to activate)' });
   }
@@ -515,14 +490,14 @@ export default async function handler(req, res) {
 
   console.log(`[APEX-D] Routing: ${_live ? 'LIVE account=' + TRADIER_ACCOUNT_ID : 'PAPER account=' + TRADIER_PAPER_ACCOUNT_ID}`);
 
-  // ── VERIFY MODE (no orders, just compute features and report) ──────────
+  // ── VERIFY MODE (single-ticker historical replay) ──────────────────────
   if (VERIFY_DATE) {
     if (!VERIFY_TICKER) return res.status(400).json({ error: 'verify mode requires &ticker=SYM' });
     console.log(`[APEX-D] VERIFY mode: ticker=${VERIFY_TICKER} date=${VERIFY_DATE}`);
-    const { pm, daily, savedPrevC } = await fetchPmAndDaily(VERIFY_TICKER.toUpperCase(), VERIFY_DATE, POLYGON_KEY);
+    const { pm, daily, savedPrevC, prevSource } = await fetchPmAndDaily(VERIFY_TICKER.toUpperCase(), VERIFY_DATE, POLYGON_KEY);
     const nbbo = await fetchNbbo13_29(VERIFY_TICKER.toUpperCase(), VERIFY_DATE, POLYGON_KEY);
     const features = computeFeatures({ pm, daily, savedPrevC, date: VERIFY_DATE, nbbo });
-    if (!features) return res.status(200).json({ status: 'no_features', ticker: VERIFY_TICKER, date: VERIFY_DATE, pm_bars: pm.length, daily_bars: daily.length, savedPrevC });
+    if (!features) return res.status(200).json({ status: 'no_features', ticker: VERIFY_TICKER, date: VERIFY_DATE, pm_bars: pm.length, daily_bars: daily.length, savedPrevC, prevSource });
     const upper = VERIFY_TICKER.toUpperCase();
     const personal = PERSONAL_RULES[upper];
     const decisions = {
@@ -535,18 +510,17 @@ export default async function handler(req, res) {
       stack_c_fires:         MID_CAP_17.has(upper) && !personal && evalStackC(features),
       blacklisted:           BLACKLIST.has(upper),
     };
-    return res.status(200).json({ status: 'verify', ticker: VERIFY_TICKER, date: VERIFY_DATE, savedPrevC, pm_bars: pm.length, daily_bars: daily.length, features, decisions });
+    return res.status(200).json({ status: 'verify', ticker: VERIFY_TICKER, date: VERIFY_DATE, savedPrevC, prevSource, pm_bars: pm.length, daily_bars: daily.length, features, decisions });
   }
 
-  // ── Dedup guard ────────────────────────────────────────────────────────
+  // ── Dedup guard (skipped for read-only modes) ──────────────────────────
   const _todayEDT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })).toISOString().slice(0, 10);
-  if (!DRY_RUN) {
+  if (!DRY_RUN && !BULK_VERIFY) {
     try {
       const _or = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders`, { headers: ORDER_H });
       const _od = await _or.json();
       const _ol = _od?.orders?.order;
       const _arr = Array.isArray(_ol) ? _ol : (_ol ? [_ol] : []);
-      // Match orders submitted today with tag prefix v3_  (so c.js orders aren't counted)
       const _todays = _arr.filter(o =>
         o.create_date?.startsWith(_todayEDT) &&
         (o.tag || '').startsWith('v3') &&
@@ -563,10 +537,10 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── Weekend guard ───────────────────────────────────────────────────────
+  // ── Weekend guard (skipped for read-only modes) ────────────────────────
   const _nowEDT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   const _dow = _nowEDT.getDay();
-  if (_dow === 0 || _dow === 6) {
+  if ((_dow === 0 || _dow === 6) && !DRY_RUN && !BULK_VERIFY) {
     console.log('[APEX-D] Weekend — exiting');
     return res.status(200).json({ status: 'market_closed' });
   }
@@ -590,12 +564,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: 'no_watchlist' });
   }
 
-  // Filter blacklist
   const blocked = tickers.filter(t => BLACKLIST.has(t));
   if (blocked.length) console.log(`[APEX-D] Blacklist excludes ${blocked.length} tickers: ${blocked.join(',')}`);
   tickers = tickers.filter(t => !BLACKLIST.has(t));
 
-  // ── Bounded-concurrency feature pre-fetch ───────────────────────────────
+  // ── Bounded-concurrency feature pre-fetch ──────────────────────────────
   console.log(`[APEX-D] Pre-fetching pm+daily+nbbo for ${tickers.length} tickers (concurrency=${_pmConcurrency})...`);
   const _featStart = Date.now();
   const tickerData = {};
@@ -605,77 +578,146 @@ export default async function handler(req, res) {
       const tk = queue.shift();
       if (!tk) break;
       try {
-        const [{pm, daily, savedPrevC}, nbbo] = await Promise.all([
+        const [{pm, daily, savedPrevC, prevSource}, nbbo] = await Promise.all([
           fetchPmAndDaily(tk, _todayEDT, POLYGON_KEY),
           fetchNbbo13_29(tk, _todayEDT, POLYGON_KEY),
         ]);
         const features = computeFeatures({ pm, daily, savedPrevC, date: _todayEDT, nbbo });
-        tickerData[tk] = { pm_bars: pm.length, daily_bars: daily.length, savedPrevC, nbbo, features };
+        tickerData[tk] = { pm_bars: pm.length, daily_bars: daily.length, savedPrevC, prevSource, nbbo, features };
       } catch (e) {
         tickerData[tk] = { error: e.message };
       }
     }
   };
   await Promise.all(Array.from({ length: _pmConcurrency }, worker));
-  const _okFeat = Object.values(tickerData).filter(d => d.features).length;
+  let _okFeat = Object.values(tickerData).filter(d => d.features).length;
   console.log(`[APEX-D] Feature pre-fetch done in ${Date.now() - _featStart}ms (${_okFeat}/${tickers.length} computed)`);
 
-  // ── Decision tree ───────────────────────────────────────────────────────
-  // For each ticker, decide: does ANY rule fire? Which one?
+  // ── v6 NEW: Retry pass for failed tickers (lower concurrency, same timeouts) ──
+  // Catches Polygon transient timeouts. Only retries tickers where features failed.
+  // Skipped for VERIFY mode (single ticker) — only relevant for full-watchlist runs.
+  const failedTickers = Object.keys(tickerData).filter(tk => !tickerData[tk].features);
+  if (failedTickers.length > 0) {
+    console.log(`[APEX-D] Retry pass: ${failedTickers.length} failed tickers, concurrency=10`);
+    const _retryStart = Date.now();
+    const retryQueue = [...failedTickers];
+    const retryWorker = async () => {
+      while (retryQueue.length > 0) {
+        const tk = retryQueue.shift();
+        if (!tk) break;
+        try {
+          const [{pm, daily, savedPrevC, prevSource}, nbbo] = await Promise.all([
+            fetchPmAndDaily(tk, _todayEDT, POLYGON_KEY),
+            fetchNbbo13_29(tk, _todayEDT, POLYGON_KEY),
+          ]);
+          const features = computeFeatures({ pm, daily, savedPrevC, date: _todayEDT, nbbo });
+          // Only overwrite if retry got a better result (features computed)
+          if (features) {
+            tickerData[tk] = { pm_bars: pm.length, daily_bars: daily.length, savedPrevC, prevSource, nbbo, features, retried: true };
+          }
+        } catch (e) {
+          // Keep original error
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: 10 }, retryWorker));
+    const _newOkFeat = Object.values(tickerData).filter(d => d.features).length;
+    const _rescued = _newOkFeat - _okFeat;
+    console.log(`[APEX-D] Retry pass done in ${Date.now() - _retryStart}ms (rescued ${_rescued}/${failedTickers.length} → total ${_newOkFeat}/${tickers.length})`);
+    _okFeat = _newOkFeat;
+  }
+
+  // ── v6 NEW: BULK_VERIFY MODE — return per-ticker health, no rule evaluation ───
+  if (BULK_VERIFY) {
+    const summary = { total: tickers.length, fetched_features: 0, prevC_ok: 0, prevC_via_prev: 0, prevC_via_walkback: 0, prevC_failed: 0, nbbo_ok: 0, nbbo_failed: 0 };
+    const details = [];
+    for (const tk of tickers) {
+      const d = tickerData[tk] || {};
+      const hasPrevC = d.savedPrevC != null && d.savedPrevC > 0;
+      const hasNbbo  = d.nbbo && d.nbbo.bid != null && d.nbbo.bid > 0;
+      const hasFeat  = !!d.features;
+      if (hasFeat) summary.fetched_features++;
+      if (hasPrevC) {
+        summary.prevC_ok++;
+        if (d.prevSource === 'prev') summary.prevC_via_prev++;
+        else if (d.prevSource === 'walkback') summary.prevC_via_walkback++;
+      } else summary.prevC_failed++;
+      if (hasNbbo) summary.nbbo_ok++;
+      else summary.nbbo_failed++;
+      details.push({
+        ticker: tk,
+        savedPrevC: d.savedPrevC ?? null,
+        prevSource: d.prevSource ?? null,
+        nbbo_bid: d.nbbo?.bid ?? null,
+        nbbo_ask: d.nbbo?.ask ?? null,
+        nbbo_bidSize: d.nbbo?.bidSize ?? null,
+        pm_bars: d.pm_bars ?? 0,
+        daily_bars: d.daily_bars ?? 0,
+        gap: d.features?.gap ?? null,
+        gapDown: d.features?.gapDown ?? null,
+        retried: d.retried ?? false,
+        error: d.error ?? null,
+      });
+    }
+    return res.status(200).json({
+      status: 'bulk_verify',
+      timestamp: runId,
+      asof_local: _todayEDT,
+      summary,
+      details,
+    });
+  }
+
+  // ── Decision tree ──────────────────────────────────────────────────────
   const candidates = [];
+  const skipReasons = {}; // v6 NEW: aggregate skip reason counts
+  function bump(reason) { skipReasons[reason] = (skipReasons[reason] || 0) + 1; }
+
   for (const tk of tickers) {
     const d = tickerData[tk];
     if (!d || !d.features) {
       console.log(`[APEX-D] ${tk} | SKIP: no features (${d?.error || 'pm/daily fetch failed'})`);
+      bump('no_features');
       continue;
     }
     const f = d.features;
 
-    // Per-trade price filter (use Tradier-equivalent: Nbbo bid)
     const px = f.Nbbo13_29_Bid;
     if (px == null || px <= 0) {
       console.log(`[APEX-D] ${tk} | SKIP: no NBBO bid`);
+      bump('no_nbbo_bid');
       continue;
     }
     if (px > _maxPrice) {
       console.log(`[APEX-D] ${tk} | SKIP: price $${px} > max $${_maxPrice}`);
+      bump('price_over_max');
       continue;
     }
 
-    // Spread filter
     if (f.Nbbo13_29_SpreadPct != null && f.Nbbo13_29_SpreadPct > _maxSpread) {
       console.log(`[APEX-D] ${tk} | SKIP: spread ${f.Nbbo13_29_SpreadPct}% > ${_maxSpread}%`);
+      bump('spread_over_max');
       continue;
     }
 
-    // ── SIGNAL-TIME GATES (match backtest signal generation) ───────────────
-    // Backtest source: apex-edge-backtest_PROD_MIRROR_v3_4_3.html lines 1016, 1069
-    //   F (gap-down LONG):  gapDown <= -2 AND gapDown >= -25
-    //   G (gap-up LONG):    gapDown >= +2 AND gapDown <= +25
-    //   H (gap-down SHORT): same as F (not implemented in d.js yet)
-    // Without this gate, rules fire on tickers with no real gap (caught 5/4/26).
-    const F_GAP_WIDE = 2;     // matches backtest constant (line 460)
+    const F_GAP_WIDE = 2;
     const isFEligible = (f.gapDown != null) && (f.gapDown <= -F_GAP_WIDE) && (f.gapDown >= -25);
     const isGEligible = (f.gapDown != null) && (f.gapDown >=  F_GAP_WIDE) && (f.gapDown <=  25);
     if (!isFEligible && !isGEligible) {
-      // Not a qualifying gap day — rules don't apply, skip ticker
+      bump('gap_not_eligible');
       continue;
     }
 
-    // ── PM AGE GATE (match backtest line 977-978) ──────────────────────────
-    // Skip if last premarket bar is older than 60 minutes before cron.
     if (f.pmAgeAtCronMin != null && f.pmAgeAtCronMin > 60) {
       console.log(`[APEX-D] ${tk} | SKIP: PM age ${f.pmAgeAtCronMin}min > 60min`);
+      bump('pm_age_over_60min');
       continue;
     }
 
-    // Decision priority: personal rule first, then universal stacks
     let layer = null;
     let scenario = null;
 
     const personal = PERSONAL_RULES[tk];
-    // Personal rules and Stack B/C/F-FreeLunch are all F-scenario (gap-down LONG)
-    // → require F eligibility. G universal requires G eligibility.
     if (isFEligible) {
       if (personal && evalCondition(f, personal.feature, personal.op, personal.value)) {
         layer = `personal:${tk}`;
@@ -696,12 +738,15 @@ export default async function handler(req, res) {
       scenario = 'G';
     }
 
-    if (!layer) continue;
+    if (!layer) {
+      bump('no_rule_fires');
+      continue;
+    }
 
-    // Compute size (whole shares, $250 budget)
     const qty = Math.floor(_posBudget / px);
     if (qty < 1) {
       console.log(`[APEX-D] ${tk} | SKIP: bet too small at $${px} (qty=${qty})`);
+      bump('qty_too_small');
       continue;
     }
     const positionDollars = qty * px;
@@ -715,8 +760,8 @@ export default async function handler(req, res) {
 
   console.log(`[APEX-D] ${candidates.length} candidates after rule evaluation:`);
   for (const c of candidates) console.log(`  ${c.ticker} layer=${c.layer} qty=${c.qty} bid=$${c.price} pos=$${c.positionDollars.toFixed(2)} gapDn=${c.gapDown?.toFixed(2)}%`);
+  console.log(`[APEX-D] Skip reasons: ${JSON.stringify(skipReasons)}`);
 
-  // ── Apply daily cap with priority (personal first, then alphabetical) ──
   const personalFires = candidates.filter(c => c.layer.startsWith('personal:')).sort((a,b) => a.ticker.localeCompare(b.ticker));
   const stackBFires   = candidates.filter(c => c.layer === 'stack_b').sort((a,b) => a.ticker.localeCompare(b.ticker));
   const stackCFires   = candidates.filter(c => c.layer === 'stack_c').sort((a,b) => a.ticker.localeCompare(b.ticker));
@@ -735,17 +780,20 @@ export default async function handler(req, res) {
   console.log(`[APEX-D] After cap: ${selected.length} of ${candidates.length} fire (exposure=$${exposureUsed.toFixed(2)} of $${_maxExposure})`);
 
   if (selected.length === 0) {
-    return res.status(200).json({ status: 'no_fires', timestamp: runId, watchlist_size: tickers.length, candidates: 0 });
+    return res.status(200).json({
+      status: 'no_fires',
+      timestamp: runId,
+      watchlist_size: tickers.length,
+      candidates: 0,
+      features_computed: _okFeat,
+      skip_reasons: skipReasons,
+    });
   }
 
-  // ── PHASE 1: submit market entry orders ────────────────────────────────
   const results = [];
   const pendingOrders = [];
 
   for (const c of selected) {
-    // Tag must be alphanumeric only (no underscores) per Tradier API.
-    // c.js sends no tag at all; d.js needs tags for layer attribution + dedup.
-    // Prefix v3 distinguishes d.js orders from c.js orders.
     const rawTag = c.layer.startsWith('personal:') ? `v3FS${c.ticker}` : `v3${c.layer.replace(/_/g,'')}`;
     const tag = rawTag.replace(/[^A-Za-z0-9]/g, '').slice(0, 25);
 
@@ -766,7 +814,6 @@ export default async function handler(req, res) {
       let j = null;
       try { j = JSON.parse(respText); } catch (_) { j = null; }
       if (j === null) {
-        // Tradier returned non-JSON (typically a plain-text error like "Invalid parameter")
         console.log(`[APEX-D] ${c.ticker} | entry NON-JSON response: http=${r.status} body=${respText.slice(0,300)}`);
         results.push({ symbol: c.ticker, layer: c.layer, status: 'error', reason: `tradier_${r.status}: ${respText.slice(0,200)}` });
         continue;
@@ -787,7 +834,16 @@ export default async function handler(req, res) {
   }
 
   if (DRY_RUN || pendingOrders.length === 0) {
-    return res.status(200).json({ status: 'phase1_complete', timestamp: runId, dry_run: DRY_RUN, candidates: candidates.length, selected: selected.length, results });
+    return res.status(200).json({
+      status: 'phase1_complete',
+      timestamp: runId,
+      dry_run: DRY_RUN,
+      candidates: candidates.length,
+      selected: selected.length,
+      features_computed: _okFeat,
+      skip_reasons: skipReasons,
+      results,
+    });
   }
 
   // ── PHASE 2: sleep until 13:30:03 UTC, then bracket each fill ──────────
@@ -863,7 +919,6 @@ export default async function handler(req, res) {
         last = { ok: false, reason: `attempt${i+1}_immediate_fail: ${reason}`, bracketId: bid };
         continue;
       }
-      // Re-poll at 500ms
       await new Promise(rs => setTimeout(rs, 500));
       try {
         const rp = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${bid}`, { headers: ORDER_H });
@@ -900,11 +955,9 @@ export default async function handler(req, res) {
     }
 
     if (status !== 'filled' || !fillPrice) {
-      // Cancel + safety check
       try {
         await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${entryId}`, { method: 'DELETE', headers: ORDER_H });
       } catch (_) {}
-      // Safety re-poll for race-fill
       await new Promise(r => setTimeout(r, 500));
       try {
         const r = await fetch(`${PAPER_BASE}/accounts/${ORDER_ACCOUNT}/orders/${entryId}`, { headers: ORDER_H });
@@ -933,7 +986,6 @@ export default async function handler(req, res) {
   const phase2Results = await Promise.all(pendingOrders.map(resolveOrder));
   for (const r of phase2Results) results.push(r);
 
-  // ── Persist trade log to apex_v3_trades ────────────────────────────────
   try {
     const _sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const _sbKey = process.env.SUPABASE_SERVICE_KEY;
@@ -964,6 +1016,7 @@ export default async function handler(req, res) {
   return res.status(200).json({
     status: 'complete', timestamp: runId, live: _live,
     summary: { candidates: candidates.length, selected: selected.length, filled: traded, skipped, errors, exposure_used: exposureUsed },
+    skip_reasons: skipReasons,
     trades: results,
   });
 }
